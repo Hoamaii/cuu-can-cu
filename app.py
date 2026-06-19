@@ -18,6 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
+st.image("IMG_7823.jpeg", width=250)
 st.title("🐑 Cừu Cần Cù")
 
 st.write(
