@@ -84,20 +84,21 @@ st.markdown("""
 .sb-streak-icon{font-size:22px;display:block;margin-bottom:4px}
 
 /* ─── CENTER HERO ────────────────── */
-.hero-wrap{position:relative;border-radius:28px;overflow:hidden;
-  box-shadow:0 6px 32px rgba(0,0,0,.1);margin-bottom:14px;animation:fade-in .6s ease}
+.hero-outer{position:relative;margin-bottom:14px;animation:fade-in .6s ease}
+.hero-wrap{border-radius:28px;overflow:hidden;
+  box-shadow:0 6px 32px rgba(0,0,0,.1);display:block}
 .hero-svg{width:100%;display:block}
-.hero-sheep-float{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;
+.hero-sheep-float{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;z-index:10;
   animation:float 3.5s ease-in-out infinite}
 .hero-sheep-img{width:108px;height:108px;object-fit:contain;
-  filter:drop-shadow(0 8px 24px rgba(0,0,0,.18))}
-.hero-sheep-state{font-size:22px;position:absolute;top:0;right:-4px;
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,.18));background:transparent}
+.hero-sheep-state{font-size:22px;position:absolute;top:-2px;right:-6px;
   animation:wag 2.5s ease-in-out infinite}
 .hero-bubble{background:white;border-radius:20px 20px 20px 6px;
   padding:7px 13px;font-size:12px;color:#1A1A2E;
   box-shadow:0 3px 16px rgba(0,0,0,.1);font-weight:600;
-  margin-top:4px;max-width:175px;text-align:center}
+  margin-top:6px;max-width:180px;text-align:center;white-space:nowrap}
 
 /* Dream card */
 .dream-card{background:white;border-radius:24px;padding:18px 20px;
@@ -175,10 +176,10 @@ st.markdown("""
 
 /* Emotion chips via Streamlit buttons */
 div.emotion-zone [data-testid="stButton"]>button{
-  border-radius:20px!important;padding:8px 10px!important;font-size:12px!important;
-  font-weight:600!important;width:100%!important;border:2px solid #EEE!important;
+  border-radius:14px!important;padding:5px 8px!important;font-size:11.5px!important;
+  font-weight:600!important;width:100%!important;border:1.5px solid #EEE!important;
   background:#FEFAF6!important;color:#1A1A2E!important;
-  transition:all .2s!important;text-align:left!important;line-height:1.3!important}
+  transition:all .2s!important;text-align:left!important;line-height:1.4!important}
 div.emotion-zone [data-testid="stButton"]>button:hover{
   background:#F5F3FF!important;border-color:#7C6FE8!important;color:#4A3ACA!important}
 div.em-sel [data-testid="stButton"]>button{
@@ -198,11 +199,16 @@ div.em-sel [data-testid="stButton"]>button{
   display:flex;align-items:center;gap:5px}
 .status-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;
   display:inline-block;animation:pulse-dot 1.5s infinite}
-.chat-sheep-hero-wrap{text-align:center;padding:14px 0 8px;animation:slide-up .4s ease}
-.chat-sheep-hero-img{width:88px;height:88px;object-fit:contain;
-  filter:drop-shadow(0 8px 24px rgba(124,111,232,.3));
-  animation:float 3.5s ease-in-out infinite}
-.chat-sheep-emotion-badge{font-size:26px;display:block;margin-top:-6px;
+.chat-sheep-hero-wrap{text-align:center;padding:20px 0 10px;animation:slide-up .4s ease}
+.chat-sheep-hero-circle{
+  width:140px;height:140px;border-radius:50%;
+  background:linear-gradient(135deg,#F5F3FF,#EDE7F6);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 32px rgba(124,111,232,.22);
+  margin:0 auto;animation:float 3.5s ease-in-out infinite;
+  border:3px solid #E8E4FF}
+.chat-sheep-hero-img{width:112px;height:112px;object-fit:cover;border-radius:50%}
+.chat-sheep-emotion-badge{font-size:28px;display:block;margin-top:6px;
   animation:wag 2.5s ease-in-out infinite}
 .pulse-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
   background:#7C6FE8;animation:pulse-dot 1.2s infinite}
@@ -317,6 +323,12 @@ body{
   padding:9px;font-size:12.5px;font-weight:700;
   border-radius:0 0 13px 13px;cursor:pointer;
 }
+/* markdown tables inside bubbles */
+.msg-table{border-collapse:collapse;width:100%;font-size:12px;margin:8px 0;border-radius:8px;overflow:hidden}
+.msg-table th{background:#EDE7F6;color:#4A3ACA;font-weight:700;padding:6px 10px;text-align:left;font-size:11.5px}
+.msg-table td{padding:5px 10px;border-bottom:1px solid #F0F0F0;font-size:12px}
+.msg-table tr:last-child td{border-bottom:none}
+.msg-table tr:nth-child(even) td{background:#FAFAFA}
 </style>
 """
 
@@ -506,20 +518,48 @@ def recent_context() -> str:
 def md_to_html(text: str) -> str:
     text = html_lib.escape(text)
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-    # Bullet points
+    text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
+
+    # ── Markdown table parser ──────────────────────────
     lines = text.split("\n")
     result_lines = []
-    for line in lines:
-        if re.match(r"^•\s", line) or re.match(r"^-\s", line) or re.match(r"^\d+\.\s", line):
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Separator row: |---|---|---|
+        if re.match(r"^\s*\|[\s\-|:]+\|\s*$", line):
+            # Previous line should be the header
+            if result_lines and "|" in result_lines[-1]:
+                header_raw = result_lines.pop()
+                headers = [h.strip() for h in header_raw.strip("|").split("|")]
+                table = '<table class="msg-table"><thead><tr>'
+                for h in headers:
+                    table += f"<th>{h}</th>"
+                table += "</tr></thead><tbody>"
+                i += 1
+                while i < len(lines) and "|" in lines[i] and not re.match(r"^\s*\|[\s\-|:]+\|\s*$", lines[i]):
+                    cells = [c.strip() for c in lines[i].strip("|").split("|")]
+                    table += "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
+                    i += 1
+                table += "</tbody></table>"
+                result_lines.append(table)
+                continue
+        # Bullet points
+        if re.match(r"^[•\-]\s", line) or re.match(r"^\d+\.\s", line):
             result_lines.append(f"<div style='padding-left:8px'>{line}</div>")
         else:
             result_lines.append(line)
+        i += 1
+
     text = "\n".join(result_lines)
     paras = text.split("\n\n")
     result = []
     for para in paras:
-        lines2 = para.split("\n")
-        result.append("<p>" + "<br>".join(lines2) + "</p>")
+        if para.strip().startswith("<table"):
+            result.append(para)
+        else:
+            lines2 = para.split("\n")
+            result.append("<p>" + "<br>".join(lines2) + "</p>")
     return "".join(result)
 
 def card_html(pid: str) -> str:
@@ -1637,7 +1677,7 @@ def render_home():
     _s_emoji = SHEEP_EMOJI.get(_ss, "🐑")
     _bubble  = SHEEP_BUBBLE.get(_ss, SHEEP_BUBBLE["listening"])
 
-    col_sb, col_ctr, col_rp = st.columns([1.15, 2.55, 1.35])
+    col_sb, col_ctr, col_rp = st.columns([1.0, 2.3, 1.7])
 
     # ── LEFT SIDEBAR ──────────────────────────────────
     with col_sb:
@@ -1670,8 +1710,8 @@ def render_home():
         _g_pct  = min(_streak * 5 + 5, 20)  # path progress %
         _g_steps = max(842 - _turns * 20, 50)
         st.markdown(f"""
-<div class="hero-wrap">
-  {LANDSCAPE_SVG}
+<div class="hero-outer">
+  <div class="hero-wrap">{LANDSCAPE_SVG}</div>
   <div class="hero-sheep-float">
     <div style="position:relative;display:inline-block">
       <img src="{MASCOT_SRC}" class="hero-sheep-img" alt="Cừu">
@@ -1849,7 +1889,9 @@ def render_chat():
         # Sheep hero — reacts emotionally to messages
         st.markdown(f"""
 <div class="chat-sheep-hero-wrap">
-  <img src="{MASCOT_SRC}" class="chat-sheep-hero-img" alt="Cừu">
+  <div class="chat-sheep-hero-circle">
+    <img src="{MASCOT_SRC}" class="chat-sheep-hero-img" alt="Cừu">
+  </div>
   <span class="chat-sheep-emotion-badge">{_s_emoji}</span>
 </div>
 """, unsafe_allow_html=True)
