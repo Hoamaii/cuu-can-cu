@@ -551,7 +551,7 @@ def get_response(text: str) -> dict:
         return r(
             "Chào mừng bạn đến với hành trình đầu tư! 🌱 Cừu sẽ đồng hành từng bước.\n\n"
             "**3 bước đơn giản để bắt đầu:**\n\n"
-            "**1.** Mở tài khoản TCBS miễn phí (5 phút · TCInvest App)\n"
+            "**1.** Mở tài khoản TCBS miễn phí (3 phút · TCInvest App)\n"
             "**2.** Nạp tiền tối thiểu **50.000đ**\n"
             "**3.** Bắt đầu với **iPower** — an toàn, linh hoạt, không kỳ hạn\n\n"
             "Bạn muốn Cừu hướng dẫn bước nào? 😊",
@@ -628,7 +628,6 @@ col_left, col_main = st.columns([1.1, 4.2])
 nav_items = [
     ("chat",     "💬", "Chat cùng Cừu",       True),
     ("search",   "🔍", "Tìm sản phẩm",        False),
-    ("knowledge","📖", "Kho kiến thức",        False),
     ("plan",     "🎯", "Kế hoạch tiết kiệm",  False),
     ("journal",  "❤️", "Nhật ký cảm xúc",     False),
     ("history",  "🕐", "Lịch sử hội thoại",   False),
