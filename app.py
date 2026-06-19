@@ -30,8 +30,21 @@ def get_image_base64(path: str):
             return base64.b64encode(f.read()).decode()
     return None
 
-MASCOT_PATH = "IMG_7823.jpeg"
-mascot_b64 = get_image_base64(MASCOT_PATH)
+MASCOT_CANDIDATES = [
+    "mascot.png",
+    "mascot.jpg",
+    "mascot.jpeg",
+    "IMG_7823.jpeg",
+    "IMG_7823.jpg",
+    "cuu.png",
+    "cuu.jpg",
+    "cuu.jpeg",
+]
+mascot_b64 = None
+for candidate in MASCOT_CANDIDATES:
+    mascot_b64 = get_image_base64(candidate)
+    if mascot_b64:
+        break
 
 if mascot_b64:
     mascot_sidebar_html = f'<img src="data:image/jpeg;base64,{mascot_b64}" class="mascot-img-sidebar" />'
@@ -58,9 +71,25 @@ st.markdown(
 
         #MainMenu, header, footer {visibility: hidden;}
 
+        /* Streamlit injects an empty fixed header bar above the page in wide layout — collapse it */
+        div[data-testid="stDecoration"] {
+            display: none !important;
+        }
+        div[data-testid="stHeader"] {
+            background: transparent !important;
+            height: 0 !important;
+            min-height: 0 !important;
+        }
+        div[data-testid="stAppViewContainer"] > div:first-child {
+            padding-top: 0 !important;
+        }
+        div[data-testid="stToolbar"] {
+            display: none !important;
+        }
+
         .block-container {
-            padding-top: 1.6rem;
-            padding-bottom: 2rem;
+            padding-top: 1.2rem;
+            padding-bottom: 7rem;
             padding-left: 2.2rem;
             padding-right: 2.2rem;
             max-width: 1500px;
@@ -120,25 +149,33 @@ st.markdown(
         }
 
         /* ===== Custom menu (no st.button) ===== */
-        .menu-item {
-            display: flex;
+        section[data-testid="stSidebar"] a.menu-item,
+        section[data-testid="stSidebar"] a.menu-item:link,
+        section[data-testid="stSidebar"] a.menu-item:visited {
+            display: flex !important;
             align-items: center;
             gap: 0.7rem;
             padding: 0.7rem 0.9rem;
             margin-bottom: 0.35rem;
             border-radius: 14px;
-            color: #5C4A43;
+            color: #5C4A43 !important;
             font-weight: 600;
             font-size: 0.92rem;
             text-decoration: none !important;
+            border-bottom: none !important;
             transition: all 0.18s ease;
         }
-        .menu-item:hover {
+        section[data-testid="stSidebar"] a.menu-item:hover {
             background: #FFF4EF;
+            color: #5C4A43 !important;
+            text-decoration: none !important;
         }
-        .menu-item.active {
+        section[data-testid="stSidebar"] a.menu-item.active,
+        section[data-testid="stSidebar"] a.menu-item.active:link,
+        section[data-testid="stSidebar"] a.menu-item.active:visited,
+        section[data-testid="stSidebar"] a.menu-item.active:hover {
             background: #FFE3E0;
-            color: #E8584C;
+            color: #E8584C !important;
         }
         .menu-icon {
             font-size: 1.05rem;
@@ -262,20 +299,23 @@ st.markdown(
         .avatar-circle-ai {
             width: 42px;
             height: 42px;
+            min-width: 42px;
             border-radius: 50%;
             overflow: hidden;
             flex-shrink: 0;
             margin-right: 0.5rem;
             border: 2px solid #FFE9E2;
+            background: #FFE9E2;
         }
         .mascot-img-avatar {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
         .mascot-emoji-avatar {
-            width: 100%;
-            height: 100%;
+            width: 42px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -343,17 +383,33 @@ st.markdown(
             margin: 0.8rem 0 1rem 0;
         }
 
-        /* ===== Chat input ===== */
+        /* ===== Chat input — Streamlit pins st.chat_input to page bottom; style it to match design ===== */
         div[data-testid="stChatInput"] {
-            background: #FFFFFF;
-            border-radius: 18px;
-            border: 1.5px solid #F2E0D8;
-            padding: 0.3rem 0.6rem;
-            margin-top: 0.4rem;
+            background: #FFFFFF !important;
+            border-radius: 18px !important;
+            border: 1.5px solid #F2E0D8 !important;
+            box-shadow: 0 6px 20px rgba(255, 154, 158, 0.12) !important;
+            padding: 0.3rem 0.6rem !important;
+            max-width: 1500px;
+            margin: 0 auto;
         }
         div[data-testid="stChatInput"] textarea {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 0.95rem;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            font-size: 0.95rem !important;
+        }
+        div[data-testid="stChatInput"] button {
+            background: #F0594A !important;
+            border-radius: 50% !important;
+        }
+        div[data-testid="stChatInput"] button svg {
+            fill: #FFFFFF !important;
+        }
+        /* bottom block padding so content isn't hidden behind the fixed chat input */
+        div[data-testid="stBottomBlockContainer"] {
+            background: transparent !important;
+            padding-left: 2.2rem !important;
+            padding-right: 2.2rem !important;
+            max-width: 1500px;
         }
 
         .disclaimer-row {
@@ -364,6 +420,25 @@ st.markdown(
             color: #B8A89F;
             margin-top: 0.8rem;
             padding-left: 0.3rem;
+        }
+
+        /* ===== Decorative input toolbar icons (visual only, sits above the real st.chat_input) ===== */
+        .input-toolbar-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            padding: 0.4rem 0.3rem 0.5rem 0.3rem;
+        }
+        .toolbar-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #F8F2EE;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #8C7A72;
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -574,6 +649,16 @@ with chip_cols[4]:
 # ======================
 # CHAT INPUT (logic giữ nguyên 100%)
 # ======================
+st.markdown(
+    """
+    <div class="input-toolbar-row">
+        <div class="toolbar-icon">📎</div>
+        <div class="toolbar-icon">🎙️</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 prompt = st.chat_input("Nhắn tin cho Cừu...")
 
 final_prompt = clicked_suggestion or prompt
