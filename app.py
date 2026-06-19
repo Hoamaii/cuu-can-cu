@@ -88,17 +88,21 @@ st.markdown("""
 .hero-wrap{border-radius:28px;overflow:hidden;
   box-shadow:0 6px 32px rgba(0,0,0,.1);display:block}
 .hero-svg{width:100%;display:block}
-.hero-sheep-float{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;z-index:10;
+.hero-sheep-float{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:row;align-items:center;gap:10px;z-index:10;
   animation:float 3.5s ease-in-out infinite}
-.hero-sheep-img{width:108px;height:108px;object-fit:contain;
-  filter:drop-shadow(0 8px 24px rgba(0,0,0,.18));background:transparent}
-.hero-sheep-state{font-size:22px;position:absolute;top:-2px;right:-6px;
+.hero-sheep-img-wrap{position:relative;display:inline-block}
+.hero-sheep-img{width:100px;height:100px;object-fit:contain;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.18));background:transparent}
+.hero-sheep-state{font-size:20px;position:absolute;top:-4px;right:-8px;
   animation:wag 2.5s ease-in-out infinite}
-.hero-bubble{background:white;border-radius:20px 20px 20px 6px;
-  padding:7px 13px;font-size:12px;color:#1A1A2E;
-  box-shadow:0 3px 16px rgba(0,0,0,.1);font-weight:600;
-  margin-top:6px;max-width:180px;text-align:center;white-space:nowrap}
+.hero-bubble{background:white;border-radius:16px 16px 16px 4px;
+  padding:8px 12px;font-size:12px;color:#1A1A2E;
+  box-shadow:0 3px 16px rgba(0,0,0,.12);font-weight:600;
+  white-space:nowrap;position:relative}
+.hero-bubble::before{content:'';position:absolute;left:-7px;top:50%;
+  transform:translateY(-50%);border:6px solid transparent;
+  border-right-color:white}
 
 /* Dream card */
 .dream-card{background:white;border-radius:24px;padding:18px 20px;
@@ -153,26 +157,27 @@ st.markdown("""
   flex-shrink:0;border:1.5px solid #E8E4FF}
 
 /* ─── RIGHT PANEL ────────────────── */
-.right-panel{background:white;border-radius:28px;padding:20px 15px;
-  min-height:96vh;display:flex;flex-direction:column;gap:16px;
+.right-panel{background:white;border-radius:28px;padding:16px 13px 20px;
+  height:auto;overflow-y:visible;
   box-shadow:0 4px 28px rgba(0,0,0,.07);animation:fade-in .5s ease}
-.rp-section{margin-bottom:4px}
-.rp-title{font-size:12.5px;font-weight:800;color:#1A1A2E;margin:0 0 10px;
-  display:flex;align-items:center;gap:6px}
-.worry-chip{display:inline-flex;align-items:center;gap:6px;
-  background:#EFF6FF;border-radius:12px;padding:7px 12px;
-  font-size:12px;font-weight:600;color:#1E40AF;
-  margin:3px 4px 3px 0;border:1.5px solid #BFDBFE}
-.dream-goal{display:flex;align-items:center;gap:10px;padding:10px 13px;
-  border-radius:16px;background:#F0FFF4;font-size:12.5px;font-weight:600;
-  color:#15803D;margin-bottom:6px;border:1.5px solid #BBF7D0}
-.achievement{display:flex;align-items:center;gap:10px;padding:9px 13px;
-  border-radius:14px;background:linear-gradient(135deg,#F0FFF4,#DCFCE7);
-  font-size:12px;font-weight:600;color:#15803D;margin-bottom:6px;
-  border:1px solid #86EFAC}
-.ach-check{width:20px;height:20px;border-radius:50%;background:#22C55E;
+.rp-section{margin-bottom:12px}
+.rp-title{font-size:12px;font-weight:800;color:#1A1A2E;margin:0 0 8px;
+  display:flex;align-items:center;gap:5px}
+.worry-chip{display:inline-flex;align-items:center;gap:5px;
+  background:#EFF6FF;border-radius:10px;padding:5px 10px;
+  font-size:11.5px;font-weight:600;color:#1E40AF;
+  margin:2px 3px 2px 0;border:1.5px solid #BFDBFE}
+.dream-goal{display:flex;align-items:center;gap:8px;padding:7px 10px;
+  border-radius:12px;background:#F0FFF4;font-size:12px;font-weight:600;
+  color:#15803D;margin-bottom:5px;border:1.5px solid #BBF7D0;
+  box-sizing:border-box;max-width:100%}
+.achievement{display:flex;align-items:center;gap:8px;padding:6px 10px;
+  border-radius:10px;background:linear-gradient(135deg,#F0FFF4,#DCFCE7);
+  font-size:11.5px;font-weight:600;color:#15803D;margin-bottom:4px;
+  border:1px solid #86EFAC;box-sizing:border-box;max-width:100%}
+.ach-check{width:18px;height:18px;border-radius:50%;background:#22C55E;
   display:flex;align-items:center;justify-content:center;
-  color:white;font-size:11px;flex-shrink:0}
+  color:white;font-size:10px;flex-shrink:0}
 
 /* Emotion chips via Streamlit buttons */
 div.emotion-zone [data-testid="stButton"]>button{
@@ -199,41 +204,57 @@ div.em-sel [data-testid="stButton"]>button{
   display:flex;align-items:center;gap:5px}
 .status-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;
   display:inline-block;animation:pulse-dot 1.5s infinite}
-.chat-sheep-hero-wrap{text-align:center;padding:20px 0 10px;animation:slide-up .4s ease}
+.chat-sheep-hero-wrap{text-align:center;padding:10px 0 6px;animation:slide-up .4s ease}
 .chat-sheep-hero-circle{
-  width:140px;height:140px;border-radius:50%;
+  width:100px;height:100px;border-radius:50%;
   background:linear-gradient(135deg,#F5F3FF,#EDE7F6);
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 8px 32px rgba(124,111,232,.22);
+  box-shadow:0 6px 24px rgba(124,111,232,.22);
   margin:0 auto;animation:float 3.5s ease-in-out infinite;
   border:3px solid #E8E4FF}
-.chat-sheep-hero-img{width:112px;height:112px;object-fit:cover;border-radius:50%}
-.chat-sheep-emotion-badge{font-size:28px;display:block;margin-top:6px;
+.chat-sheep-hero-img{width:80px;height:80px;object-fit:cover;border-radius:50%}
+.chat-sheep-emotion-badge{font-size:22px;display:block;margin-top:4px;
   animation:wag 2.5s ease-in-out infinite}
 .pulse-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
   background:#7C6FE8;animation:pulse-dot 1.2s infinite}
 
 /* ─── QR BUTTONS ─────────────────── */
 [data-testid="stHorizontalBlock"]{gap:6px!important}
-div.qr-zone [data-testid="stButton"]>button{
+div.qr-zone [data-testid="stButton"]>button,
+div.qr-zone [data-testid="stBaseButton-secondary"]{
   background:linear-gradient(135deg,#F5F3FF,#EDE7F6)!important;
   border:1.5px solid #C4B5FD!important;border-radius:20px!important;
   color:#4A3ACA!important;font-size:12px!important;font-weight:700!important;
   padding:10px 12px!important;width:100%!important;
-  transition:all .2s!important;line-height:1.4!important}
-div.qr-zone [data-testid="stButton"]>button:hover{
+  transition:all .2s!important;line-height:1.4!important;
+  box-shadow:0 2px 8px rgba(124,111,232,.12)!important}
+div.qr-zone [data-testid="stButton"]>button:hover,
+div.qr-zone [data-testid="stBaseButton-secondary"]:hover{
   background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
   color:white!important;border-color:#7C6FE8!important;transform:translateY(-1px)!important}
 
 /* ─── CHAT INPUT ─────────────────── */
-[data-testid="stChatInput"]{border-radius:22px!important;
+[data-testid="stChatInput"],
+[data-testid="stChatInput"]>div,
+[data-testid="stChatInput"]>div>div{
+  border:none!important;outline:none!important;
+  box-shadow:none!important;background:transparent!important}
+[data-testid="stChatInput"]{
+  border-radius:22px!important;
   border:2px solid #E8E4FF!important;
-  box-shadow:0 4px 24px rgba(124,111,232,.15)!important;background:white!important}
-[data-testid="stChatInput"] textarea{font-size:14px!important;color:#1A1A2E!important}
+  box-shadow:0 4px 24px rgba(124,111,232,.15)!important;
+  background:white!important;overflow:hidden!important}
+[data-testid="stChatInput"] textarea{
+  font-size:14px!important;color:#1A1A2E!important;
+  border:none!important;outline:none!important;box-shadow:none!important;
+  background:transparent!important}
+[data-testid="stChatInput"] textarea:focus{
+  border:none!important;outline:none!important;box-shadow:none!important}
 [data-testid="stChatInput"] textarea::placeholder{color:#C4B5FD!important;font-style:italic!important}
 [data-testid="stChatInput"] button{
   background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
   border-radius:50%!important;width:38px!important;height:38px!important;
+  border:none!important;outline:none!important;
   box-shadow:0 4px 14px rgba(124,111,232,.4)!important}
 
 /* ─── SPECIAL BUTTONS ────────────── */
@@ -272,12 +293,13 @@ body{
   padding:8px 2px 12px;
   scroll-behavior:smooth;
 }
-.msg-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px}
+.msg-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
 .msg-row.user{flex-direction:row-reverse}
 .av-sheep{
   width:36px;height:36px;border-radius:50%;background:#FFF0F0;
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;flex-shrink:0;box-shadow:0 2px 7px rgba(0,0,0,.12);
+  align-self:flex-start;margin-top:2px;
 }
 .av-user{
   width:34px;height:34px;border-radius:50%;background:#FCE4EC;
@@ -1713,7 +1735,7 @@ def render_home():
 <div class="hero-outer">
   <div class="hero-wrap">{LANDSCAPE_SVG}</div>
   <div class="hero-sheep-float">
-    <div style="position:relative;display:inline-block">
+    <div class="hero-sheep-img-wrap">
       <img src="{MASCOT_SRC}" class="hero-sheep-img" alt="Cừu">
       <span class="hero-sheep-state">{_s_emoji}</span>
     </div>
@@ -1896,10 +1918,21 @@ def render_chat():
 </div>
 """, unsafe_allow_html=True)
 
-        # Chat messages
-        components.html(build_chat_html(st.session_state.messages), height=460, scrolling=False)
+        # Chat messages — dynamic height giảm khoảng trắng
+        _msg_count = len(st.session_state.messages)
+        _chat_h = max(180, min(420, _msg_count * 95 + 100))
+        components.html(build_chat_html(st.session_state.messages), height=_chat_h, scrolling=False)
 
         # Quick replies — 2×2 grid
+        st.markdown("""<style>
+div.qr-zone [data-testid="stButton"]>button,
+div.qr-zone button{
+  background:linear-gradient(135deg,#F5F3FF,#EDE7F6)!important;
+  border:1.5px solid #C4B5FD!important;border-radius:20px!important;
+  color:#4A3ACA!important;font-size:12px!important;font-weight:700!important;
+  padding:10px 12px!important;width:100%!important;line-height:1.4!important;
+  box-shadow:0 2px 8px rgba(124,111,232,.12)!important}
+</style>""", unsafe_allow_html=True)
         st.markdown('<div class="qr-zone">', unsafe_allow_html=True)
         if _qr_list:
             r1c1, r1c2 = st.columns(2)
@@ -1911,7 +1944,14 @@ def render_chat():
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Chat input — spans full page width (Streamlit default)
+    # Chat input — override browser red border
+    st.markdown("""<style>
+[data-testid="stChatInput"]{border:2px solid #E8E4FF!important;border-radius:22px!important;
+  box-shadow:0 4px 20px rgba(124,111,232,.12)!important;background:white!important;outline:none!important}
+[data-testid="stChatInput"] textarea,[data-testid="stChatInput"] div{
+  border:none!important;outline:none!important;box-shadow:none!important}
+[data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
+</style>""", unsafe_allow_html=True)
     user_input = st.chat_input("Hôm nay bạn muốn tâm sự điều gì với Cừu? 🌸", key="cin")
     if user_input:
         process_message(user_input)
