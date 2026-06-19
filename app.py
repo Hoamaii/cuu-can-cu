@@ -21,7 +21,7 @@ st.set_page_config(
 st.title("🐑 Cừu Cần Cù")
 
 st.write(
-    "Xin chào, mình là Cừu Cần Cù 🐑. "
+    "Xin chào"
     "Mình có thể lắng nghe tâm sự và đồng hành cùng bạn."
 )
 
