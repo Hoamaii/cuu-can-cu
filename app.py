@@ -57,7 +57,7 @@ st.markdown("""
   text-align:center;padding:26px 14px 14px;
   border-bottom:1px solid #F5F5F5;
 }
-.sheep-img{width:120px;height:120px;object-fit:contain;display:block;margin:0 auto 8px}
+.sheep-img{width:200px;height:200px;object-fit:contain;display:block;margin:0 auto 10px}
 .sheep-name{font-size:19px;font-weight:800;color:#1A1A2E}
 .sheep-sub{font-size:12px;color:#999;margin-top:3px}
 
