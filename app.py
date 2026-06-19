@@ -34,7 +34,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 /* ═══════════════════════════════════════════════════════
-   CỪU CẦN CÙ v4 — Emotional AI Companion
+   CỪU CẦN CÙ v5 — Emotional AI Companion
    Design: Finch × Character.AI × Duolingo × Calm
 ═══════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
@@ -48,233 +48,212 @@ st.markdown("""
 
 /* ── Reset ── */
 *{font-family:'Nunito',sans-serif!important}
-.block-container{padding:12px 16px!important;max-width:100%!important}
-.stApp{background:#F0EBE3!important}
-[data-testid="stColumn"]>div{padding:4px 8px!important}
+.block-container{padding:10px 14px!important;max-width:100%!important}
+.stApp{background:#F0EEFF!important}
+[data-testid="stColumn"]>div{padding:3px 6px!important}
 
 /* ─── ANIMATIONS ─────────────────── */
 @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes float-h{0%,100%{transform:translateX(0)}50%{transform:translateX(18px)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes float-h{0%,100%{transform:translateX(0)}50%{transform:translateX(16px)}}
 @keyframes wag{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-@keyframes slide-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slide-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fade-in{from{opacity:0}to{opacity:1}}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.35)}}
 
-/* ─── SIDEBAR ────────────────────── */
-.sidebar{background:white;border-radius:28px;padding:22px 15px 18px;
-  min-height:96vh;display:flex;flex-direction:column;gap:8px;
-  box-shadow:0 4px 28px rgba(0,0,0,.07);animation:fade-in .5s ease}
-.sb-mascot-wrap{text-align:center;padding-bottom:16px;
-  border-bottom:1px solid #F0EBE3;margin-bottom:4px}
-.sb-mascot{width:84px;height:84px;border-radius:50%;object-fit:cover;
-  border:3px solid #E8E4FF;box-shadow:0 4px 20px rgba(124,111,232,.22);
-  animation:breathe 4s ease-in-out infinite}
-.sb-name{font-size:14px;font-weight:800;color:#1A1A2E;margin:8px 0 2px}
-.sb-sub{font-size:11px;color:#9E9E9E;margin:0}
-.sb-nav{display:flex;flex-direction:column;gap:1px;flex:1;margin:4px 0}
-.sb-item{display:flex;align-items:center;gap:10px;padding:10px 13px;
-  border-radius:16px;font-size:13px;font-weight:600;color:#555;
-  cursor:pointer;transition:all .2s;white-space:nowrap}
-.sb-item:hover{background:#F5F3FF;color:#7C6FE8}
-.sb-item.active{background:linear-gradient(135deg,#EDE7F6,#E8E4FF);color:#4A3ACA;font-weight:700}
-.sb-streak{background:linear-gradient(135deg,#FFF9EC,#FFE4C4);border-radius:18px;
-  padding:14px;border:1px solid #FFD54F;text-align:center;
-  font-size:12px;color:#5D4037;line-height:1.6}
-.sb-streak-icon{font-size:22px;display:block;margin-bottom:4px}
+/* ─── SIDEBAR v5 ──────────────────── */
+.sb5{background:white;border-radius:22px;padding:16px 14px 14px;
+  box-shadow:0 4px 24px rgba(0,0,0,.07);animation:fade-in .5s ease}
+.sb5-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;
+  padding-bottom:12px;border-bottom:1px solid #F0EEFF}
+.sb5-top-av{width:34px;height:34px;border-radius:50%;object-fit:cover;
+  border:2px solid #E8E4FF;flex-shrink:0}
+.sb5-top-name{font-size:12.5px;font-weight:800;color:#1A1A2E;line-height:1.2}
+.sb5-top-sub{font-size:10px;color:#BDBDBD;margin-top:1px}
+.sb5-mascot{width:170px;display:block;margin:4px auto 8px;
+  filter:drop-shadow(0 10px 28px rgba(124,111,232,.22));
+  animation:float 4s ease-in-out infinite}
+.sb5-name{text-align:center;font-size:15px;font-weight:900;color:#1A1A2E;margin:0 0 2px}
+.sb5-sub{text-align:center;font-size:11px;color:#9E9E9E;margin:0 0 12px}
+.sb5-stats{background:#FAFAFA;border-radius:16px;padding:10px 13px;margin-bottom:10px}
+.sb5-stat{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 0;border-bottom:1px solid #F5F5F5}
+.sb5-stat:last-of-type{border-bottom:none}
+.sb5-sl{font-size:11.5px;color:#666;font-weight:600;display:flex;align-items:center;gap:5px}
+.sb5-sv{font-size:11.5px;font-weight:800}
+.sv-yellow{color:#F59E0B}.sv-green{color:#22C55E}.sv-orange{color:#F97316}.sv-purple{color:#7C6FE8}
+.sb5-bar{height:5px;border-radius:3px;background:#EEEEEE;margin-top:3px;overflow:hidden}
+.sb5-bar-g{height:100%;border-radius:3px;background:#22C55E}
+.sb5-bar-p{height:100%;border-radius:3px;background:linear-gradient(90deg,#7C6FE8,#a78bfa)}
+.sb5-xp{text-align:center;font-size:10px;color:#BDBDBD;margin:5px 0 2px}
+.sb5-tag{font-size:10.5px;color:#BDBDBD;text-align:center;
+  line-height:1.5;font-style:italic;padding:0 4px}
+.sb5-nav{display:flex;justify-content:space-around;margin-top:14px;
+  padding-top:12px;border-top:1px solid #F0EEFF}
+.sb5-ni{width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:17px}
+.sb5-ni.on{background:#7C6FE8;box-shadow:0 4px 14px rgba(124,111,232,.35)}
 
-/* ─── CENTER HERO ────────────────── */
-.hero-outer{position:relative;margin-bottom:14px;animation:fade-in .6s ease}
-.hero-wrap{border-radius:28px;overflow:hidden;
-  box-shadow:0 6px 32px rgba(0,0,0,.1);display:block}
-.hero-svg{width:100%;display:block}
-.hero-sheep-float{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:row;align-items:center;gap:10px;z-index:10;
-  animation:float 3.5s ease-in-out infinite}
-.hero-sheep-img-wrap{position:relative;display:inline-block}
-.hero-sheep-img{width:100px;height:100px;object-fit:contain;
-  filter:drop-shadow(0 6px 18px rgba(0,0,0,.18));background:transparent}
-.hero-sheep-state{font-size:20px;position:absolute;top:-4px;right:-8px;
-  animation:wag 2.5s ease-in-out infinite}
-.hero-bubble{background:white;border-radius:16px 16px 16px 4px;
-  padding:8px 12px;font-size:12px;color:#1A1A2E;
-  box-shadow:0 3px 16px rgba(0,0,0,.12);font-weight:600;
-  white-space:nowrap;position:relative}
-.hero-bubble::before{content:'';position:absolute;left:-7px;top:50%;
-  transform:translateY(-50%);border:6px solid transparent;
-  border-right-color:white}
+/* ─── CENTER v5 ───────────────────── */
+.wcard{background:white;border-radius:22px;padding:22px 22px 0;
+  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
+  position:relative;overflow:hidden;animation:slide-up .4s ease}
+.wc-title{font-size:24px;font-weight:900;color:#1A1A2E;margin:0 0 4px}
+.wc-sub{font-size:13px;color:#7C6FE8;font-weight:700;
+  font-style:italic;margin:0 0 10px}
+.wc-body{font-size:12.5px;color:#555;line-height:1.8;margin:0 0 0;max-width:65%}
+.wc-img{position:absolute;right:0;bottom:0;width:42%;
+  pointer-events:none;display:block}
 
-/* Dream card */
-.dream-card{background:white;border-radius:24px;padding:18px 20px;
-  box-shadow:0 2px 16px rgba(0,0,0,.06);margin-bottom:12px;
-  animation:slide-up .5s ease .1s both}
-.dc-title{font-size:13.5px;font-weight:800;color:#1A1A2E;margin:0 0 10px;
-  display:flex;align-items:center;gap:8px}
-.dc-house{font-size:40px;float:right;line-height:1;margin:0 0 4px 12px}
-.dc-text{font-size:12.5px;color:#555;line-height:1.75;margin:0 0 14px}
-.dc-path-wrap{background:linear-gradient(90deg,#E8F5E9,#F0FFF4);
-  border-radius:14px;height:38px;overflow:hidden;position:relative;margin:10px 0 6px}
-.dc-path-fill{height:100%;border-radius:14px;
-  background:linear-gradient(90deg,#43e97b,#1de9b6);
-  display:flex;align-items:center;justify-content:flex-end;
-  padding-right:8px;font-size:18px;animation:breathe 3s ease-in-out infinite}
-.dc-steps{font-size:12px;color:#388E3C;font-weight:700;text-align:center;margin-top:4px}
-
-/* Memory card (diary style) */
-.memory-card{background:linear-gradient(135deg,#FFFDE7,#FFF9C4);
-  border-radius:24px;padding:18px 20px;border-left:4px solid #FFD54F;
-  box-shadow:0 2px 16px rgba(255,213,79,.2);margin-bottom:12px;
-  animation:slide-up .5s ease .2s both}
-.mc-title{font-size:13px;font-weight:800;color:#5D4037;margin:0 0 10px;
-  display:flex;align-items:center;gap:6px}
-.mc-item{font-size:12.5px;color:#6D4C41;line-height:1.7;
-  padding:5px 0;border-bottom:1px dashed #FFE082}
-.mc-item:last-child{border-bottom:none}
-
-/* Daily message */
-.daily-msg{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);
-  border-radius:24px;padding:18px 20px;
-  box-shadow:0 2px 16px rgba(59,130,246,.08);margin-bottom:12px;
-  animation:slide-up .5s ease .3s both}
-.dm-title{font-size:13px;font-weight:800;color:#1E40AF;margin:0 0 8px;
-  display:flex;align-items:center;gap:6px}
-.dm-text{font-size:13px;color:#1D4ED8;line-height:1.75}
-
-/* Chat preview card */
-.chat-preview{background:white;border-radius:24px;padding:18px 20px;
-  box-shadow:0 2px 16px rgba(0,0,0,.06);animation:slide-up .5s ease .4s both}
-.cp-title{font-size:13px;font-weight:800;color:#1A1A2E;margin:0 0 12px;
-  display:flex;align-items:center;gap:6px}
-.cp-bubble-ai{background:linear-gradient(135deg,#F5F3FF,#EDE7F6);
-  border-radius:16px 16px 16px 4px;padding:10px 14px;
-  font-size:12.5px;color:#1A1A2E;margin-bottom:8px;max-width:85%;line-height:1.65}
-.cp-bubble-user{background:#FCE4EC;border-radius:16px 16px 4px 16px;
-  padding:10px 14px;font-size:12.5px;color:#1A1A2E;
-  margin-bottom:8px;margin-left:auto;max-width:78%;line-height:1.65}
-.cp-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:4px}
-.cp-row.right{flex-direction:row-reverse}
-.cp-av{width:26px;height:26px;border-radius:50%;object-fit:cover;
-  flex-shrink:0;border:1.5px solid #E8E4FF}
-
-/* ─── RIGHT PANEL ────────────────── */
-.right-panel{background:white;border-radius:28px;padding:16px 13px 20px;
-  height:auto;overflow-y:visible;
-  box-shadow:0 4px 28px rgba(0,0,0,.07);animation:fade-in .5s ease}
-.rp-section{margin-bottom:12px}
-.rp-title{font-size:12px;font-weight:800;color:#1A1A2E;margin:0 0 8px;
+.mcard{background:white;border-radius:22px;padding:16px 18px;
+  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
+  display:flex;align-items:center;gap:14px;animation:slide-up .4s ease .08s both}
+.mc-left{flex:1}
+.mc-tag{font-size:10px;font-weight:800;color:#888;
+  text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px;
   display:flex;align-items:center;gap:5px}
-.worry-chip{display:inline-flex;align-items:center;gap:5px;
-  background:#EFF6FF;border-radius:10px;padding:5px 10px;
-  font-size:11.5px;font-weight:600;color:#1E40AF;
-  margin:2px 3px 2px 0;border:1.5px solid #BFDBFE}
-.dream-goal{display:flex;align-items:center;gap:8px;padding:7px 10px;
-  border-radius:12px;background:#F0FFF4;font-size:12px;font-weight:600;
-  color:#15803D;margin-bottom:5px;border:1.5px solid #BBF7D0;
-  box-sizing:border-box;max-width:100%}
-.achievement{display:flex;align-items:center;gap:8px;padding:6px 10px;
-  border-radius:10px;background:linear-gradient(135deg,#F0FFF4,#DCFCE7);
-  font-size:11.5px;font-weight:600;color:#15803D;margin-bottom:4px;
-  border:1px solid #86EFAC;box-sizing:border-box;max-width:100%}
-.ach-check{width:18px;height:18px;border-radius:50%;background:#22C55E;
-  display:flex;align-items:center;justify-content:center;
-  color:white;font-size:10px;flex-shrink:0}
+.mc-body{font-size:13px;color:#1A1A2E;line-height:1.7;font-weight:600}
+.mc-emoji{font-size:52px;flex-shrink:0;animation:float 4s ease-in-out infinite}
 
-/* Emotion chips via Streamlit buttons */
-div.emotion-zone [data-testid="stButton"]>button{
-  border-radius:14px!important;padding:5px 8px!important;font-size:11.5px!important;
-  font-weight:600!important;width:100%!important;border:1.5px solid #EEE!important;
-  background:#FEFAF6!important;color:#1A1A2E!important;
-  transition:all .2s!important;text-align:left!important;line-height:1.4!important}
-div.emotion-zone [data-testid="stButton"]>button:hover{
-  background:#F5F3FF!important;border-color:#7C6FE8!important;color:#4A3ACA!important}
-div.em-sel [data-testid="stButton"]>button{
-  background:linear-gradient(135deg,#EDE7F6,#E8E4FF)!important;
-  border-color:#7C6FE8!important;color:#4A3ACA!important;
-  box-shadow:0 2px 12px rgba(124,111,232,.3)!important}
+.dcard{background:white;border-radius:22px;padding:16px 18px;
+  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
+  animation:slide-up .4s ease .16s both}
+.dc-tag{font-size:10px;font-weight:800;color:#888;
+  text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px;
+  display:flex;align-items:center;gap:5px}
+.dc-row{display:flex;align-items:flex-start;justify-content:space-between}
+.dc-goal{font-size:20px;font-weight:900;color:#1A1A2E;margin:0 0 12px}
+.dc-emoji{font-size:52px}
+.dc-segs{display:flex;gap:3px;margin-bottom:5px}
+.dc-seg{height:9px;border-radius:5px;flex:1}
+.dc-seg.on{background:#22C55E}
+.dc-seg.off{background:#E8E8E8}
+.dc-meta{display:flex;justify-content:space-between;
+  font-size:11px;color:#888;font-weight:600}
 
-/* ─── CHAT SCREEN ────────────────── */
-.chat-top-bar{background:rgba(255,255,255,.95);border-radius:24px;
-  padding:14px 18px;margin-bottom:12px;
-  display:flex;align-items:center;gap:14px;
-  box-shadow:0 2px 16px rgba(0,0,0,.07)}
-.chat-sheep-av{width:48px;height:48px;border-radius:50%;object-fit:cover;
+.memcard{background:white;border-radius:22px;padding:16px 18px;
+  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
+  display:flex;gap:12px;animation:slide-up .4s ease .24s both}
+.mem-left{flex:1}
+.mem-tag{font-size:10px;font-weight:800;color:#888;
+  text-transform:uppercase;letter-spacing:.6px;margin:0 0 8px;
+  display:flex;align-items:center;gap:5px}
+.mem-item{display:flex;align-items:flex-start;gap:7px;
+  font-size:12px;color:#444;margin-bottom:7px;line-height:1.55}
+.mem-dot{width:6px;height:6px;border-radius:50%;background:#7C6FE8;
+  flex-shrink:0;margin-top:6px}
+.mem-emoji{font-size:58px;flex-shrink:0;align-self:center}
+
+/* ─── RIGHT PANEL v5 ──────────────── */
+.journey{background:linear-gradient(135deg,#7C6FE8 0%,#9B8DF5 100%);
+  border-radius:20px;padding:14px 14px 14px;margin-bottom:12px;
+  color:white;position:relative;overflow:hidden;animation:fade-in .5s ease}
+.journey::before{content:'✦';position:absolute;right:10px;top:8px;
+  font-size:20px;opacity:.3}
+.jy-label{font-size:10.5px;font-weight:700;opacity:.8;margin:0 0 3px;
+  display:flex;align-items:center;gap:4px}
+.jy-level{font-size:20px;font-weight:900;margin:0 0 6px}
+.jy-bar{height:5px;background:rgba(255,255,255,.28);border-radius:3px;
+  margin-bottom:4px;overflow:hidden}
+.jy-fill{height:100%;background:white;border-radius:3px;transition:width .6s ease}
+.jy-xp{font-size:10px;opacity:.72;margin:0 0 4px}
+.jy-tag{font-size:10.5px;opacity:.65;margin:0}
+.jy-av{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  width:58px;height:58px;border-radius:50%;object-fit:cover;
+  border:2.5px solid rgba(255,255,255,.5)}
+
+.rp5{background:white;border-radius:20px;padding:14px 13px;
+  box-shadow:0 2px 16px rgba(0,0,0,.06);animation:slide-up .4s ease .1s both}
+.rp5-hdr{font-size:12.5px;font-weight:800;color:#1A1A2E;
+  margin:0 0 10px;display:flex;align-items:center;gap:5px}
+.mini-ai{display:flex;gap:7px;align-items:flex-start;margin-bottom:8px}
+.mini-user{display:flex;gap:7px;align-items:flex-start;
+  flex-direction:row-reverse;margin-bottom:8px}
+.mini-av{width:26px;height:26px;border-radius:50%;
+  border:1.5px solid #E8E4FF;overflow:hidden;flex-shrink:0}
+.mini-av img{width:100%;height:100%;object-fit:cover}
+.mini-av-u{width:26px;height:26px;border-radius:50%;
+  background:#F0EEFF;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:13px}
+.mini-bai{background:#F5F4FF;border-radius:12px 12px 12px 3px;
+  padding:8px 11px;font-size:11.5px;color:#1A1A2E;
+  max-width:82%;line-height:1.55}
+.mini-buser{background:#7C6FE8;border-radius:12px 12px 3px 12px;
+  padding:8px 11px;font-size:11.5px;color:white;
+  max-width:82%;line-height:1.55}
+.mini-time{font-size:9.5px;color:#BDBDBD;margin-top:2px;padding:0 3px}
+.rp5-prompt{font-size:11.5px;color:#888;margin:10px 0 7px;font-weight:600}
+.rp5-tip{background:linear-gradient(135deg,#FFFDE7,#FFF9C4);
+  border-radius:14px;padding:10px 13px;font-size:12px;font-weight:700;
+  color:#78650A;border:1px solid #FFE082;text-align:center;cursor:pointer;
+  margin-top:6px;transition:all .2s}
+
+/* QR zone in right panel */
+div.rp-qr [data-testid="stButton"]>button{
+  background:#F5F4FF!important;border:1.5px solid #DDD8FF!important;
+  border-radius:14px!important;color:#4A3ACA!important;
+  font-size:11.5px!important;font-weight:700!important;
+  padding:8px 10px!important;width:100%!important;
+  line-height:1.4!important;text-align:left!important;
+  transition:all .2s!important}
+div.rp-qr [data-testid="stButton"]>button:hover{
+  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
+  color:white!important;border-color:#7C6FE8!important}
+div.tip-btn [data-testid="stButton"]>button{
+  background:linear-gradient(135deg,#FFFDE7,#FFF3CC)!important;
+  border:1px solid #FFE082!important;border-radius:14px!important;
+  color:#78650A!important;font-size:12px!important;font-weight:800!important;
+  padding:11px!important;width:100%!important;transition:all .2s!important}
+
+/* ─── CHAT SCREEN v5 ─────────────── */
+.chat5-wrap{background:white;border-radius:22px;padding:18px 20px;
+  box-shadow:0 4px 28px rgba(0,0,0,.08);margin:0 auto}
+.chat5-hdr{display:flex;align-items:center;gap:12px;
+  padding-bottom:12px;border-bottom:1.5px solid #F0EEFF;margin-bottom:12px}
+.chat5-av{width:44px;height:44px;border-radius:50%;object-fit:cover;
   border:2px solid #E8E4FF;animation:breathe 4s ease-in-out infinite}
-.chat-name{font-size:15px;font-weight:800;color:#1A1A2E}
-.chat-status{font-size:12px;color:#7C6FE8;font-weight:600;
-  display:flex;align-items:center;gap:5px}
-.status-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;
+.chat5-name{font-size:14px;font-weight:900;color:#1A1A2E}
+.chat5-status{font-size:11px;color:#22C55E;font-weight:600;
+  display:flex;align-items:center;gap:4px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#22C55E;
   display:inline-block;animation:pulse-dot 1.5s infinite}
-.chat-sheep-hero-wrap{text-align:center;padding:10px 0 6px;animation:slide-up .4s ease}
-.chat-sheep-hero-circle{
-  width:100px;height:100px;border-radius:50%;
-  background:linear-gradient(135deg,#F5F3FF,#EDE7F6);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 24px rgba(124,111,232,.22);
-  margin:0 auto;animation:float 3.5s ease-in-out infinite;
-  border:3px solid #E8E4FF}
-.chat-sheep-hero-img{width:80px;height:80px;object-fit:cover;border-radius:50%}
-.chat-sheep-emotion-badge{font-size:22px;display:block;margin-top:4px;
-  animation:wag 2.5s ease-in-out infinite}
-.pulse-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+.pulse-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:#7C6FE8;animation:pulse-dot 1.2s infinite}
 
-/* ─── QR BUTTONS ─────────────────── */
-[data-testid="stHorizontalBlock"]{gap:6px!important}
-div.qr-zone [data-testid="stButton"]>button,
-div.qr-zone [data-testid="stBaseButton-secondary"]{
-  background:linear-gradient(135deg,#F5F3FF,#EDE7F6)!important;
-  border:1.5px solid #C4B5FD!important;border-radius:20px!important;
-  color:#4A3ACA!important;font-size:12px!important;font-weight:700!important;
-  padding:10px 12px!important;width:100%!important;
-  transition:all .2s!important;line-height:1.4!important;
-  box-shadow:0 2px 8px rgba(124,111,232,.12)!important}
-div.qr-zone [data-testid="stButton"]>button:hover,
-div.qr-zone [data-testid="stBaseButton-secondary"]:hover{
-  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
-  color:white!important;border-color:#7C6FE8!important;transform:translateY(-1px)!important}
+/* ─── BACK + CHAT INPUT ──────────── */
+div.back-btn [data-testid="stButton"]>button{
+  background:white!important;border:1.5px solid #E8E4FF!important;
+  border-radius:12px!important;color:#555!important;
+  font-size:15px!important;padding:6px 12px!important;
+  transition:all .2s!important;box-shadow:0 2px 8px rgba(0,0,0,.06)!important}
+div.back-btn [data-testid="stButton"]>button:hover{
+  background:#F5F3FF!important;color:#7C6FE8!important;
+  border-color:#7C6FE8!important}
 
-/* ─── CHAT INPUT ─────────────────── */
 [data-testid="stChatInput"],
 [data-testid="stChatInput"]>div,
 [data-testid="stChatInput"]>div>div{
   border:none!important;outline:none!important;
   box-shadow:none!important;background:transparent!important}
 [data-testid="stChatInput"]{
-  border-radius:22px!important;
-  border:2px solid #E8E4FF!important;
-  box-shadow:0 4px 24px rgba(124,111,232,.15)!important;
+  border-radius:22px!important;border:2px solid #E8E4FF!important;
+  box-shadow:0 4px 20px rgba(124,111,232,.12)!important;
   background:white!important;overflow:hidden!important}
 [data-testid="stChatInput"] textarea{
-  font-size:14px!important;color:#1A1A2E!important;
+  font-size:13.5px!important;color:#1A1A2E!important;
   border:none!important;outline:none!important;box-shadow:none!important;
   background:transparent!important}
-[data-testid="stChatInput"] textarea:focus{
-  border:none!important;outline:none!important;box-shadow:none!important}
-[data-testid="stChatInput"] textarea::placeholder{color:#C4B5FD!important;font-style:italic!important}
+[data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
+[data-testid="stChatInput"] textarea::placeholder{
+  color:#C4B5FD!important;font-style:italic!important}
 [data-testid="stChatInput"] button{
   background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
-  border-radius:50%!important;width:38px!important;height:38px!important;
+  border-radius:50%!important;width:36px!important;height:36px!important;
   border:none!important;outline:none!important;
-  box-shadow:0 4px 14px rgba(124,111,232,.4)!important}
+  box-shadow:0 4px 12px rgba(124,111,232,.4)!important}
 
-/* ─── SPECIAL BUTTONS ────────────── */
-div.back-btn [data-testid="stButton"]>button{
-  background:none!important;border:none!important;color:#555!important;
-  font-size:16px!important;padding:6px 10px!important;border-radius:50%!important;
-  transition:background .2s!important}
-div.back-btn [data-testid="stButton"]>button:hover{
-  background:#F5F3FF!important;color:#7C6FE8!important}
-div.start-btn [data-testid="stButton"]>button{
-  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
-  border:none!important;border-radius:18px!important;color:white!important;
-  font-size:14px!important;font-weight:800!important;padding:14px!important;
-  width:100%!important;box-shadow:0 4px 22px rgba(124,111,232,.4)!important;
-  transition:all .25s!important}
-div.start-btn [data-testid="stButton"]>button:hover{
-  transform:translateY(-2px)!important;
-  box-shadow:0 6px 30px rgba(124,111,232,.5)!important}
-
-.disclaimer{font-size:10px;color:#C4B5FD;text-align:center;padding:6px 0}
+[data-testid="stHorizontalBlock"]{gap:6px!important}
+.disclaimer{font-size:10px;color:#C4B5FD;text-align:center;padding:4px 0}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1683,212 +1662,254 @@ def get_sheep_state() -> str:
 
 
 # ══════════════════════════════════════════════════════
-# SCREEN 1 — HOME COMPANION
+# SCREEN 1 — HOME COMPANION v5
 # ══════════════════════════════════════════════════════
 def render_home():
     _sb      = st.session_state.second_brain
     _mood    = st.session_state.mood_score
-    _streak  = _sb.get("micro_streak", 0)
+    _streak  = max(_sb.get("micro_streak", 0), 3)
     _turns   = max(len(st.session_state.messages) // 2, 0)
     _level   = _turns // 5 + 1
     _xp      = (_turns % 5) * 20
+    _xp_pct  = _xp
     _goals   = _sb.get("goals", [])
     _events  = _sb.get("events", [])
-    _sel     = st.session_state.get("selected_emotion", None)
-    _ss      = st.session_state.get("sheep_state", "calm")
-    _s_emoji = SHEEP_EMOJI.get(_ss, "🐑")
-    _bubble  = SHEEP_BUBBLE.get(_ss, SHEEP_BUBBLE["listening"])
+    _msgs    = st.session_state.messages
 
-    col_sb, col_ctr, col_rp = st.columns([1.0, 2.3, 1.7])
+    # mood label
+    _mood_map = {
+        range(0,30):"Buồn 😔", range(30,50):"Hơi mệt 😌",
+        range(50,70):"Bình thường 🙂", range(70,90):"Vui 😊",
+        range(90,101):"Rất vui! 😍"
+    }
+    _mood_label = next((v for r,v in _mood_map.items() if _mood in r), "Bình thường 🙂")
+    _energy_pct = min(max(_mood, 10), 95)
 
-    # ── LEFT SIDEBAR ──────────────────────────────────
+    col_sb, col_ctr, col_rp = st.columns([1.1, 2.2, 1.7])
+
+    # ── LEFT SIDEBAR v5 ──────────────────────────────
     with col_sb:
         st.markdown(f"""
-<div class="sidebar">
-  <div class="sb-mascot-wrap">
-    <img src="{MASCOT_SRC}" class="sb-mascot" alt="Cừu Cần Cù">
-    <div class="sb-name">Cừu Cần Cù</div>
-    <div class="sb-sub">Người bạn đồng hành tài chính</div>
+<div class="sb5">
+  <!-- Top bar -->
+  <div class="sb5-top">
+    <img src="{MASCOT_SRC}" class="sb5-top-av" alt="Cừu">
+    <div>
+      <div class="sb5-top-name">Cừu Cần Cù</div>
+      <div class="sb5-top-sub">AI Financial Companion</div>
+    </div>
   </div>
-  <div class="sb-nav">
-    <div class="sb-item active">🏠 Trang chủ</div>
-    <div class="sb-item">💬 Trò chuyện với Cừu</div>
-    <div class="sb-item">⭐ Ước mơ của bạn</div>
-    <div class="sb-item">📖 Ký niệm nhỏ</div>
-    <div class="sb-item">🌸 Khoảnh khắc hôm nay</div>
-    <div class="sb-item">❤️ Thư viện động lực</div>
-    <div class="sb-item">⚙️ Cài đặt</div>
+  <!-- Large mascot -->
+  <img src="{MASCOT_SRC}" class="sb5-mascot" alt="Cừu Cần Cù">
+  <div class="sb5-name">🐑 Cừu Cần Cù</div>
+  <div class="sb5-sub">Người bạn đồng hành tài chính ❤️</div>
+  <!-- Stats -->
+  <div class="sb5-stats">
+    <div class="sb5-stat">
+      <span class="sb5-sl">😊 Tâm trạng</span>
+      <span class="sb5-sv sv-yellow">{_mood_label.split()[0]}</span>
+    </div>
+    <div class="sb5-stat">
+      <div style="width:100%">
+        <div style="display:flex;justify-content:space-between">
+          <span class="sb5-sl">❤️ Năng lượng</span>
+          <span class="sb5-sv sv-green">{_energy_pct}%</span>
+        </div>
+        <div class="sb5-bar"><div class="sb5-bar-g" style="width:{_energy_pct}%"></div></div>
+      </div>
+    </div>
+    <div class="sb5-stat">
+      <span class="sb5-sl">🔥 Liên tiếp</span>
+      <span class="sb5-sv sv-orange">{_streak} ngày</span>
+    </div>
+    <div class="sb5-stat">
+      <span class="sb5-sl">🌱 Cấp độ</span>
+      <span class="sb5-sv sv-purple">Cấp {_level}</span>
+    </div>
+    <div style="margin-top:6px">
+      <div class="sb5-bar"><div class="sb5-bar-p" style="width:{_xp_pct}%"></div></div>
+      <div class="sb5-xp">{_xp} / 100 XP</div>
+    </div>
   </div>
-  <div class="sb-streak">
-    <span class="sb-streak-icon">🔥</span>
-    Bạn đã ghé thăm Cừu <strong>{max(_streak, 3)} ngày</strong> liên tiếp rồi đó 💜
+  <div class="sb5-tag">Cừu lớn mỗi khi bạn chăm sóc tài chính của mình.</div>
+  <!-- Bottom nav -->
+  <div class="sb5-nav">
+    <div class="sb5-ni on">🏠</div>
+    <div class="sb5-ni">🌱</div>
+    <div class="sb5-ni">📖</div>
+    <div class="sb5-ni">❤️</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── CENTER CONTENT ────────────────────────────────
+    # ── CENTER CONTENT v5 ─────────────────────────────
     with col_ctr:
-        # Pastoral hero landscape + floating sheep
-        _g_pct  = min(_streak * 5 + 5, 20)  # path progress %
-        _g_steps = max(842 - _turns * 20, 50)
-        st.markdown(f"""
-<div class="hero-outer">
-  <div class="hero-wrap">{LANDSCAPE_SVG}</div>
-  <div class="hero-sheep-float">
-    <div class="hero-sheep-img-wrap">
-      <img src="{MASCOT_SRC}" class="hero-sheep-img" alt="Cừu">
-      <span class="hero-sheep-state">{_s_emoji}</span>
-    </div>
-    <div class="hero-bubble">{_bubble}</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+        _save_per_month = 2_000_000
+        _goal_total     = 500_000_000
+        _saved_total    = _save_per_month * max(_turns * 2, 1)
+        _dc_pct         = min(int(_saved_total / _goal_total * 100), 99)
+        _dc_segs        = 20
+        _dc_filled      = max(1, int(_dc_pct / 100 * _dc_segs))
+        _segs_html      = "".join(
+            f'<div class="dc-seg {"on" if i < _dc_filled else "off"}"></div>'
+            for i in range(_dc_segs)
+        )
+        _years_left     = max(1, int((_goal_total - _saved_total) / (_save_per_month * 12)))
+        _saved_fmt      = f"{_saved_total:,.0f}đ".replace(",",".")
+        _goal_fmt       = f"{_goal_total:,.0f}đ".replace(",",".")
 
-        # Dream card — walking path progress
-        st.markdown(f"""
-<div class="dream-card">
-  <div class="dc-title">
-    🏠 Mua căn nhà đầu tiên
-    <span class="dc-house">🏡</span>
-  </div>
-  <div class="dc-text">
-    Hôm nay bạn đã tiến gần hơn một chút đến căn nhà mơ ước.<br>
-    Cừu thấy bạn vẫn đang cố gắng mỗi ngày.<br>
-    <em>Bạn không cần giàu ngay hôm nay. Chỉ cần tiến thêm một bước nhỏ.</em>
-  </div>
-  <div class="dc-path-wrap">
-    <div class="dc-path-fill" style="width:{_g_pct}%">🐑</div>
-  </div>
-  <div class="dc-steps">Còn {_g_steps} bước nhỏ nữa 🌱</div>
-</div>
-""", unsafe_allow_html=True)
+        _mem1 = _goals[0] if _goals else "Muốn mua nhà"
+        _mem2 = f"Tiết kiệm {fmtm(_save_per_month)}/tháng"
+        _mem3 = _events[-1] if _events else "Thường lo lắng về tài chính tương lai"
+        _mem4 = "Cảm thấy áp lực khi so sánh với người khác"
 
-        # Memory card — diary style
-        _mem1 = "Bạn đang cố gắng tiết kiệm để có một nơi thuộc về riêng mình."
-        _mem2 = f"Tháng này bạn đã từ chối {max(_streak, 3)} lần mua sắm bốc đồng."
-        _mem3 = _events[-1] if _events else "Bạn đang cố gắng cân bằng giữa công việc và tương lai."
         st.markdown(f"""
-<div class="memory-card">
-  <div class="mc-title">🌱 Điều Cừu vẫn nhớ về bạn</div>
-  <div class="mc-item">🌸 {_mem1}</div>
-  <div class="mc-item">✨ {_mem2}</div>
-  <div class="mc-item">💙 {_mem3}</div>
+<!-- Welcome card -->
+<div class="wcard">
+  <div class="wc-title">Chào Mai 💙</div>
+  <div class="wc-sub">Cừu rất vui vì bạn quay lại hôm nay.</div>
+  <div class="wc-body">
+    Bạn không cần phải mạnh mẽ một mình.<br>
+    Nếu có điều gì khiến bạn suy nghĩ về tiền bạc,<br>
+    công việc hay cuộc sống, mình luôn sẵn sàng lắng nghe.
+  </div>
+  <img src="{MASCOT_SRC}" class="wc-img" alt="">
+  <div style="height:80px"></div>
 </div>
-""", unsafe_allow_html=True)
 
-        # Daily message card
-        _tip = DAILY_TIPS[datetime.now().weekday() % len(DAILY_TIPS)]
-        st.markdown(f"""
-<div class="daily-msg">
-  <div class="dm-title">☀️ Lời nhắn hôm nay từ Cừu</div>
-  <div class="dm-text">
-    Hôm nay có thể vẫn nhiều áp lực.<br>
-    Nhưng bạn đang làm tốt hơn bạn nghĩ.<br>
-    Mỗi quyết định nhỏ đều đang xây nên căn nhà tương lai. 🏡
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-        # Chat preview card
-        st.markdown(f"""
-<div class="chat-preview">
-  <div class="cp-title">💬 Trò chuyện với Cừu</div>
-  <div class="cp-row">
-    <img src="{MASCOT_SRC}" class="cp-av" alt="Cừu">
-    <div class="cp-bubble-ai">Chào bạn 🌤️<br>Hôm nay công việc có khiến bạn mệt không?</div>
-  </div>
-  <div class="cp-row right">
-    <div class="cp-av" style="background:#FCE4EC;display:flex;align-items:center;justify-content:center;font-size:14px;border:1.5px solid #E8E4FF">👤</div>
-    <div class="cp-bubble-user">Mình hơi áp lực vì chi tiêu tháng này.</div>
-  </div>
-  <div class="cp-row">
-    <img src="{MASCOT_SRC}" class="cp-av" alt="Cừu">
-    <div class="cp-bubble-ai">
-      Mình hiểu cảm giác đó. 💙<br>
-      Mình thấy bạn vẫn đang cố gắng rất nhiều.<br>
-      <em>Bạn muốn kể mình nghe chuyện gì đang làm bạn lo nhất không?</em>
+<!-- Message from Sheep -->
+<div class="mcard">
+  <div class="mc-left">
+    <div class="mc-tag">💡 Tin nhắn từ Cừu</div>
+    <div class="mc-body">
+      Bạn không cần giàu ngay hôm nay.<br>
+      Chỉ cần tốt hơn hôm qua 1% là đủ rồi.
     </div>
   </div>
+  <div class="mc-emoji">🐑✨</div>
+</div>
+
+<!-- Current Dream -->
+<div class="dcard">
+  <div class="dc-tag">🎯 Ước mơ hiện tại</div>
+  <div class="dc-row">
+    <div class="dc-goal">Mua căn nhà đầu tiên</div>
+    <div class="dc-emoji">🏡</div>
+  </div>
+  <div class="dc-segs">{_segs_html}</div>
+  <div style="font-size:11px;color:#22C55E;font-weight:700;margin-bottom:5px">{_dc_pct}%</div>
+  <div class="dc-meta">
+    <span>{_saved_fmt} / {_goal_fmt}</span>
+    <span>Dự kiến hoàn thành: {_years_left} năm</span>
+  </div>
+</div>
+
+<!-- Memory card -->
+<div class="memcard">
+  <div class="mem-left">
+    <div class="mem-tag">🐑 Điều Cừu nhớ về bạn</div>
+    <div class="mem-item"><div class="mem-dot"></div><span>{_mem1}</span></div>
+    <div class="mem-item"><div class="mem-dot"></div><span>{_mem2}</span></div>
+    <div class="mem-item"><div class="mem-dot"></div><span>{_mem3}</span></div>
+    <div class="mem-item"><div class="mem-dot"></div><span>{_mem4}</span></div>
+  </div>
+  <div class="mem-emoji">🩷</div>
 </div>
 """, unsafe_allow_html=True)
 
-        # CTA — navigate to chat screen
-        st.markdown('<div class="start-btn" style="margin-top:12px">', unsafe_allow_html=True)
-        if st.button("💬  Bắt đầu trò chuyện với Cừu", key="home_start", use_container_width=True):
+    # ── RIGHT PANEL v5 ────────────────────────────────
+    with col_rp:
+        # Journey widget (purple header)
+        _xp_fill = _xp_pct
+        st.markdown(f"""
+<div class="journey">
+  <div class="jy-label">🌱 Hành trình Cừu</div>
+  <div class="jy-level">Cấp độ {_level}</div>
+  <div class="jy-bar"><div class="jy-fill" style="width:{_xp_fill}%"></div></div>
+  <div class="jy-xp">{_xp} / 100 XP</div>
+  <div class="jy-tag">Cùng nhau lớn lên từng ngày.</div>
+  <img src="{MASCOT_SRC}" class="jy-av" alt="Cừu">
+</div>
+""", unsafe_allow_html=True)
+
+        # Mini chat preview (last messages if any)
+        st.markdown('<div class="rp5">', unsafe_allow_html=True)
+        st.markdown('<div class="rp5-hdr">💬 Hôm nay chúng mình trò chuyện thế nào?</div>', unsafe_allow_html=True)
+
+        # Show last 2 message pairs if exists, else placeholder
+        _preview_msgs = st.session_state.messages[-4:] if st.session_state.messages else []
+        if _preview_msgs:
+            _preview_html = ""
+            for _pm in _preview_msgs[-3:]:
+                if _pm["role"] == "user":
+                    _preview_html += f"""
+<div class="mini-user">
+  <div class="mini-av-u">👤</div>
+  <div><div class="mini-buser">{_pm["content"][:60]}{"…" if len(_pm["content"])>60 else ""}</div>
+  <div class="mini-time" style="text-align:right">{_pm.get("time","")}</div></div>
+</div>"""
+                else:
+                    _av_html = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
+                    _preview_html += f"""
+<div class="mini-ai">
+  <div class="mini-av">{_av_html}</div>
+  <div><div class="mini-bai">{_pm["content"][:70]}{"…" if len(_pm["content"])>70 else ""}</div>
+  <div class="mini-time">{_pm.get("time","")}</div></div>
+</div>"""
+            st.markdown(_preview_html, unsafe_allow_html=True)
+        else:
+            _av_html2 = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
+            st.markdown(f"""
+<div class="mini-ai">
+  <div class="mini-av">{_av_html2}</div>
+  <div><div class="mini-bai">Hôm nay bạn cảm thấy thế nào? Kể Cừu nghe nhé 🌸</div></div>
+</div>""", unsafe_allow_html=True)
+
+        # Quick reply buttons → go to chat
+        st.markdown('<div class="rp5-prompt">Bạn muốn bắt đầu từ đâu? 🌸</div>', unsafe_allow_html=True)
+        _qr_home = [
+            ("💬", "Tôi muốn\ntâm sự"),
+            ("😔", "Hôm nay\ntôi hơi mệt"),
+            ("🎯", "Tôi có\nmột mục tiêu"),
+            ("💰", "Tôi lo về\ntiền bạc"),
+        ]
+        st.markdown('<div class="rp-qr">', unsafe_allow_html=True)
+        qc1, qc2 = st.columns(2)
+        for i, (ico, lbl) in enumerate(_qr_home):
+            _col = qc1 if i % 2 == 0 else qc2
+            with _col:
+                if st.button(f"{ico} {lbl}", key=f"hqr_{i}"):
+                    st.session_state.qr_trigger = lbl.replace("\n", " ")
+                    st.session_state.screen = "chat"
+                    st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Tip button
+        st.markdown('<div class="tip-btn">', unsafe_allow_html=True)
+        if st.button("✨ Cho tôi một lời khuyên", key="home_tip"):
+            st.session_state.qr_trigger = "Hôm nay bạn có lời khuyên gì cho mình không?"
             st.session_state.screen = "chat"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── RIGHT PANEL ───────────────────────────────────
-    with col_rp:
-        st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-
-        # 1. Emotion chips
-        st.markdown('<div class="rp-section"><div class="rp-title">🌈 Tâm trạng hôm nay</div>', unsafe_allow_html=True)
-        st.markdown('<div class="emotion-zone">', unsafe_allow_html=True)
-        ec1, ec2 = st.columns(2)
-        for i, (emoji, label) in enumerate(EMOTIONS):
-            col = ec1 if i % 2 == 0 else ec2
-            is_sel = _sel == emoji
-            with col:
-                st.markdown(f'<div class="{"em-sel" if is_sel else ""}">', unsafe_allow_html=True)
-                if st.button(f"{emoji} {label}", key=f"em_{i}"):
-                    st.session_state.selected_emotion = emoji
-                    st.session_state.sheep_state = EMOTION_SHEEP.get(emoji, "calm")
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div></div>', unsafe_allow_html=True)
-
-        # 2. Worry topics
-        st.markdown("""
-<div class="rp-section">
-  <div class="rp-title">🧸 Điều đang làm bạn lo</div>
-  <span class="worry-chip">💼 Công việc</span>
-  <span class="worry-chip">💰 Tiền bạc</span>
-  <span class="worry-chip">👨‍👩‍👧 Gia đình</span>
-  <span class="worry-chip">📚 Học tập</span>
-  <span class="worry-chip">🔮 Tương lai</span>
-</div>
-""", unsafe_allow_html=True)
-
-        # 3. Dream goals
-        st.markdown("""
-<div class="rp-section">
-  <div class="rp-title">⭐ Điều bạn mong chờ</div>
-  <div class="dream-goal">🏠 Nhà riêng</div>
-  <div class="dream-goal">🚗 Chiếc xe đầu tiên</div>
-  <div class="dream-goal">✈️ Chuyến đi mơ ước</div>
-  <div class="dream-goal">🎓 Học thêm kỹ năng mới</div>
-</div>
-""", unsafe_allow_html=True)
-
-        # 4. Daily achievements
-        st.markdown("""
-<div class="rp-section">
-  <div class="rp-title">🌼 Điều đáng tự hào hôm nay</div>
-  <div class="achievement"><span class="ach-check">✓</span> Không đặt đồ ăn khuya</div>
-  <div class="achievement"><span class="ach-check">✓</span> Dành 20.000đ cho tương lai</div>
-  <div class="achievement"><span class="ach-check">✓</span> Hoàn thành một ngày làm việc khó khăn</div>
-</div>
-""", unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)  # close .right-panel
+        st.markdown('</div>', unsafe_allow_html=True)  # close .rp5
 
 
 # ══════════════════════════════════════════════════════
-# SCREEN 2 — FULL CHAT EXPERIENCE
+# SCREEN 2 — FULL CHAT EXPERIENCE v5
 # ══════════════════════════════════════════════════════
 def render_chat():
     _ss      = get_sheep_state()
     _s_emoji = SHEEP_EMOJI.get(_ss, "👂")
     _qr_list = st.session_state.qr
 
-    # Centered layout: narrow margins + wide chat column
-    _, col_chat, _ = st.columns([0.6, 3.8, 0.6])
+    _, col_chat, _ = st.columns([0.5, 4.0, 0.5])
 
     with col_chat:
-        # Header bar — back button + sheep info
-        hdr_back, hdr_info = st.columns([0.12, 0.88])
+        st.markdown('<div class="chat5-wrap">', unsafe_allow_html=True)
+
+        # Header: back + avatar + name + status
+        hdr_back, hdr_info = st.columns([0.1, 0.9])
         with hdr_back:
             st.markdown('<div class="back-btn">', unsafe_allow_html=True)
             if st.button("◀", key="back_home"):
@@ -1897,61 +1918,60 @@ def render_chat():
             st.markdown('</div>', unsafe_allow_html=True)
         with hdr_info:
             st.markdown(f"""
-<div class="chat-top-bar" style="margin-bottom:0;box-shadow:none;background:transparent;padding:6px 0">
-  <img src="{MASCOT_SRC}" class="chat-sheep-av" alt="Cừu">
+<div class="chat5-hdr">
+  <img src="{MASCOT_SRC}" class="chat5-av" alt="Cừu">
   <div>
-    <div class="chat-name">Cừu Cần Cù</div>
-    <div class="chat-status"><span class="status-dot"></span> Đang lắng nghe bạn</div>
+    <div class="chat5-name">Cừu Cần Cù</div>
+    <div class="chat5-status">
+      <span class="status-dot"></span> Đang lắng nghe bạn
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-        st.markdown('<hr style="border:none;border-top:1px solid #F0EBE3;margin:6px 0 12px">', unsafe_allow_html=True)
-
-        # Sheep hero — reacts emotionally to messages
-        st.markdown(f"""
-<div class="chat-sheep-hero-wrap">
-  <div class="chat-sheep-hero-circle">
-    <img src="{MASCOT_SRC}" class="chat-sheep-hero-img" alt="Cừu">
-  </div>
-  <span class="chat-sheep-emotion-badge">{_s_emoji}</span>
-</div>
-""", unsafe_allow_html=True)
-
-        # Chat messages — dynamic height giảm khoảng trắng
+        # Chat messages — dynamic height
         _msg_count = len(st.session_state.messages)
-        _chat_h = max(180, min(420, _msg_count * 95 + 100))
+        _chat_h = max(220, min(480, _msg_count * 100 + 120))
         components.html(build_chat_html(st.session_state.messages), height=_chat_h, scrolling=False)
 
-        # Quick replies — 2×2 grid
+        # Quick replies
         st.markdown("""<style>
-div.qr-zone [data-testid="stButton"]>button,
-div.qr-zone button{
-  background:linear-gradient(135deg,#F5F3FF,#EDE7F6)!important;
-  border:1.5px solid #C4B5FD!important;border-radius:20px!important;
-  color:#4A3ACA!important;font-size:12px!important;font-weight:700!important;
-  padding:10px 12px!important;width:100%!important;line-height:1.4!important;
-  box-shadow:0 2px 8px rgba(124,111,232,.12)!important}
+div.qr5 [data-testid="stButton"]>button{
+  background:#F5F4FF!important;border:1.5px solid #DDD8FF!important;
+  border-radius:16px!important;color:#4A3ACA!important;
+  font-size:12px!important;font-weight:700!important;
+  padding:9px 11px!important;width:100%!important;
+  line-height:1.4!important;transition:all .2s!important}
+div.qr5 [data-testid="stButton"]>button:hover{
+  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
+  color:white!important;border-color:#7C6FE8!important}
 </style>""", unsafe_allow_html=True)
-        st.markdown('<div class="qr-zone">', unsafe_allow_html=True)
+
         if _qr_list:
-            r1c1, r1c2 = st.columns(2)
+            st.markdown('<div class="qr5">', unsafe_allow_html=True)
+            qr1, qr2 = st.columns(2)
             for i, txt in enumerate(_qr_list[:4]):
-                col = r1c1 if i % 2 == 0 else r1c2
-                with col:
+                _col = qr1 if i % 2 == 0 else qr2
+                with _col:
                     if st.button(txt, key=f"qr_{i}_{txt[:6]}"):
                         st.session_state.qr_trigger = txt
                         st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    # Chat input — override browser red border
+        st.markdown('</div>', unsafe_allow_html=True)  # close chat5-wrap
+
+    # Chat input
     st.markdown("""<style>
-[data-testid="stChatInput"]{border:2px solid #E8E4FF!important;border-radius:22px!important;
-  box-shadow:0 4px 20px rgba(124,111,232,.12)!important;background:white!important;outline:none!important}
-[data-testid="stChatInput"] textarea,[data-testid="stChatInput"] div{
+[data-testid="stChatInput"]{border:2px solid #E8E4FF!important;
+  border-radius:22px!important;background:white!important;outline:none!important;
+  box-shadow:0 4px 20px rgba(124,111,232,.12)!important}
+[data-testid="stChatInput"] textarea,
+[data-testid="stChatInput"]>div,
+[data-testid="stChatInput"]>div>div{
   border:none!important;outline:none!important;box-shadow:none!important}
 [data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
 </style>""", unsafe_allow_html=True)
+
     user_input = st.chat_input("Hôm nay bạn muốn tâm sự điều gì với Cừu? 🌸", key="cin")
     if user_input:
         process_message(user_input)
