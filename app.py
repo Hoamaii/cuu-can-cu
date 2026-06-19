@@ -18,12 +18,56 @@ st.set_page_config(
     layout="wide"
 )
 
-st.image("IMG_7823.jpeg", width=250)
-st.title(" Cừu Cần Cù ")
+# ======================
+# SIDEBAR
+# ======================
 
-st.write(
-    "Xin chào! "
-    "Mình có thể lắng nghe tâm sự và đồng hành cùng bạn."
+with st.sidebar:
+
+    st.image("IMG_7823.jpeg", width=160)
+
+    st.markdown("## 🐑 Cừu Cần Cù")
+
+    st.caption(
+        "Người bạn đồng hành tài chính"
+    )
+
+    st.divider()
+
+    st.button("💬 Chat cùng Cừu")
+
+    st.button("🔍 Tìm sản phẩm TCBS")
+
+    st.button("🎯 Kế hoạch tiết kiệm")
+
+    st.button("❤️ Nhật ký cảm xúc")
+
+    st.button("🕘 Lịch sử hội thoại")
+
+    st.divider()
+
+    st.success(
+        """
+🌱 Tích tiểu thành đại
+
+Chỉ cần bắt đầu từ số tiền nhỏ mỗi ngày.
+"""
+    )
+
+# ======================
+# MAIN PAGE
+# ======================
+
+st.markdown("# 👋 Xin chào!")
+
+st.markdown(
+"""
+Mình là **Cừu Cần Cù**
+
+Người bạn đồng hành tài chính của bạn.
+
+### 🌱 Tích tiểu thành đại từ số tiền nhỏ
+"""
 )
 
 # ======================
