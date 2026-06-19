@@ -34,8 +34,8 @@ st.set_page_config(
 st.markdown("""
 <style>
 /* ═══════════════════════════════════════════════════════
-   CỪU CẦN CÙ v5 — Emotional AI Companion
-   Design: Finch × Character.AI × Duolingo × Calm
+   CỪU CẦN CÙ v6 — AI Companion Product
+   Design: Finch × Duolingo × Apple Health × Headspace
 ═══════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
 
@@ -46,24 +46,190 @@ st.markdown("""
 [data-testid="collapsedControl"],
 .stDeployButton{display:none!important}
 
+/* ── Centered 1200px layout ── */
+.block-container{
+  max-width:1200px!important;
+  margin:0 auto!important;
+  padding:20px 28px 80px!important
+}
+.stApp{background:#F7F5FF!important}
+
 /* ── Reset ── */
 *{font-family:'Nunito',sans-serif!important}
-.block-container{padding:10px 14px!important;max-width:100%!important}
-.stApp{background:#F0EEFF!important}
-[data-testid="stColumn"]>div{padding:3px 6px!important}
+[data-testid="stColumn"]>div{padding:3px 7px!important}
 
 /* ─── ANIMATIONS ─────────────────── */
 @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes float-h{0%,100%{transform:translateX(0)}50%{transform:translateX(16px)}}
-@keyframes wag{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-@keyframes slide-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes slide-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fade-in{from{opacity:0}to{opacity:1}}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.35)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
 
-/* ─── SIDEBAR v5 ──────────────────── */
-.sb5{background:white;border-radius:22px;padding:16px 14px 14px;
-  box-shadow:0 4px 24px rgba(0,0,0,.07);animation:fade-in .5s ease}
+/* ─────────────────────────────────────────────────────
+   AI COMPANION v6 — Full design system
+   Priority: Memory → Dream → Progress → Chat
+───────────────────────────────────────────────────── */
+
+/* ── COMPANION HEADER ──────────────────────────────── */
+.comp-hdr{display:flex;align-items:center;justify-content:space-between;
+  background:white;border-radius:20px;padding:14px 20px;
+  margin-bottom:18px;box-shadow:0 2px 16px rgba(0,0,0,.06);
+  animation:fade-in .4s ease}
+.ch-left{display:flex;align-items:center;gap:12px}
+.ch-av{width:42px;height:42px;border-radius:50%;object-fit:cover;
+  border:2.5px solid #E8E4FF;animation:breathe 4s ease-in-out infinite;flex-shrink:0}
+.ch-name{font-size:15px;font-weight:900;color:#1A1A2E;margin:0 0 1px}
+.ch-sub{font-size:11px;color:#9E9E9E;margin:0;font-weight:600}
+.ch-pills{display:flex;gap:7px;flex-wrap:wrap}
+.ch-pill{display:inline-flex;align-items:center;gap:4px;
+  background:#F5F4FF;border:1.5px solid #E8E4FF;border-radius:20px;
+  padding:5px 11px;font-size:11.5px;font-weight:700;color:#4A3ACA}
+.ch-pill.green{background:#F0FFF4;border-color:#BBF7D0;color:#15803D}
+.ch-pill.orange{background:#FFF7ED;border-color:#FED7AA;color:#C2410C}
+
+/* ── SECTION SHARED ────────────────────────────────── */
+.sec-card{background:white;border-radius:20px;padding:18px 20px;
+  box-shadow:0 2px 16px rgba(0,0,0,.06);height:100%;box-sizing:border-box;
+  animation:slide-up .45s ease both}
+.sec-label{font-size:10.5px;font-weight:800;color:#9E9E9E;
+  text-transform:uppercase;letter-spacing:.8px;margin:0 0 14px;
+  display:flex;align-items:center;gap:6px}
+
+/* ── SECTION 1: MEMORY ─────────────────────────────── */
+.mem-list{display:flex;flex-direction:column;gap:0}
+.mem-row{display:flex;align-items:flex-start;gap:9px;
+  padding:8px 0;border-bottom:1px solid #F5F4FF;font-size:12.5px;
+  color:#333;line-height:1.55;font-weight:600}
+.mem-row:last-of-type{border-bottom:none}
+.mem-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.mem-footer{margin-top:10px;font-size:11px;color:#BDBDBD;font-weight:600;
+  display:flex;align-items:center;gap:5px;
+  border-top:1px solid #F5F4FF;padding-top:10px}
+
+/* ── SECTION 2: DREAM ──────────────────────────────── */
+.dream-name-big{font-size:19px;font-weight:900;color:#1A1A2E;
+  margin:0 0 14px;line-height:1.3}
+.dream-bar-wrap{background:#F0F0F0;border-radius:8px;height:10px;
+  overflow:hidden;margin-bottom:7px}
+.dream-bar-fill{height:100%;border-radius:8px;
+  background:linear-gradient(90deg,#7B61FF,#A78BFA);
+  transition:width .8s ease}
+.dream-pct{font-size:11.5px;font-weight:800;color:#7B61FF;
+  margin-bottom:12px;display:flex;justify-content:flex-end}
+.dream-stats-row{display:flex;gap:8px;margin-bottom:12px}
+.dream-stat{flex:1;background:#F5F4FF;border-radius:12px;
+  padding:8px 10px;text-align:center}
+.ds-val{font-size:13px;font-weight:800;color:#1A1A2E}
+.ds-lbl{font-size:10px;color:#9E9E9E;font-weight:600;margin-top:1px}
+.dream-sheep-msg{background:linear-gradient(135deg,#F5F4FF,#EDE8FF);
+  border-radius:12px;padding:10px 13px;font-size:12.5px;
+  color:#4A3ACA;font-weight:700;font-style:italic;
+  border-left:3px solid #7B61FF;line-height:1.55}
+.dream-milestone{display:flex;align-items:center;gap:6px;
+  font-size:11px;color:#7B61FF;font-weight:700;
+  margin-bottom:10px}
+.milestone-dot{width:8px;height:8px;border-radius:50%;
+  background:#7B61FF;animation:pulse-dot 2s infinite}
+
+/* ── SECTION 3: PROGRESS ───────────────────────────── */
+.prog-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
+.prog-item{background:#F7F5FF;border-radius:16px;padding:14px 12px;
+  text-align:center;border:1.5px solid #EDE8FF;
+  transition:transform .2s}
+.prog-item:hover{transform:translateY(-2px)}
+.pi-icon{font-size:22px;margin-bottom:6px}
+.pi-val{font-size:15px;font-weight:900;color:#1A1A2E;margin-bottom:3px}
+.pi-lbl{font-size:10.5px;color:#9E9E9E;font-weight:600}
+.pi-bar{height:4px;border-radius:2px;background:#E8E4FF;
+  margin-top:7px;overflow:hidden}
+.pi-bar-fill{height:100%;border-radius:2px;
+  background:linear-gradient(90deg,#7B61FF,#A78BFA)}
+
+/* ── SECTION 4: CHAT ───────────────────────────────── */
+.chat-section{background:white;border-radius:20px;padding:18px 20px;
+  box-shadow:0 2px 16px rgba(0,0,0,.06);margin-top:0;
+  animation:slide-up .45s ease .2s both}
+.chat-sec-hdr{font-size:10.5px;font-weight:800;color:#9E9E9E;
+  text-transform:uppercase;letter-spacing:.8px;margin:0 0 12px;
+  display:flex;align-items:center;gap:6px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#22C55E;
+  display:inline-block;animation:pulse-dot 1.5s infinite}
+
+/* Quick actions */
+.qa-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+div.qa-zone [data-testid="stButton"]>button{
+  background:#F7F5FF!important;border:1.5px solid #E8E4FF!important;
+  border-radius:20px!important;color:#4A3ACA!important;
+  font-size:12px!important;font-weight:700!important;
+  padding:8px 15px!important;
+  transition:all .2s!important;white-space:nowrap!important}
+div.qa-zone [data-testid="stButton"]>button:hover{
+  background:linear-gradient(135deg,#7B61FF,#A78BFA)!important;
+  color:white!important;border-color:#7B61FF!important;
+  transform:translateY(-1px)!important}
+
+/* ── FULL CHAT SCREEN ──────────────────────────────── */
+.chat-full-wrap{background:white;border-radius:20px;
+  padding:18px 22px;box-shadow:0 4px 24px rgba(0,0,0,.08);
+  max-width:780px;margin:0 auto}
+.chat-full-hdr{display:flex;align-items:center;gap:12px;
+  padding-bottom:12px;border-bottom:1.5px solid #F5F4FF;margin-bottom:14px}
+.cf-av{width:42px;height:42px;border-radius:50%;object-fit:cover;
+  border:2px solid #E8E4FF;animation:breathe 4s ease-in-out infinite}
+.cf-name{font-size:14px;font-weight:900;color:#1A1A2E}
+.cf-status{font-size:11px;color:#22C55E;font-weight:700;
+  display:flex;align-items:center;gap:4px}
+
+/* back btn */
+div.back-btn [data-testid="stButton"]>button{
+  background:white!important;border:1.5px solid #E8E4FF!important;
+  border-radius:12px!important;color:#555!important;
+  font-size:15px!important;padding:5px 12px!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.06)!important;transition:all .2s!important}
+div.back-btn [data-testid="stButton"]>button:hover{
+  background:#F5F3FF!important;color:#7B61FF!important;
+  border-color:#7B61FF!important}
+
+/* QR full screen */
+div.qr5 [data-testid="stButton"]>button{
+  background:#F7F5FF!important;border:1.5px solid #E8E4FF!important;
+  border-radius:16px!important;color:#4A3ACA!important;
+  font-size:12px!important;font-weight:700!important;
+  padding:9px 11px!important;width:100%!important;
+  line-height:1.4!important;transition:all .2s!important}
+div.qr5 [data-testid="stButton"]>button:hover{
+  background:linear-gradient(135deg,#7B61FF,#A78BFA)!important;
+  color:white!important;border-color:#7B61FF!important}
+
+/* ── CHAT INPUT ────────────────────────────────────── */
+[data-testid="stChatInput"],
+[data-testid="stChatInput"]>div,
+[data-testid="stChatInput"]>div>div{
+  border:none!important;outline:none!important;
+  box-shadow:none!important;background:transparent!important}
+[data-testid="stChatInput"]{
+  border-radius:22px!important;border:2px solid #E8E4FF!important;
+  box-shadow:0 4px 20px rgba(123,97,255,.1)!important;
+  background:white!important;overflow:hidden!important}
+[data-testid="stChatInput"] textarea{
+  font-size:13.5px!important;color:#1A1A2E!important;
+  border:none!important;outline:none!important;background:transparent!important}
+[data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
+[data-testid="stChatInput"] textarea::placeholder{
+  color:#C4B5FD!important;font-style:italic!important}
+[data-testid="stChatInput"] button{
+  background:linear-gradient(135deg,#7B61FF,#A78BFA)!important;
+  border-radius:50%!important;width:36px!important;height:36px!important;
+  border:none!important;outline:none!important;
+  box-shadow:0 4px 12px rgba(123,97,255,.4)!important}
+
+[data-testid="stHorizontalBlock"]{gap:6px!important}
+.disclaimer{font-size:10.5px;color:#C4B5FD;text-align:center;
+  padding:6px 0;font-style:italic}
+
+/* ── OLD v5 classes — kept for compatibility ── */
+.sb5{display:none}.sb5-top{display:none}
 .sb5-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;
   padding-bottom:12px;border-bottom:1px solid #F0EEFF}
 .sb5-top-av{width:34px;height:34px;border-radius:50%;object-fit:cover;
@@ -1662,7 +1828,8 @@ def get_sheep_state() -> str:
 
 
 # ══════════════════════════════════════════════════════
-# SCREEN 1 — HOME COMPANION v5
+# SCREEN 1 — HOME COMPANION v6
+# Priority: Memory → Dream → Progress → Chat
 # ══════════════════════════════════════════════════════
 def render_home():
     _sb      = st.session_state.second_brain
@@ -1671,300 +1838,245 @@ def render_home():
     _turns   = max(len(st.session_state.messages) // 2, 0)
     _level   = _turns // 5 + 1
     _xp      = (_turns % 5) * 20
-    _xp_pct  = _xp
     _goals   = _sb.get("goals", [])
     _events  = _sb.get("events", [])
     _msgs    = st.session_state.messages
 
-    # mood label
-    _mood_map = {
-        range(0,30):"Buồn 😔", range(30,50):"Hơi mệt 😌",
-        range(50,70):"Bình thường 🙂", range(70,90):"Vui 😊",
-        range(90,101):"Rất vui! 😍"
-    }
-    _mood_label = next((v for r,v in _mood_map.items() if _mood in r), "Bình thường 🙂")
+    # Mood label & pill color
+    if _mood < 30:
+        _mood_label, _pill_cls = "Buồn 😔", ""
+    elif _mood < 50:
+        _mood_label, _pill_cls = "Hơi mệt 😌", ""
+    elif _mood < 70:
+        _mood_label, _pill_cls = "Bình thường 🙂", "green"
+    else:
+        _mood_label, _pill_cls = "Vui 😊", "green"
+
     _energy_pct = min(max(_mood, 10), 95)
 
-    col_sb, col_ctr, col_rp = st.columns([1.1, 2.2, 1.7])
-
-    # ── LEFT SIDEBAR v5 ──────────────────────────────
-    with col_sb:
-        st.markdown(f"""
-<div class="sb5">
-  <!-- Top bar -->
-  <div class="sb5-top">
-    <img src="{MASCOT_SRC}" class="sb5-top-av" alt="Cừu">
+    # ── COMPANION HEADER ─────────────────────────────
+    st.markdown(f"""
+<div class="comp-hdr">
+  <div class="ch-left">
+    <img src="{MASCOT_SRC}" class="ch-av" alt="Cừu">
     <div>
-      <div class="sb5-top-name">Cừu Cần Cù</div>
-      <div class="sb5-top-sub">AI Financial Companion</div>
+      <div class="ch-name">🐑 Cừu Cần Cù</div>
+      <div class="ch-sub">AI Financial Companion · TCBS</div>
     </div>
   </div>
-  <!-- Large mascot -->
-  <img src="{MASCOT_SRC}" class="sb5-mascot" alt="Cừu Cần Cù">
-  <div class="sb5-name">🐑 Cừu Cần Cù</div>
-  <div class="sb5-sub">Người bạn đồng hành tài chính ❤️</div>
-  <!-- Stats -->
-  <div class="sb5-stats">
-    <div class="sb5-stat">
-      <span class="sb5-sl">😊 Tâm trạng</span>
-      <span class="sb5-sv sv-yellow">{_mood_label.split()[0]}</span>
-    </div>
-    <div class="sb5-stat">
-      <div style="width:100%">
-        <div style="display:flex;justify-content:space-between">
-          <span class="sb5-sl">❤️ Năng lượng</span>
-          <span class="sb5-sv sv-green">{_energy_pct}%</span>
-        </div>
-        <div class="sb5-bar"><div class="sb5-bar-g" style="width:{_energy_pct}%"></div></div>
-      </div>
-    </div>
-    <div class="sb5-stat">
-      <span class="sb5-sl">🔥 Liên tiếp</span>
-      <span class="sb5-sv sv-orange">{_streak} ngày</span>
-    </div>
-    <div class="sb5-stat">
-      <span class="sb5-sl">🌱 Cấp độ</span>
-      <span class="sb5-sv sv-purple">Cấp {_level}</span>
-    </div>
-    <div style="margin-top:6px">
-      <div class="sb5-bar"><div class="sb5-bar-p" style="width:{_xp_pct}%"></div></div>
-      <div class="sb5-xp">{_xp} / 100 XP</div>
-    </div>
-  </div>
-  <div class="sb5-tag">Cừu lớn mỗi khi bạn chăm sóc tài chính của mình.</div>
-  <!-- Bottom nav -->
-  <div class="sb5-nav">
-    <div class="sb5-ni on">🏠</div>
-    <div class="sb5-ni">🌱</div>
-    <div class="sb5-ni">📖</div>
-    <div class="sb5-ni">❤️</div>
+  <div class="ch-pills">
+    <span class="ch-pill {_pill_cls}">😊 {_mood_label}</span>
+    <span class="ch-pill orange">🔥 {_streak} ngày liên tiếp</span>
+    <span class="ch-pill">⭐ Cấp {_level}</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── CENTER CONTENT v5 ─────────────────────────────
-    with col_ctr:
-        _save_per_month = 2_000_000
-        _goal_total     = 500_000_000
-        _saved_total    = _save_per_month * max(_turns * 2, 1)
-        _dc_pct         = min(int(_saved_total / _goal_total * 100), 99)
-        _dc_segs        = 20
-        _dc_filled      = max(1, int(_dc_pct / 100 * _dc_segs))
-        _segs_html      = "".join(
-            f'<div class="dc-seg {"on" if i < _dc_filled else "off"}"></div>'
-            for i in range(_dc_segs)
-        )
-        _years_left     = max(1, int((_goal_total - _saved_total) / (_save_per_month * 12)))
-        _saved_fmt      = f"{_saved_total:,.0f}đ".replace(",",".")
-        _goal_fmt       = f"{_goal_total:,.0f}đ".replace(",",".")
+    # ── ROW 1: Memory | Dream ─────────────────────────
+    col_mem, col_dream = st.columns([1, 1])
 
-        _mem1 = _goals[0] if _goals else "Muốn mua nhà"
-        _mem2 = f"Tiết kiệm {fmtm(_save_per_month)}/tháng"
-        _mem3 = _events[-1] if _events else "Thường lo lắng về tài chính tương lai"
-        _mem4 = "Cảm thấy áp lực khi so sánh với người khác"
+    _mem1 = _goals[0] if _goals else "Muốn mua nhà"
+    _mem2 = "Tiết kiệm 2 triệu đ/tháng đều đặn"
+    _mem3 = _events[-1]["event"].replace("_"," ").title() if _events else "Lo lắng về tài chính tương lai"
+    _mem4 = "Thích tích lũy từng bước nhỏ, bền vững"
 
+    with col_mem:
         st.markdown(f"""
-<!-- Welcome card -->
-<div class="wcard">
-  <div class="wc-title">Chào Mai 💙</div>
-  <div class="wc-sub">Cừu rất vui vì bạn quay lại hôm nay.</div>
-  <div class="wc-body">
-    Bạn không cần phải mạnh mẽ một mình.<br>
-    Nếu có điều gì khiến bạn suy nghĩ về tiền bạc,<br>
-    công việc hay cuộc sống, mình luôn sẵn sàng lắng nghe.
+<div class="sec-card">
+  <div class="sec-label">🐑 Cừu nhớ về bạn</div>
+  <div class="mem-list">
+    <div class="mem-row"><span class="mem-icon">🎯</span><span>{_mem1}</span></div>
+    <div class="mem-row"><span class="mem-icon">💰</span><span>{_mem2}</span></div>
+    <div class="mem-row"><span class="mem-icon">💭</span><span>{_mem3}</span></div>
+    <div class="mem-row"><span class="mem-icon">🌱</span><span>{_mem4}</span></div>
   </div>
-  <img src="{MASCOT_SRC}" class="wc-img" alt="">
-  <div style="height:80px"></div>
+  <div class="mem-footer">🕐 Cập nhật lúc {datetime.now().strftime("%H:%M")} · Hôm nay</div>
 </div>
+""", unsafe_allow_html=True)
 
-<!-- Message from Sheep -->
-<div class="mcard">
-  <div class="mc-left">
-    <div class="mc-tag">💡 Tin nhắn từ Cừu</div>
-    <div class="mc-body">
-      Bạn không cần giàu ngay hôm nay.<br>
-      Chỉ cần tốt hơn hôm qua 1% là đủ rồi.
+    _save_per_month = 2_000_000
+    _goal_total     = 500_000_000
+    _saved_total    = _save_per_month * max(_turns * 2, 1)
+    _dc_pct         = min(int(_saved_total / _goal_total * 100), 99)
+    _months_left    = max(1, int((_goal_total - _saved_total) / _save_per_month))
+    _sheep_dream_msg = SHEEP_BUBBLE.get(get_sheep_state(), "Mỗi bước nhỏ đang đưa bạn gần hơn nhé! 🌱")
+
+    with col_dream:
+        st.markdown(f"""
+<div class="sec-card">
+  <div class="sec-label">🎯 Ước mơ của bạn</div>
+  <div class="dream-name-big">🏡 Mua căn nhà đầu tiên</div>
+  <div class="dream-milestone">
+    <span class="milestone-dot"></span>
+    Còn {_months_left} tháng · Đang tiến đến đây!
+  </div>
+  <div class="dream-bar-wrap">
+    <div class="dream-bar-fill" style="width:{_dc_pct}%"></div>
+  </div>
+  <div class="dream-pct">{_dc_pct}% hoàn thành</div>
+  <div class="dream-stats-row">
+    <div class="dream-stat">
+      <div class="ds-val">{fmtm(_saved_total)}</div>
+      <div class="ds-lbl">Đã tích lũy</div>
+    </div>
+    <div class="dream-stat">
+      <div class="ds-val">{fmtm(_goal_total)}</div>
+      <div class="ds-lbl">Mục tiêu</div>
+    </div>
+    <div class="dream-stat">
+      <div class="ds-val">{fmtm(_save_per_month)}/th</div>
+      <div class="ds-lbl">Mỗi tháng</div>
     </div>
   </div>
-  <div class="mc-emoji">🐑✨</div>
-</div>
-
-<!-- Current Dream -->
-<div class="dcard">
-  <div class="dc-tag">🎯 Ước mơ hiện tại</div>
-  <div class="dc-row">
-    <div class="dc-goal">Mua căn nhà đầu tiên</div>
-    <div class="dc-emoji">🏡</div>
-  </div>
-  <div class="dc-segs">{_segs_html}</div>
-  <div style="font-size:11px;color:#22C55E;font-weight:700;margin-bottom:5px">{_dc_pct}%</div>
-  <div class="dc-meta">
-    <span>{_saved_fmt} / {_goal_fmt}</span>
-    <span>Dự kiến hoàn thành: {_years_left} năm</span>
-  </div>
-</div>
-
-<!-- Memory card -->
-<div class="memcard">
-  <div class="mem-left">
-    <div class="mem-tag">🐑 Điều Cừu nhớ về bạn</div>
-    <div class="mem-item"><div class="mem-dot"></div><span>{_mem1}</span></div>
-    <div class="mem-item"><div class="mem-dot"></div><span>{_mem2}</span></div>
-    <div class="mem-item"><div class="mem-dot"></div><span>{_mem3}</span></div>
-    <div class="mem-item"><div class="mem-dot"></div><span>{_mem4}</span></div>
-  </div>
-  <div class="mem-emoji">🩷</div>
+  <div class="dream-sheep-msg">💬 "{_sheep_dream_msg}"</div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── RIGHT PANEL v5 ────────────────────────────────
-    with col_rp:
-        # Journey widget (purple header)
-        _xp_fill = _xp_pct
-        st.markdown(f"""
-<div class="journey">
-  <div class="jy-label">🌱 Hành trình Cừu</div>
-  <div class="jy-level">Cấp độ {_level}</div>
-  <div class="jy-bar"><div class="jy-fill" style="width:{_xp_fill}%"></div></div>
-  <div class="jy-xp">{_xp} / 100 XP</div>
-  <div class="jy-tag">Cùng nhau lớn lên từng ngày.</div>
-  <img src="{MASCOT_SRC}" class="jy-av" alt="Cừu">
+    # ── ROW 2: Progress ───────────────────────────────
+    st.markdown(f"""
+<div class="sec-card" style="margin-top:12px">
+  <div class="sec-label">📈 Tiến độ hành trình</div>
+  <div class="prog-row">
+    <div class="prog-item">
+      <div class="pi-icon">🔥</div>
+      <div class="pi-val">{_streak}</div>
+      <div class="pi-lbl">Ngày liên tiếp</div>
+      <div class="pi-bar"><div class="pi-bar-fill" style="width:{min(_streak*10,100)}%"></div></div>
+    </div>
+    <div class="prog-item">
+      <div class="pi-icon">⭐</div>
+      <div class="pi-val">Cấp {_level}</div>
+      <div class="pi-lbl">Cấp độ</div>
+      <div class="pi-bar"><div class="pi-bar-fill" style="width:{_xp}%"></div></div>
+    </div>
+    <div class="prog-item">
+      <div class="pi-icon">💬</div>
+      <div class="pi-val">{_turns}</div>
+      <div class="pi-lbl">Cuộc trò chuyện</div>
+      <div class="pi-bar"><div class="pi-bar-fill" style="width:{min(_turns*20,100)}%"></div></div>
+    </div>
+    <div class="prog-item">
+      <div class="pi-icon">😊</div>
+      <div class="pi-val">{_energy_pct}%</div>
+      <div class="pi-lbl">Năng lượng</div>
+      <div class="pi-bar"><div class="pi-bar-fill" style="width:{_energy_pct}%"></div></div>
+    </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-        # Mini chat preview (last messages if any)
-        st.markdown('<div class="rp5">', unsafe_allow_html=True)
-        st.markdown('<div class="rp5-hdr">💬 Hôm nay chúng mình trò chuyện thế nào?</div>', unsafe_allow_html=True)
+    # ── ROW 3: Chat section ───────────────────────────
+    st.markdown("""
+<div class="chat-section">
+  <div class="chat-sec-hdr">
+    <span class="status-dot"></span>
+    💬 Cuộc trò chuyện hôm nay
+  </div>
+""", unsafe_allow_html=True)
 
-        # Show last 2 message pairs if exists, else placeholder
-        _preview_msgs = st.session_state.messages[-4:] if st.session_state.messages else []
-        if _preview_msgs:
-            _preview_html = ""
-            for _pm in _preview_msgs[-3:]:
-                if _pm["role"] == "user":
-                    _preview_html += f"""
+    _preview_msgs = _msgs[-4:] if _msgs else []
+    if _preview_msgs:
+        _preview_html = ""
+        for _pm in _preview_msgs[-3:]:
+            if _pm["role"] == "user":
+                _preview_html += f"""
 <div class="mini-user">
   <div class="mini-av-u">👤</div>
-  <div><div class="mini-buser">{_pm["content"][:60]}{"…" if len(_pm["content"])>60 else ""}</div>
+  <div><div class="mini-buser">{_pm["content"][:90]}{"…" if len(_pm["content"])>90 else ""}</div>
   <div class="mini-time" style="text-align:right">{_pm.get("time","")}</div></div>
 </div>"""
-                else:
-                    _av_html = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
-                    _preview_html += f"""
+            else:
+                _av_html = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
+                _preview_html += f"""
 <div class="mini-ai">
   <div class="mini-av">{_av_html}</div>
-  <div><div class="mini-bai">{_pm["content"][:70]}{"…" if len(_pm["content"])>70 else ""}</div>
+  <div><div class="mini-bai">{_pm["content"][:100]}{"…" if len(_pm["content"])>100 else ""}</div>
   <div class="mini-time">{_pm.get("time","")}</div></div>
 </div>"""
-            st.markdown(_preview_html, unsafe_allow_html=True)
-        else:
-            _av_html2 = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
-            st.markdown(f"""
+        st.markdown(_preview_html, unsafe_allow_html=True)
+    else:
+        _av_html2 = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
+        st.markdown(f"""
 <div class="mini-ai">
   <div class="mini-av">{_av_html2}</div>
   <div><div class="mini-bai">Hôm nay bạn cảm thấy thế nào? Kể Cừu nghe nhé 🌸</div></div>
 </div>""", unsafe_allow_html=True)
 
-        # Quick reply buttons → go to chat
-        st.markdown('<div class="rp5-prompt">Bạn muốn bắt đầu từ đâu? 🌸</div>', unsafe_allow_html=True)
-        _qr_home = [
-            ("💬", "Tôi muốn\ntâm sự"),
-            ("😔", "Hôm nay\ntôi hơi mệt"),
-            ("🎯", "Tôi có\nmột mục tiêu"),
-            ("💰", "Tôi lo về\ntiền bạc"),
-        ]
-        st.markdown('<div class="rp-qr">', unsafe_allow_html=True)
-        qc1, qc2 = st.columns(2)
-        for i, (ico, lbl) in enumerate(_qr_home):
-            _col = qc1 if i % 2 == 0 else qc2
-            with _col:
-                if st.button(f"{ico} {lbl}", key=f"hqr_{i}"):
-                    st.session_state.qr_trigger = lbl.replace("\n", " ")
-                    st.session_state.screen = "chat"
-                    st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # close .chat-section
 
-        # Tip button
-        st.markdown('<div class="tip-btn">', unsafe_allow_html=True)
-        if st.button("✨ Cho tôi một lời khuyên", key="home_tip"):
-            st.session_state.qr_trigger = "Hôm nay bạn có lời khuyên gì cho mình không?"
-            st.session_state.screen = "chat"
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)  # close .rp5
+    # Quick action buttons
+    _qr_home = [
+        "💬 Tôi muốn tâm sự",
+        "😔 Hôm nay tôi hơi mệt",
+        "🎯 Tôi có một mục tiêu",
+        "💰 Tôi lo về tiền bạc",
+        "📊 So sánh sản phẩm",
+        "🌱 Bắt đầu đầu tư",
+    ]
+    st.markdown('<div class="qa-zone">', unsafe_allow_html=True)
+    _qr_cols = st.columns(3)
+    for i, lbl in enumerate(_qr_home):
+        with _qr_cols[i % 3]:
+            if st.button(lbl, key=f"hqa_{i}"):
+                st.session_state.qr_trigger = lbl
+                st.session_state.screen = "chat"
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════
-# SCREEN 2 — FULL CHAT EXPERIENCE v5
+# SCREEN 2 — FULL CHAT EXPERIENCE v6
 # ══════════════════════════════════════════════════════
 def render_chat():
     _ss      = get_sheep_state()
     _s_emoji = SHEEP_EMOJI.get(_ss, "👂")
     _qr_list = st.session_state.qr
 
-    _, col_chat, _ = st.columns([0.5, 4.0, 0.5])
+    # Back button
+    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
+    if st.button("◀ Về trang chính", key="back_home"):
+        st.session_state.screen = "home"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    with col_chat:
-        st.markdown('<div class="chat5-wrap">', unsafe_allow_html=True)
-
-        # Header: back + avatar + name + status
-        hdr_back, hdr_info = st.columns([0.1, 0.9])
-        with hdr_back:
-            st.markdown('<div class="back-btn">', unsafe_allow_html=True)
-            if st.button("◀", key="back_home"):
-                st.session_state.screen = "home"
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-        with hdr_info:
-            st.markdown(f"""
-<div class="chat5-hdr">
-  <img src="{MASCOT_SRC}" class="chat5-av" alt="Cừu">
-  <div>
-    <div class="chat5-name">Cừu Cần Cù</div>
-    <div class="chat5-status">
-      <span class="status-dot"></span> Đang lắng nghe bạn
+    # Chat container
+    st.markdown(f"""
+<div class="chat-full-wrap">
+  <div class="chat-full-hdr">
+    <img src="{MASCOT_SRC}" class="cf-av" alt="Cừu">
+    <div style="flex:1">
+      <div class="cf-name">Cừu Cần Cù</div>
+      <div class="cf-status">
+        <span class="status-dot"></span> Đang lắng nghe bạn {_s_emoji}
+      </div>
     </div>
   </div>
-</div>
 """, unsafe_allow_html=True)
 
-        # Chat messages — dynamic height
-        _msg_count = len(st.session_state.messages)
-        _chat_h = max(220, min(480, _msg_count * 100 + 120))
-        components.html(build_chat_html(st.session_state.messages), height=_chat_h, scrolling=False)
+    # Chat messages — dynamic height
+    _msg_count = len(st.session_state.messages)
+    _chat_h = max(220, min(520, _msg_count * 100 + 120))
+    components.html(build_chat_html(st.session_state.messages), height=_chat_h, scrolling=False)
 
-        # Quick replies
-        st.markdown("""<style>
-div.qr5 [data-testid="stButton"]>button{
-  background:#F5F4FF!important;border:1.5px solid #DDD8FF!important;
-  border-radius:16px!important;color:#4A3ACA!important;
-  font-size:12px!important;font-weight:700!important;
-  padding:9px 11px!important;width:100%!important;
-  line-height:1.4!important;transition:all .2s!important}
-div.qr5 [data-testid="stButton"]>button:hover{
-  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
-  color:white!important;border-color:#7C6FE8!important}
-</style>""", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # close chat-full-wrap
 
-        if _qr_list:
-            st.markdown('<div class="qr5">', unsafe_allow_html=True)
-            qr1, qr2 = st.columns(2)
-            for i, txt in enumerate(_qr_list[:4]):
-                _col = qr1 if i % 2 == 0 else qr2
-                with _col:
-                    if st.button(txt, key=f"qr_{i}_{txt[:6]}"):
-                        st.session_state.qr_trigger = txt
-                        st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+    # Quick replies
+    if _qr_list:
+        st.markdown('<div class="qr5">', unsafe_allow_html=True)
+        qr1, qr2 = st.columns(2)
+        for i, txt in enumerate(_qr_list[:4]):
+            _col = qr1 if i % 2 == 0 else qr2
+            with _col:
+                if st.button(txt, key=f"qr_{i}_{txt[:6]}"):
+                    st.session_state.qr_trigger = txt
+                    st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)  # close chat5-wrap
-
-    # Chat input
+    # Chat input override (inject close to element for specificity)
     st.markdown("""<style>
 [data-testid="stChatInput"]{border:2px solid #E8E4FF!important;
   border-radius:22px!important;background:white!important;outline:none!important;
-  box-shadow:0 4px 20px rgba(124,111,232,.12)!important}
+  box-shadow:0 4px 20px rgba(123,97,255,.12)!important}
 [data-testid="stChatInput"] textarea,
 [data-testid="stChatInput"]>div,
 [data-testid="stChatInput"]>div>div{
