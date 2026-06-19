@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 st.image("IMG_7823.jpeg", width=250)
-st.title("🐑 Cừu Cần Cù")
+st.title(" Cừu Cần Cù ")
 
 st.write(
     "Xin chào! "
