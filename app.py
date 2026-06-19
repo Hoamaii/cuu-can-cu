@@ -31,7 +31,6 @@ def get_image_base64(path: str):
     return None
 
 MASCOT_CANDIDATES = [
-    MASCOT_CANDIDATES = [
     "Pasted Graphic.png",
     "mascot.png",
     "mascot.jpg",
