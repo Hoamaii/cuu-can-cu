@@ -6,46 +6,25 @@ client = Groq(
 api_key=st.secrets["GROQ_API_KEY"]
 )
 
-# ======================
-
 # Giao diện
-
-# ======================
 
 st.set_page_config(
 page_title="🐑 Cừu Cần Cù",
 layout="wide"
 )
 
-st.image(
-"https://images.unsplash.com/photo-1484557985045-edf25e08da73?w=400",
-width=150
-)
-
 st.title("🐑 Cừu Cần Cù")
 
-# ======================
-
-# Load Prompt
-
-# ======================
+# Đọc prompt
 
 with open("prompt.txt", "r", encoding="utf-8") as f:
 SYSTEM_PROMPT = f.read()
 
-# ======================
-
-# Load Excel
-
-# ======================
+# Đọc Excel
 
 df = pd.read_excel("knowledge.xlsx")
 
-# ======================
-
-# Search Knowledge
-
-# ======================
+# Tìm dữ liệu liên quan
 
 def find_knowledge(question):
 
@@ -80,21 +59,18 @@ top_rows = matched[:5]
 result = ""
 
 for _, row in top_rows:
-
     result += str(row.to_dict())
     result += "\n\n"
 
 return result
 ```
 
-# ======================
-
-# Memory
-
-# ======================
+# Lưu lịch sử chat
 
 if "messages" not in st.session_state:
 st.session_state.messages = []
+
+# Hiển thị lịch sử
 
 for msg in st.session_state.messages:
 
@@ -103,11 +79,7 @@ with st.chat_message(msg["role"]):
     st.write(msg["content"])
 ```
 
-# ======================
-
-# Chat
-
-# ======================
+# Ô nhập chat
 
 prompt = st.chat_input(
 "Hãy trò chuyện với Cừu..."
@@ -138,20 +110,24 @@ response = client.chat.completions.create(
         {
             "role": "system",
             "content": f"""
-            Dữ liệu TCBS:
+```
 
-            {knowledge}
+Dữ liệu TCBS:
 
-            Chỉ dùng dữ liệu trên khi trả lời.
-            """
-        },
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ]
+{knowledge}
+
+Chỉ sử dụng dữ liệu trên để trả lời.
+Nếu không có dữ liệu phù hợp thì nói chưa có thông tin.
+"""
+},
+{
+"role": "user",
+"content": prompt
+}
+]
 )
 
+```
 answer = response.choices[0].message.content
 
 st.session_state.messages.append(
