@@ -460,155 +460,236 @@ def build_chat_html(messages: list) -> str:
 </script>
 </body></html>"""
 
-# ── AI ENGINE — cải tiến toàn diện ───────────────────
-def get_resp(text: str) -> dict:
-    t = norm(text)
-    ctx = recent_context()  # context 4 tin gần nhất
-    amount = extract_amount(text)
-    now = datetime.now().strftime("%H:%M")
+# ══════════════════════════════════════════════════════
+#  AI PIPELINE:  User → Emotion → Memory → Knowledge → LLM → Response
+# ══════════════════════════════════════════════════════
 
-    def r(content, products=None, qr=None):
-        return {"content": content, "time": now, "products": products or [], "qr": qr or QR_DEFAULT}
+# ── STAGE 1 · EMOTION ANALYSIS ───────────────────────
+def analyze_emotion(t: str, ctx: str) -> dict:
+    """
+    Phân tích cảm xúc từ input đã norm.
+    Trả về: {label, intensity, mood_shift}
+      label     : 'negative' | 'positive' | 'journal' | 'neutral'
+      intensity : 0–3  (0=không, 3=rất mạnh)
+      mood_shift: True nếu cảm xúc thay đổi so với memory
+    """
+    neg_kws = ["buon", "stress", "met", "chan", "lo", "lo lang", "ap luc",
+               "so hai", "that vong", "tuyet vong", "kho khan", "nan long",
+               "that bai", "bi quan", "chiu khong noi", "qua suc", "kiet suc",
+               "mo mo", "roi", "co don", "cang thang", "tram cam", "kiet suc",
+               "khong on", "khong biet lam sao", "mat ngu"]
+    pos_kws = ["vui", "hanh phuc", "tu hao", "phan khich", "tuyet voi",
+               "on roi", "tot lam", "hom nay tot", "phan khoi", "sung suong",
+               "binh yen", "nhe nhom", "thanh thoi", "on dinh", "tot dep"]
+    jrn_kws = ["tam su", "nhat ky", "ke cuuu", "ke cuu", "nghe khong",
+               "can ai do", "can chia se", "muon noi", "toi cam thay",
+               "minh cam thay", "trong long", "khong biet ke ai"]
 
-    def pick(*options):
-        return random.choice(options)
+    neg = score(t, neg_kws)
+    pos = score(t, pos_kws)
+    jrn = score(t, jrn_kws)
 
-    # ── NHẬN DIỆN CẢM XÚC (multi-signal) ──────────────
-    neg_score = score(t, ["buon", "stress", "met", "chan", "lo", "lo lang", "ap luc",
-                           "so hai", "that vong", "tuyet vong", "kho khan", "nan long",
-                           "that bai", "bi quan", "chiu khong noi", "qua suc", "kiet suc",
-                           "mo mo", "roi", "co don", "cang thang", "tram cam"])
-    pos_score = score(t, ["vui", "hanh phuc", "tu hao", "phan khich", "tuyet voi",
-                           "on roi", "tot lam", "hom nay tot", "phan khoi", "sung suong",
-                           "binh yen", "nhe nhom", "thanh thoi"])
-    journal_score = score(t, ["tam su", "nhat ky", "ke cuuu", "ke cuu", "nghe khong",
-                                "can ai do", "can chia se", "muon noi", "khong biet no chuyen",
-                                "toi cam thay", "minh cam thay", "trong long"])
+    prev_mood = st.session_state.get("mood_ctx", "neutral")
 
-    # ── NHẬN DIỆN SẢN PHẨM ──
-    ipower_score = score(t + ctx, ["ipower", "linh hoat", "50k", "50.000", "tich luy", "gui tiet kiem"])
-    ifund_score  = score(t + ctx, ["ifund", "tcef", "quy mo", "co phieu", "dai han", "5 nam", "10 nam"])
-    ibond_score  = score(t + ctx, ["ibond", "trai phieu", "lai co dinh", "an toan", "co dinh"])
-    zerofee_score = score(t + ctx, ["zero fee", "zerofee", "mien phi", "giao dich", "co phieu"])
-    margin_score = score(t + ctx, ["margin", "vay", "ky quy", "789", "don bay"])
+    if jrn >= 1:
+        label, intensity = "journal", min(jrn, 3)
+    elif neg >= pos and neg >= 1:
+        label = "negative"
+        intensity = min(neg, 3)
+    elif pos >= 1:
+        label = "positive"
+        intensity = min(pos, 3)
+    else:
+        label = "neutral"
+        intensity = 0
 
-    # ── CẢM XÚC TIÊU CỰC / TÂM SỰ ──────────────────────
-    if neg_score >= 1 or journal_score >= 1:
-        st.session_state.mood_ctx = "negative"
-        empathy_openers = [
+    mood_shift = (label != prev_mood) and (label != "neutral")
+    return {"label": label, "intensity": intensity, "mood_shift": mood_shift}
+
+
+# ── STAGE 2 · MEMORY ─────────────────────────────────
+def fetch_memory() -> dict:
+    """
+    Truy xuất context từ session state.
+    Trả về: {history_text, prev_mood, turn_count, last_products}
+    """
+    msgs = st.session_state.messages
+    history_text = " ".join(norm(m["content"]) for m in msgs[-6:])
+    prev_mood    = st.session_state.get("mood_ctx", "neutral")
+    turn_count   = len([m for m in msgs if m["role"] == "user"])
+    last_products = []
+    for m in reversed(msgs):
+        if m["role"] == "ai" and m.get("products"):
+            last_products = m["products"]
+            break
+    return {
+        "history_text": history_text,
+        "prev_mood":    prev_mood,
+        "turn_count":   turn_count,
+        "last_products": last_products,
+    }
+
+
+# ── STAGE 3 · KNOWLEDGE SEARCH ───────────────────────
+def search_knowledge(t: str, ctx: str, amount) -> dict:
+    """
+    Xác định intent và tra cứu KB phù hợp.
+    Trả về: {intent, products, goal, detail_text}
+    """
+    # Product affinity scores
+    prod_scores = {
+        "ipower":    score(t + ctx, ["ipower", "linh hoat", "50k", "50.000",
+                                     "tich luy", "gui tiet kiem", "khong ky han"]),
+        "ifund":     score(t + ctx, ["ifund", "tcef", "quy mo", "co phieu dai han",
+                                     "5 nam", "10 nam", "quy dau tu"]),
+        "ibond":     score(t + ctx, ["ibond", "trai phieu", "lai co dinh",
+                                     "co dinh", "khoai an toan"]),
+        "zerofee":   score(t + ctx, ["zero fee", "zerofee", "mien phi giao dich",
+                                     "co phieu", "mua co phieu", "chung khoan"]),
+        "margin789": score(t + ctx, ["margin", "vay", "ky quy", "789", "don bay"]),
+    }
+
+    # Intent detection (theo thứ tự ưu tiên)
+    intent = "unknown"
+    if re.search(r"so sanh|ipower.*ifund|ifund.*ipower|khac nhau|chon gi", t):
+        intent = "compare"
+    elif re.search(r"moi bat dau|nguoi moi|chua biet|chua hieu|lan dau|newbie|biet bat dau tu dau", t):
+        intent = "onboarding"
+    elif re.search(r"nap tien|chuyen tien|deposit|mo tai khoan|mo tk|dang ki", t):
+        intent = "how_to"
+    elif re.search(r"lai suat|lai|ty le sinh loi|loi nhuan|bao nhieu phan", t):
+        intent = "rates"
+    elif re.search(r"gui ngan hang|tiet kiem ngan hang|so voi ngan hang", t):
+        intent = "bank_compare"
+    elif re.search(r"\bmargin\b|vay ky quy|789|don bay tai chinh", t):
+        intent = "margin"
+    elif re.search(r"\bibond\b|trai phieu|lai co dinh", t):
+        intent = "ibond"
+    elif re.search(r"\bifund\b|tcef|quy mo co phieu", t):
+        intent = "ifund"
+    elif re.search(r"ipower|tich luy linh hoat|gui khong ky han", t):
+        intent = "ipower"
+    elif re.search(r"co phieu|chung khoan|stock|zero.?fee|mua co phieu", t):
+        intent = "zerofee"
+    elif re.search(r"muc tieu|ke hoach|tiet kiem|mua xe|mua nha|du lich|gom tien|cuoi|huu tri|tu do tai chinh", t):
+        intent = "goal"
+    elif amount:
+        intent = "amount"
+    elif re.search(r"chao|hello|hi\b|xin chao|bat dau|oi cuu|hey", t) and len(t) < 25:
+        intent = "greeting"
+
+    # Goal detection
+    goal = None
+    goal_map = {
+        "mua xe":   ("mua xe",     "500 triệu–1 tỷ đ",  3),
+        "mua nha":  ("mua nhà",    "1–3 tỷ đ",         10),
+        "du lich":  ("du lịch",    "20–100 triệu đ",    1),
+        "huu tri":  ("hưu trí",    "3–5 tỷ đ",         20),
+        "cuoi":     ("đám cưới",   "100–300 triệu đ",   2),
+    }
+    for kw, info in goal_map.items():
+        if kw in t:
+            goal = info
+            break
+
+    # Lấy sản phẩm liên quan nhất
+    top_products = [p for p, s in sorted(prod_scores.items(), key=lambda x: -x[1]) if s > 0]
+
+    return {
+        "intent":      intent,
+        "products":    top_products[:3],
+        "prod_scores": prod_scores,
+        "goal":        goal,
+    }
+
+
+# ── STAGE 4 · LLM / RESPONSE GENERATOR ──────────────
+def generate_response(text: str, emotion: dict, memory: dict, knowledge: dict) -> dict:
+    """
+    Tổng hợp response từ Emotion + Memory + Knowledge.
+    (Rule-based engine — có thể swap bằng GPT/Claude API call tại đây)
+    Trả về: {content, products, qr}
+    """
+    t          = norm(text)
+    amount     = extract_amount(text)
+    intent     = knowledge["intent"]
+    emotion_label = emotion["label"]
+    turn       = memory["turn_count"]
+
+    def pick(*opts): return random.choice(opts)
+    def out(content, products=None, qr=None):
+        return {"content": content, "products": products or [], "qr": qr or QR_DEFAULT}
+
+    # ── Emotion ghi nhớ vào Memory ──
+    if emotion_label in ("negative", "positive", "journal"):
+        st.session_state.mood_ctx = emotion_label
+
+    # ── Cảm xúc tiêu cực / Tâm sự ──────────────────────
+    if emotion_label in ("negative", "journal"):
+        openers = [
             "Cừu nghe thấy bạn rồi. Cảm giác đó không nhẹ chút nào — bạn đang gánh nhiều thứ quá. 🤍",
             "Bạn nói ra được như vậy là dũng cảm lắm đó. Cừu ở đây, không đi đâu hết. 💙",
             "Cừu hiểu — đôi khi mọi thứ cứ dồn vào một lúc, không biết bắt đầu từ đâu. 🤍",
         ]
-        follow_ups = [
+        follows = [
             "\n\nBạn muốn tâm sự thêm không? Cừu lắng nghe hết, không phán xét gì đâu nhé. 😊\n\nHoặc nếu bạn muốn, Cừu có thể giúp bạn **lập một kế hoạch tài chính nhỏ** — đôi khi thấy mọi thứ rõ ràng hơn sẽ nhẹ lòng hơn nhiều. 🌱",
-            "\n\nKể Cừu nghe thêm đi — điều gì đang khiến bạn nặng lòng nhất lúc này? Cừu muốn thực sự hiểu, không chỉ nói mấy câu sáo rỗng đâu. 💙",
-            "\n\nBạn có muốn **viết nhật ký cảm xúc** cùng Cừu không? Đôi khi viết ra giúp đầu óc nhẹ hơn, và Cừu sẽ đồng hành cùng bạn. 📝",
+            "\n\nKể Cừu nghe thêm đi — điều gì đang khiến bạn nặng lòng nhất? Cừu muốn thực sự hiểu. 💙",
+            "\n\nBạn có muốn **viết nhật ký cảm xúc** cùng Cừu không? Đôi khi viết ra giúp đầu óc nhẹ hơn. 📝",
         ]
-        return r(
-            pick(*empathy_openers) + pick(*follow_ups),
-            qr=["Tâm sự thêm với Cừu", "Viết nhật ký cảm xúc", "Lập kế hoạch tài chính nhỏ", "Cứ nghe Cừu nói đi"]
-        )
+        return out(pick(*openers) + pick(*follows),
+                   qr=["Tâm sự thêm với Cừu", "Viết nhật ký cảm xúc", "Lập kế hoạch tài chính nhỏ", "Cứ nghe Cừu nói đi"])
 
-    # ── CẢM XÚC TÍCH CỰC ────────────────────────────────
-    if pos_score >= 1:
-        st.session_state.mood_ctx = "positive"
-        return r(
-            pick(
-                "Cừu thấy vui lây rồi! 🎉 Ngày tốt xứng đáng được kỷ niệm — và xứng đáng được đánh dấu bằng một quyết định tài chính thông minh nữa chứ! 😄\n\nBạn có muốn dùng năng lượng tích cực hôm nay để đặt một mục tiêu mới không?",
-                "Ôi, nghe mà Cừu cũng phấn chấn theo! ✨ Khi tâm trạng tốt là lúc suy nghĩ rõ nhất đó bạn.\n\nHôm nay mình có thể làm gì tốt cho tương lai tài chính không? Cừu đề xuất vài ý nhỏ nếu bạn muốn! 🌱",
-                "Thật tuyệt! 🌟 Ngày hôm nay của bạn thật đáng trân trọng.\n\nBạn có muốn để Cừu giúp **biến cảm giác tốt này thành hành động cụ thể** không — như đặt mục tiêu tiết kiệm hoặc bắt đầu đầu tư? 💪"
-            ),
-            qr=["Đặt mục tiêu mới", "Đầu tư thêm hôm nay", "Xem tiến độ tiết kiệm", "Tôi muốn tâm sự"]
-        )
+    # ── Cảm xúc tích cực ────────────────────────────────
+    if emotion_label == "positive":
+        return out(pick(
+            "Cừu thấy vui lây rồi! 🎉 Ngày tốt xứng đáng được đánh dấu bằng một quyết định tài chính thông minh nữa chứ! 😄\n\nBạn có muốn dùng năng lượng tích cực hôm nay để đặt một mục tiêu mới không?",
+            "Ôi, nghe mà Cừu cũng phấn chấn theo! ✨ Khi tâm trạng tốt là lúc suy nghĩ rõ nhất đó bạn.\n\nHôm nay mình có thể làm gì tốt cho tương lai tài chính không? Cừu đề xuất vài ý nhỏ nếu bạn muốn! 🌱",
+            "Thật tuyệt! 🌟 Bạn có muốn để Cừu giúp **biến cảm giác tốt này thành hành động cụ thể** — như đặt mục tiêu tiết kiệm hoặc bắt đầu đầu tư? 💪"
+        ), qr=["Đặt mục tiêu mới", "Đầu tư thêm hôm nay", "Xem tiến độ tiết kiệm", "Tôi muốn tâm sự"])
 
-    # ── NHẬT KÝ / TÂM SỰ CÁ NHÂN ──────────────────────
-    if re.search(r"nhat ky|viet nhat|tam su|chia se|ke cuu|ke cuuu", t):
-        return r(
+    # ── Xử lý theo Intent từ Knowledge Search ───────────
+    if intent == "greeting":
+        hour = datetime.now().hour
+        gr = "Buổi sáng" if hour < 11 else ("Buổi trưa" if hour < 13 else ("Buổi chiều" if hour < 18 else "Buổi tối"))
+        return out(pick(
+            f"{gr} bạn! ✨ Cừu đây — người bạn đồng hành tài chính của bạn tại TCBS.\n\nCừu không chỉ tư vấn sản phẩm — Cừu muốn **thực sự hiểu bạn**: mục tiêu, cảm xúc, hoàn cảnh.\n\nHôm nay bạn đang cảm thấy thế nào? 😊",
+            f"{gr} bạn thân mến! 🌸 Cừu đang ở đây, sẵn sàng lắng nghe và đồng hành.\n\nBạn có thể tâm sự tự do — về tiền bạc, về cảm xúc, về mục tiêu tương lai.\n\nHôm nay Cừu có thể giúp gì cho bạn? 💙"
+        ), qr=["Tôi đang stress về tiền", "Muốn bắt đầu đầu tư", "Có bao nhiêu thì đủ?", "Giúp tôi lập mục tiêu"])
+
+    if intent == "journal":
+        return out(
             "Cừu rất vui khi bạn muốn tâm sự! 📝 Đây là không gian an toàn — chỉ có Cừu và bạn thôi.\n\n"
             "Hôm nay bạn đang cảm thấy thế nào? Có thể bắt đầu bằng một câu ngắn thôi:\n\n"
-            "**\"Hôm nay tôi cảm thấy...\"** hoặc **\"Điều tôi đang lo là...\"**\n\n"
-            "Cừu sẽ lắng nghe và phản hồi từ trái tim. 💙",
+            "**\"Hôm nay tôi cảm thấy...\"** hoặc **\"Điều tôi đang lo là...\"**\n\nCừu sẽ lắng nghe và phản hồi từ trái tim. 💙",
             qr=["Tôi đang lo về tài chính", "Tôi muốn thay đổi thói quen", "Tôi cần lời khuyên", "Kể Cừu nghe về ngày hôm nay"]
         )
 
-    # ── CHÀO HỎI ─────────────────────────────────────────
-    if score(t, ["chao", "hello", "hi", "xin chao", "bat dau", "oi cuu", "hey"]) >= 1 and len(t) < 25:
-        hour = datetime.now().hour
-        greeting = "Buổi sáng" if hour < 11 else ("Buổi trưa" if hour < 13 else ("Buổi chiều" if hour < 18 else "Buổi tối"))
-        return r(
-            pick(
-                f"{greeting} bạn! ✨ Cừu đây — người bạn đồng hành tài chính của bạn tại TCBS.\n\n"
-                "Cừu không chỉ tư vấn sản phẩm — Cừu muốn **thực sự hiểu bạn**: mục tiêu, cảm xúc, hoàn cảnh.\n\n"
-                "Hôm nay bạn đang cảm thấy thế nào? Hay có điều gì về tài chính bạn muốn nói với Cừu? 😊",
-                f"{greeting} bạn thân mến! 🌸 Cừu đang ở đây, sẵn sàng lắng nghe và đồng hành.\n\n"
-                "Bạn có thể tâm sự tự do — về tiền bạc, về cảm xúc, về mục tiêu tương lai.\n\nHôm nay Cừu có thể giúp gì cho bạn? 💙"
-            ),
-            qr=["Tôi đang stress về tiền", "Muốn bắt đầu đầu tư", "Có bao nhiêu thì đủ?", "Giúp tôi lập mục tiêu"]
-        )
+    if intent == "amount" and amount:
+        if amount <= 200_000:
+            yearly = amount * 365
+            return out(pick(
+                f"**{fmtm(amount)}** — và bạn muốn nó sinh ra tiền. Cừu thích tư duy này lắm! ✨\n\n🌱 **iPower** hoàn toàn phù hợp: tối thiểu chỉ **50.000đ**, lãi cộng dồn hằng ngày, rút tiền bất kỳ lúc.\n\nĐể dành {fmtm(amount)}/ngày → tích lũy được **{fmtm(yearly)}** sau 1 năm (chưa tính lãi ~5–6%). 🌱\n\nCừu hướng dẫn cách bắt đầu nhé?",
+                f"Với **{fmtm(amount)}**, bạn đã có đủ để bắt đầu rồi! 🎉\n\n🌱 **iPower** là lựa chọn số 1 cho người mới:\n• Tối thiểu: 50.000đ\n• Lãi: ~5–6%/năm, cộng dồn mỗi ngày\n• Rút tiền: bất kỳ lúc nào, không phạt\n\nTiết kiệm đều {fmtm(amount)}/ngày → sau 1 năm có **{fmtm(yearly)}** + lãi! ✨"
+            ), products=["ipower"],
+               qr=["Cách mở tài khoản TCBS", "Lãi suất iPower bao nhiêu?", "Nạp tiền vào iPower", "Tôi muốn tiết kiệm thêm"])
 
-    # ── SỐ TIỀN NHỎ (≤ 200k) ────────────────────────────
-    if amount and amount <= 200_000:
-        yearly = amount * 365
-        return r(
-            pick(
-                f"**{fmtm(amount)}** — và bạn muốn nó sinh ra tiền. Cừu thích tư duy này lắm! ✨\n\n"
-                f"Bắt đầu nhỏ không có gì xấu hổ cả — người thành công nhất cũng từng bắt đầu từ con số nhỏ.\n\n"
-                f"🌱 **iPower** hoàn toàn phù hợp: tối thiểu chỉ **50.000đ**, lãi cộng dồn hằng ngày, rút tiền bất kỳ lúc.\n\n"
-                f"Để dành {fmtm(amount)}/ngày → tích lũy được **{fmtm(yearly)}** sau 1 năm (chưa tính lãi ~5-6%). 🌱\n\n"
-                "Cừu hướng dẫn cách bắt đầu nhé?",
+        if amount <= 5_000_000:
+            return out(pick(
+                f"**{fmtm(amount)} mỗi tháng** — số tiền hoàn toàn có thể tạo ra tương lai tốt hơn! 💪\n\nCừu gợi ý chia đôi:\n• 50% vào **iPower** — linh hoạt, là quỹ dự phòng\n• 50% vào **iFund** — đầu tư dài hạn, sinh lời tốt hơn\n\nSau 5 năm với {fmtm(amount)}/tháng vào iFund (~12%/năm): ước tính **~{fmtm(int(amount * 12 * 5 * 1.35))}** 🚀\n\nBạn có mục tiêu cụ thể nào không?",
+                f"Wow, {fmtm(amount)}/tháng là một con số rất ý nghĩa! ✨\n\nCừu nghĩ bạn nên kết hợp:\n🌱 **iPower** — phần an toàn, rút được khi cần\n📊 **iFund** — phần tăng trưởng, để dài hạn sinh lời\n\nBạn đang có mục tiêu gì — mua nhà, du lịch, hay tự do tài chính?"
+            ), products=["ipower", "ifund"],
+               qr=["Tính toán chi tiết hơn", "Tôi muốn mua nhà", "Mục tiêu 5 năm", "So sánh iPower và iFund"])
 
-                f"Với **{fmtm(amount)}**, bạn đã có đủ để bắt đầu rồi! 🎉\n\n"
-                f"🌱 **iPower** là lựa chọn số 1 cho người mới:\n"
-                f"• Tối thiểu: 50.000đ\n"
-                f"• Lãi: ~5–6%/năm, cộng dồn mỗi ngày\n"
-                f"• Rút tiền: bất kỳ lúc nào, không phạt\n\n"
-                f"Tiết kiệm đều {fmtm(amount)}/ngày → sau 1 năm có **{fmtm(yearly)}** + lãi! ✨\n\nBắt đầu ngay nhé?"
-            ),
-            products=["ipower"],
-            qr=["Cách mở tài khoản TCBS", "Lãi suất iPower bao nhiêu?", "Nạp tiền vào iPower", "Tôi muốn tiết kiệm thêm"]
-        )
-
-    # ── SỐ TIỀN TRUNG BÌNH (200k – 5tr) ──────────────────
-    if amount and 200_000 < amount <= 5_000_000:
-        return r(
-            pick(
-                f"**{fmtm(amount)} mỗi tháng** — số tiền hoàn toàn có thể tạo ra tương lai tốt hơn! 💪\n\n"
-                f"Cừu gợi ý chia đôi như này:\n"
-                f"• 50% vào **iPower** — linh hoạt, là quỹ dự phòng\n"
-                f"• 50% vào **iFund** — đầu tư dài hạn, sinh lời tốt hơn\n\n"
-                f"Sau 5 năm với {fmtm(amount)}/tháng vào iFund (giả sử 12%/năm): ước tính **~{fmtm(int(amount * 12 * 5 * 1.35))}** 🚀\n\n"
-                "Bạn có mục tiêu cụ thể nào không? Cừu tính toán chi tiết hơn được đó!",
-
-                f"Wow, {fmtm(amount)}/tháng là một con số rất ý nghĩa đó bạn! ✨\n\n"
-                f"Với số này, Cừu nghĩ bạn nên kết hợp:\n"
-                f"🌱 **iPower** — phần an toàn, rút được khi cần\n"
-                f"📊 **iFund** — phần tăng trưởng, để dài hạn sinh lời\n\n"
-                "Bạn đang có mục tiêu gì — mua nhà, du lịch, hay tự do tài chính?"
-            ),
-            products=["ipower", "ifund"],
-            qr=["Tính toán chi tiết hơn", "Tôi muốn mua nhà", "Mục tiêu 5 năm", "So sánh iPower và iFund"]
-        )
-
-    # ── SỐ TIỀN LỚN (> 5tr) ──────────────────────────────
-    if amount and amount > 5_000_000:
-        return r(
-            f"**{fmtm(amount)}** — bạn đang nghĩ nghiêm túc về tài chính rồi đó! 💎\n\n"
-            f"Với số vốn này, Cừu gợi ý **đa dạng hóa**:\n\n"
-            f"• 🌱 **iPower** (~20%) — quỹ dự phòng linh hoạt\n"
-            f"• 📊 **iFund** (~50%) — tăng trưởng dài hạn\n"
-            f"• 📋 **iBond** (~30%) — thu nhập cố định ổn định 8–11%/năm\n\n"
-            "Bạn có muốn Cừu phân tích chi tiết hơn theo mục tiêu cụ thể không?",
+        return out(
+            f"**{fmtm(amount)}** — bạn đang nghĩ nghiêm túc về tài chính rồi đó! 💎\n\nCừu gợi ý **đa dạng hóa**:\n• 🌱 **iPower** (~20%) — quỹ dự phòng linh hoạt\n• 📊 **iFund** (~50%) — tăng trưởng dài hạn\n• 📋 **iBond** (~30%) — thu nhập cố định 8–11%/năm\n\nBạn có muốn Cừu phân tích chi tiết hơn không?",
             products=["ipower", "ifund", "ibond"],
             qr=["Phân tích danh mục chi tiết", "Tôi muốn thu nhập cố định", "Mục tiêu hưu trí", "Tìm hiểu iBond"]
         )
 
-    # ── SO SÁNH SẢN PHẨM ──────────────────────────────
-    if re.search(r"so sanh|ipower.*ifund|ifund.*ipower|khac nhau|chon gi", t):
-        return r(
+    if intent == "compare":
+        return out(
             "Cừu so sánh thật sự khách quan cho bạn nhé! 📊\n\n"
-            "| | 🌱 iPower | 📊 iFund |\n"
-            "|---|---|---|\n"
+            "| | 🌱 iPower | 📊 iFund |\n|---|---|---|\n"
             "| Tối thiểu | 50.000đ | 100.000đ |\n"
             "| Sinh lời | ~5–6%/năm | ~12–18%/năm |\n"
             "| Rủi ro | Thấp | Trung bình |\n"
@@ -619,160 +700,148 @@ def get_resp(text: str) -> dict:
             qr=["Bắt đầu với iPower", "Tìm hiểu iFund", "Tôi muốn cả hai", "Cần bao nhiêu để bắt đầu?"]
         )
 
-    # ── IPOWER CỤ THỂ ────────────────────────────────────
-    if ipower_score >= 2 or re.search(r"ipower|tich luy linh hoat|gui khong ky han", t):
-        return r(
-            KB["ipower"]["detail"] + "\n\n"
-            "Cừu tóm tắt: **iPower là lựa chọn zero-risk nhất** để bắt đầu — tiền vẫn sinh lời trong khi bạn học thêm về đầu tư. 💡",
-            products=["ipower"],
-            qr=["Cách nạp tiền vào iPower", "Lãi suất cụ thể là bao nhiêu?", "So sánh với gửi ngân hàng", "Bước tiếp theo sau iPower?"]
-        )
-
-    # ── IFUND CỤ THỂ ─────────────────────────────────────
-    if ifund_score >= 2 or re.search(r"\bifund\b|tcef|quy mo co phieu", t):
-        return r(
-            KB["ifund"]["detail"] + "\n\n"
-            "**Chiến lược DCA:** Đầu tư đều mỗi tháng, bất kể thị trường lên hay xuống — đây là cách giảm rủi ro hiệu quả nhất. 📈",
-            products=["ifund"],
-            qr=["Đầu tư 300k/tháng vào iFund", "Rủi ro thực sự là bao nhiêu?", "iFund vs gửi tiết kiệm", "Bắt đầu ngay"]
-        )
-
-    # ── IBOND CỤ THỂ ─────────────────────────────────────
-    if ibond_score >= 2 or re.search(r"\bibond\b|trai phieu|lai co dinh|lai suat co dinh", t):
-        return r(
-            KB["ibond"]["detail"] + "\n\n"
-            "iBond phù hợp nếu bạn **không thích rủi ro** và muốn biết trước mình sẽ nhận được bao nhiêu. 💡",
-            products=["ibond"],
-            qr=["Lãi suất iBond hiện tại", "Mua iBond cần bao nhiêu?", "Kỳ hạn nào tốt nhất?", "So sánh iBond và iPower"]
-        )
-
-    # ── ZERO FEE / CỔ PHIẾU ──────────────────────────────
-    if zerofee_score >= 1 or re.search(r"co phieu|chung khoan|stock|zero.?fee|mua co phieu", t):
-        return r(
-            "Cổ phiếu — kênh đầu tư tiềm năng cao nhưng cần kiến thức! 📈\n\n"
-            + KB["zerofee"]["detail"] + "\n\n"
-            "Bạn đã có kinh nghiệm giao dịch chưa? Nếu chưa, Cừu gợi ý bắt đầu bằng iFund trước — được quản lý bởi chuyên gia, ít rủi ro hơn. 😊",
-            products=["zerofee"],
-            qr=["Chưa có kinh nghiệm — bắt đầu thế nào?", "Tôi đã giao dịch rồi", "Muốn dùng margin", "iFund vs tự mua cổ phiếu"]
-        )
-
-    # ── MARGIN ──────────────────────────────────────────
-    if margin_score >= 1 or re.search(r"\bmargin\b|vay ky quy|789|don bay tai chinh", t):
-        return r(
-            "Margin — công cụ mạnh nhưng phải thật cẩn thận nhé bạn! ⚠️\n\n"
-            + KB["margin789"]["detail"] + "\n\n"
-            "**Cừu nhắc nhở:** Margin có thể nhân đôi lãi nhưng cũng nhân đôi lỗ. Chỉ dùng khi bạn thực sự hiểu rõ rủi ro. 💡",
-            products=["margin789"],
-            qr=["Điều kiện dùng Margin 789", "Rủi ro margin là gì?", "Tôi chưa muốn dùng margin", "Tìm hiểu thêm"]
-        )
-
-    # ── MỤC TIÊU / KẾ HOẠCH ─────────────────────────────
-    if re.search(r"muc tieu|ke hoach|tiet kiem|mua xe|mua nha|du lich|gom tien|hon nhan|cuoi|huu tri|tu do tai chinh", t):
-        goals = {
-            "mua xe": ("mua xe", "500 triệu–1 tỷ đ", 3),
-            "mua nha": ("mua nhà", "1–3 tỷ đ", 10),
-            "du lich": ("du lịch", "20–100 triệu đ", 1),
-            "huu tri": ("hưu trí", "3–5 tỷ đ", 20),
-            "cuoi": ("đám cưới", "100–300 triệu đ", 2),
-        }
-        detected_goal = None
-        for kw, info in goals.items():
-            if kw in t:
-                detected_goal = info
-                break
-        if detected_goal:
-            goal_name, goal_range, years = detected_goal
-            return r(
-                f"Mục tiêu **{goal_name}** — Cừu sẽ đồng hành cùng bạn đến đó! 🎯\n\n"
-                f"Thông thường mục tiêu này cần: **{goal_range}** trong **{years}–{years+3} năm**.\n\n"
-                f"**Cừu gợi ý:**\n"
-                f"• Đặt mục tiêu số tiền cụ thể\n"
-                f"• Chia nhỏ thành khoản tiết kiệm hàng tháng\n"
-                f"• Chọn sản phẩm phù hợp: iPower (linh hoạt) + iFund (tăng trưởng)\n\n"
-                "Bạn muốn Cừu tính toán cụ thể bao nhiêu tiền/tháng cần để đạt mục tiêu không?",
-                products=["ipower", "ifund"],
-                qr=[f"Tính tiết kiệm cho {goal_name}", "Tôi cần bao nhiêu mỗi tháng?", "Xem sản phẩm phù hợp", "Tôi muốn mục tiêu khác"]
-            )
-        return r(
-            "Đặt mục tiêu tài chính — bước thông minh nhất hôm nay! 🎯\n\n"
-            "Mục tiêu rõ ràng giúp bạn tiết kiệm hiệu quả hơn **3 lần** so với không có mục tiêu.\n\n"
-            "Cừu muốn hỏi: **Mục tiêu lớn nhất của bạn trong 3–5 năm tới là gì?**\n\n"
-            "Mua xe? Mua nhà? Du lịch? Hưu trí sớm? Hay điều gì khác? 😊",
-            qr=["Mua xe", "Mua nhà", "Du lịch nước ngoài", "Tự do tài chính"]
-        )
-
-    # ── NGƯỜI MỚI ─────────────────────────────────────────
-    if re.search(r"moi bat dau|nguoi moi|chua biet|chua hieu|lan dau|newbie|moi dau tu|biet bat dau tu dau", t):
-        return r(
-            "Chào mừng bạn đến với hành trình đầu tư! 🌱 Cừu đồng hành từng bước.\n\n"
-            "**Không cần biết nhiều — chỉ cần bắt đầu đúng chỗ.**\n\n"
-            "**3 bước dành cho người mới:**\n\n"
+    if intent == "onboarding":
+        return out(
+            "Chào mừng bạn đến với hành trình đầu tư! 🌱 Cừu đồng hành từng bước.\n\n**3 bước đơn giản để bắt đầu:**\n\n"
             "**1.** Mở tài khoản TCBS miễn phí (3 phút qua TCInvest App)\n\n"
             "**2.** Nạp tiền tối thiểu **50.000đ** (từ bất kỳ ngân hàng nào)\n\n"
-            "**3.** Bắt đầu với **iPower** — lãi cộng dồn hằng ngày, rút bất kỳ lúc\n\n"
-            "Khi đã quen, Cừu sẽ hướng dẫn bạn bước tiếp theo! Bước nào bạn muốn Cừu hướng dẫn?",
+            "**3.** Bắt đầu với **iPower** — lãi cộng dồn hằng ngày, rút bất kỳ lúc\n\nBước nào bạn muốn Cừu hướng dẫn?",
             products=["ipower"],
             qr=["Cách mở tài khoản TCBS", "Cách nạp tiền đầu tiên", "iPower hoạt động thế nào?", "Mất bao lâu để thấy lãi?"]
         )
 
-    # ── NẠP TIỀN / CHUYỂN TIỀN ───────────────────────────
-    if re.search(r"nap tien|chuyen tien|deposit|nap vao|dang ki|mo tai khoan|mo tk", t):
-        return r(
+    if intent == "how_to":
+        return out(
             "Hướng dẫn nạp tiền vào TCBS — nhanh lắm, chỉ 2 phút! 💰\n\n"
-            "**Qua TCInvest App:**\n"
-            "1. Mở TCInvest App → Tài khoản → Nạp tiền\n"
+            "**Qua TCInvest App:**\n1. Mở TCInvest App → Tài khoản → Nạp tiền\n"
             "2. Chọn ngân hàng nguồn (hỗ trợ 20+ ngân hàng)\n"
             "3. Nhập số tiền (tối thiểu **50.000đ**) → Xác nhận\n\n"
-            "**Qua TCB Mobile (nếu bạn đang dùng Techcombank):**\n"
-            "Đầu tư → Tài khoản CK → Chuyển tiền vào\n\n"
-            "Tiền về ngay lập tức, không mất phí chuyển khoản! ✅",
+            "**Qua TCB Mobile:** Đầu tư → Tài khoản CK → Chuyển tiền vào\n\nTiền về ngay lập tức! ✅",
             qr=["Tải TCInvest App ở đâu?", "Tôi dùng ngân hàng khác được không?", "Sau khi nạp làm gì tiếp?", "Hỗ trợ ngân hàng nào?"]
         )
 
-    # ── SO SÁNH GỬI NGÂN HÀNG ────────────────────────────
-    if re.search(r"gui ngan hang|tiet kiem ngan hang|lai suat ngan hang|so voi ngan hang", t):
-        return r(
+    if intent == "rates":
+        return out(
+            "Thông tin lãi suất các sản phẩm TCBS: 📋\n\n"
+            "🌱 **iPower:** ~5–6%/năm, cộng dồn hàng ngày\n"
+            "📊 **iFund/TCEF:** ~12–18%/năm (lịch sử, không đảm bảo)\n"
+            "📋 **iBond:** 8–11%/năm cố định theo kỳ hạn\n"
+            "🆓 **Cổ phiếu (Zero Fee):** Tiềm năng không giới hạn, rủi ro cao\n"
+            "📐 **Margin 789:** Vay từ 7.89%/năm\n\nBạn muốn tìm hiểu sản phẩm nào kỹ hơn?",
+            qr=["Chi tiết iPower", "Chi tiết iFund", "Chi tiết iBond", "Tôi muốn lợi nhuận cao nhất"]
+        )
+
+    if intent == "bank_compare":
+        return out(
             "So sánh TCBS vs Gửi ngân hàng truyền thống: 📊\n\n"
             "**Gửi ngân hàng thường:** ~4–5%/năm, kỳ hạn cố định, rút sớm mất lãi\n\n"
             "**iPower TCBS:** ~5–6%/năm, **không kỳ hạn**, rút bất kỳ lúc nào\n\n"
             "**iBond TCBS:** 8–11%/năm, cố định theo kỳ hạn\n\n"
-            "**iFund TCBS:** Tiềm năng 12–18%/năm (biến động theo thị trường)\n\n"
-            "Cừu nghĩ: iPower là lựa chọn thông minh hơn gửi tiết kiệm thông thường về mọi mặt! 💡",
+            "**iFund TCBS:** Tiềm năng 12–18%/năm (biến động theo thị trường)\n\niPower là lựa chọn thông minh hơn gửi tiết kiệm thông thường! 💡",
             products=["ipower", "ibond"],
             qr=["Mở tài khoản iPower ngay", "Tìm hiểu iBond", "Rủi ro của iPower là gì?", "Có bảo hiểm tiền gửi không?"]
         )
 
-    # ── LÃI SUẤT ─────────────────────────────────────────
-    if re.search(r"lai suat|lai|bao nhieu phan|ty le sinh loi|loi nhuan", t):
-        return r(
-            "Thông tin lãi suất các sản phẩm TCBS: 📋\n\n"
-            "🌱 **iPower:** ~5–6%/năm, cộng dồn hằng ngày\n"
-            "📊 **iFund/TCEF:** ~12–18%/năm (lịch sử, không đảm bảo)\n"
-            "📋 **iBond:** 8–11%/năm cố định theo kỳ hạn\n"
-            "🆓 **Cổ phiếu (Zero Fee):** Tiềm năng không giới hạn, rủi ro cao\n"
-            "📐 **Margin 789:** Vay từ 7.89%/năm\n\n"
-            "Bạn đang quan tâm sản phẩm nào muốn tìm hiểu kỹ hơn?",
-            qr=["Chi tiết iPower", "Chi tiết iFund", "Chi tiết iBond", "Tôi muốn lợi nhuận cao nhất"]
+    if intent == "ipower":
+        return out(
+            KB["ipower"]["detail"] + "\n\nCừu tóm tắt: **iPower là lựa chọn zero-risk nhất** để bắt đầu — tiền vẫn sinh lời trong khi bạn học thêm về đầu tư. 💡",
+            products=["ipower"],
+            qr=["Cách nạp tiền vào iPower", "Lãi suất cụ thể là bao nhiêu?", "So sánh với gửi ngân hàng", "Bước tiếp theo sau iPower?"]
         )
 
-    # ── FALLBACK — thông minh hơn ─────────────────────────
-    # Kiểm tra nếu có context mood trước đó
-    if st.session_state.mood_ctx == "negative":
-        return r(
-            pick(
-                "Cừu vẫn ở đây với bạn nhé. 💙 Bạn không cần phải nói gì nhiều — đôi khi chỉ cần có người nghe là đủ rồi.\n\nBạn muốn Cừu giúp gì không? Hay chỉ muốn trò chuyện thêm một chút?",
-                "Cừu đang lắng nghe bạn đây. 🤍 Mình có thể nói chuyện về bất cứ điều gì — tài chính, cảm xúc, hay đơn giản là tâm sự.\n\nBạn cảm thấy thế nào rồi?"
-            ),
-            qr=["Kể thêm về tình trạng của mình", "Giúp tôi lập kế hoạch tài chính", "Tôi muốn thay đổi", "Tôi ổn hơn rồi"]
+    if intent == "ifund":
+        return out(
+            KB["ifund"]["detail"] + "\n\n**Chiến lược DCA:** Đầu tư đều mỗi tháng, bất kể thị trường lên hay xuống — đây là cách giảm rủi ro hiệu quả nhất. 📈",
+            products=["ifund"],
+            qr=["Đầu tư 300k/tháng vào iFund", "Rủi ro thực sự là bao nhiêu?", "iFund vs gửi tiết kiệm", "Bắt đầu ngay"]
         )
 
-    return r(
-        pick(
-            "Cừu đang lắng nghe bạn đây! 💙\n\nBạn có thể hỏi Cừu về:\n• Sản phẩm đầu tư TCBS (iPower, iFund, iBond, cổ phiếu)\n• Lập kế hoạch tiết kiệm theo mục tiêu\n• Tính toán số tiền cần đầu tư mỗi tháng\n• Hay đơn giản là tâm sự với Cừu 😊\n\nBạn muốn bắt đầu từ đâu?",
-            "Cừu chưa hiểu rõ ý bạn — bạn có thể nói cụ thể hơn không? 😊\n\nVí dụ: \"Tôi có 500k muốn đầu tư\" hoặc \"So sánh iPower và iFund\" hoặc đơn giản là chia sẻ cảm xúc hôm nay của bạn. 💙",
-        ),
-        qr=["So sánh sản phẩm TCBS", "Tôi có 500k muốn đầu tư", "Giúp tôi lập mục tiêu", "Tôi muốn tâm sự"]
-    )
+    if intent == "ibond":
+        return out(
+            KB["ibond"]["detail"] + "\n\niBond phù hợp nếu bạn **không thích rủi ro** và muốn biết trước mình sẽ nhận được bao nhiêu. 💡",
+            products=["ibond"],
+            qr=["Lãi suất iBond hiện tại", "Mua iBond cần bao nhiêu?", "Kỳ hạn nào tốt nhất?", "So sánh iBond và iPower"]
+        )
+
+    if intent == "zerofee":
+        return out(
+            "Cổ phiếu — kênh đầu tư tiềm năng cao nhưng cần kiến thức! 📈\n\n"
+            + KB["zerofee"]["detail"] + "\n\nBạn đã có kinh nghiệm giao dịch chưa? Nếu chưa, Cừu gợi ý bắt đầu bằng iFund trước — được quản lý bởi chuyên gia, ít rủi ro hơn. 😊",
+            products=["zerofee"],
+            qr=["Chưa có kinh nghiệm — bắt đầu thế nào?", "Tôi đã giao dịch rồi", "Muốn dùng margin", "iFund vs tự mua cổ phiếu"]
+        )
+
+    if intent == "margin":
+        return out(
+            "Margin — công cụ mạnh nhưng phải thật cẩn thận nhé bạn! ⚠️\n\n"
+            + KB["margin789"]["detail"] + "\n\n**Cừu nhắc nhở:** Margin có thể nhân đôi lãi nhưng cũng nhân đôi lỗ. Chỉ dùng khi bạn thực sự hiểu rõ rủi ro. 💡",
+            products=["margin789"],
+            qr=["Điều kiện dùng Margin 789", "Rủi ro margin là gì?", "Tôi chưa muốn dùng margin", "Tìm hiểu thêm"]
+        )
+
+    if intent == "goal":
+        goal = knowledge.get("goal")
+        if goal:
+            goal_name, goal_range, years = goal
+            return out(
+                f"Mục tiêu **{goal_name}** — Cừu sẽ đồng hành cùng bạn đến đó! 🎯\n\n"
+                f"Thông thường mục tiêu này cần: **{goal_range}** trong **{years}–{years+3} năm**.\n\n"
+                f"**Cừu gợi ý:**\n• Đặt mục tiêu số tiền cụ thể\n"
+                f"• Chia nhỏ thành khoản tiết kiệm hàng tháng\n"
+                f"• Chọn sản phẩm phù hợp: iPower (linh hoạt) + iFund (tăng trưởng)\n\n"
+                "Bạn muốn Cừu tính toán cụ thể bao nhiêu tiền/tháng cần không?",
+                products=["ipower", "ifund"],
+                qr=[f"Tính tiết kiệm cho {goal_name}", "Tôi cần bao nhiêu mỗi tháng?", "Xem sản phẩm phù hợp", "Tôi muốn mục tiêu khác"]
+            )
+        return out(
+            "Đặt mục tiêu tài chính — bước thông minh nhất hôm nay! 🎯\n\n"
+            "Mục tiêu rõ ràng giúp bạn tiết kiệm hiệu quả hơn **3 lần** so với không có mục tiêu.\n\n"
+            "**Mục tiêu lớn nhất của bạn trong 3–5 năm tới là gì?** Mua xe? Mua nhà? Du lịch? Hưu trí sớm? 😊",
+            qr=["Mua xe", "Mua nhà", "Du lịch nước ngoài", "Tự do tài chính"]
+        )
+
+    # ── Fallback — dùng mood context từ Memory ──────────
+    if memory["prev_mood"] == "negative":
+        return out(pick(
+            "Cừu vẫn ở đây với bạn nhé. 💙 Bạn không cần phải nói gì nhiều — đôi khi chỉ cần có người nghe là đủ rồi.\n\nBạn muốn Cừu giúp gì không?",
+            "Cừu đang lắng nghe bạn đây. 🤍 Mình có thể nói chuyện về bất cứ điều gì — tài chính, cảm xúc, hay đơn giản là tâm sự.\n\nBạn cảm thấy thế nào rồi?"
+        ), qr=["Kể thêm về tình trạng của mình", "Giúp tôi lập kế hoạch tài chính", "Tôi muốn thay đổi", "Tôi ổn hơn rồi"])
+
+    return out(pick(
+        "Cừu đang lắng nghe bạn đây! 💙\n\nBạn có thể hỏi Cừu về:\n• Sản phẩm đầu tư TCBS (iPower, iFund, iBond, cổ phiếu)\n• Lập kế hoạch tiết kiệm theo mục tiêu\n• Tính toán số tiền cần đầu tư mỗi tháng\n• Hay đơn giản là tâm sự với Cừu 😊\n\nBạn muốn bắt đầu từ đâu?",
+        "Cừu chưa hiểu rõ ý bạn — bạn có thể nói cụ thể hơn không? 😊\n\nVí dụ: \"Tôi có 500k muốn đầu tư\" hoặc \"So sánh iPower và iFund\" hoặc đơn giản là chia sẻ cảm xúc hôm nay. 💙",
+    ), qr=["So sánh sản phẩm TCBS", "Tôi có 500k muốn đầu tư", "Giúp tôi lập mục tiêu", "Tôi muốn tâm sự"])
+
+
+# ── STAGE 5 · ORCHESTRATOR ───────────────────────────
+def get_resp(text: str) -> dict:
+    """
+    Pipeline chính:
+      User → Emotion Analysis → Memory → Knowledge Search → LLM → Response
+    """
+    now = datetime.now().strftime("%H:%M")
+
+    # Stage 1 — Emotion Analysis
+    t   = norm(text)
+    ctx = " ".join(norm(m["content"]) for m in st.session_state.messages[-6:])
+    emotion   = analyze_emotion(t, ctx)
+
+    # Stage 2 — Memory
+    memory    = fetch_memory()
+
+    # Stage 3 — Knowledge Search
+    knowledge = search_knowledge(t, ctx, extract_amount(text))
+
+    # Stage 4 — LLM / Response Generator
+    result    = generate_response(text, emotion, memory, knowledge)
+
+    # Stage 5 — Format & return
+    return {
+        "content":  result["content"],
+        "time":     now,
+        "products": result.get("products", []),
+        "qr":       result.get("qr", QR_DEFAULT),
+    }
 
 def process(text: str):
     now = datetime.now().strftime("%H:%M")
