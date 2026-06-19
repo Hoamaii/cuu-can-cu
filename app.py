@@ -33,393 +33,97 @@ st.set_page_config(
 # ── GLOBAL CSS ────────────────────────────────────────
 st.markdown("""
 <style>
-/* ═══════════════════════════════════════════════════════
-   CỪU CẦN CÙ v6 — AI Companion Product
-   Design: Finch × Duolingo × Apple Health × Headspace
-═══════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
-
-/* ── Streamlit chrome ── */
+/* Ẩn Streamlit chrome */
 #MainMenu,footer,header,
 [data-testid="stToolbar"],
 [data-testid="stSidebar"],
 [data-testid="collapsedControl"],
 .stDeployButton{display:none!important}
 
-/* ── Centered 1200px layout ── */
-.block-container{
-  max-width:1200px!important;
-  margin:0 auto!important;
-  padding:20px 28px 80px!important
+/* Reset padding */
+.block-container{padding:0!important;max-width:100%!important}
+.stApp{background:#F5F7FA}
+
+/* === LEFT PANEL === */
+.left-panel{
+  background:#fff;
+  min-height:100vh;
+  border-right:1px solid #EEEEEE;
+  box-shadow:2px 0 12px rgba(0,0,0,.06);
+  display:flex;flex-direction:column;
+  padding-bottom:16px;
 }
-.stApp{background:#F7F5FF!important}
+.sheep-header{
+  text-align:center;padding:26px 14px 14px;
+  border-bottom:1px solid #F5F5F5;
+}
+.sheep-img{width:200px;height:200px;object-fit:contain;display:block;margin:0 auto 10px}
+.sheep-name{font-size:19px;font-weight:800;color:#1A1A2E}
+.sheep-sub{font-size:12px;color:#999;margin-top:3px}
 
-/* ── Reset ── */
-*{font-family:'Nunito',sans-serif!important}
-[data-testid="stColumn"]>div{padding:3px 7px!important}
+.nav-section{padding:12px 10px 6px}
+.nav-label{font-size:10px;font-weight:700;color:#BDBDBD;
+  text-transform:uppercase;letter-spacing:.9px;padding:0 8px;margin-bottom:4px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border-radius:11px;font-size:13px;font-weight:500;color:#555;
+  cursor:pointer;margin-bottom:2px;text-decoration:none;
+}
+.nav-item.active{background:#FDE8EA;color:#D0021B;font-weight:700}
+.nav-icon{font-size:16px;width:20px;text-align:center}
 
-/* ─── ANIMATIONS ─────────────────── */
-@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-@keyframes slide-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fade-in{from{opacity:0}to{opacity:1}}
-@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.35)}}
-@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.tip-green{
+  margin:16px 12px 0;
+  background:linear-gradient(135deg,#E8F5E9,#F1F8E9);
+  border:1px solid #A5D6A7;border-radius:13px;padding:13px 14px;
+}
+.tip-green-title{font-size:12.5px;font-weight:700;color:#2E7D32;margin-bottom:5px}
+.tip-green-text{font-size:11.5px;line-height:1.6;color:#388E3C}
 
-/* ─────────────────────────────────────────────────────
-   AI COMPANION v6 — Full design system
-   Priority: Memory → Dream → Progress → Chat
-───────────────────────────────────────────────────── */
+/* === WELCOME BANNER === */
+.welcome-banner{
+  background:white;border-radius:18px;
+  padding:18px 24px;margin-bottom:0;
+  box-shadow:0 2px 14px rgba(0,0,0,.07);
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+}
+.wb-left h2{font-size:21px;font-weight:800;color:#1A1A2E;margin:0 0 5px}
+.wb-left p{font-size:13px;color:#555;margin:0 0 3px}
+.wb-red{color:#D0021B!important;font-weight:600}
+.tip-yellow{
+  background:#FFFDE7;border:1.5px solid #FDD835;
+  border-radius:13px;padding:12px 15px;
+  min-width:190px;max-width:230px;flex-shrink:0;
+}
+.ty-label{font-size:11px;font-weight:700;color:#F57F17;margin-bottom:5px}
+.ty-text{font-size:12px;line-height:1.6;color:#795548}
 
-/* ── COMPANION HEADER ──────────────────────────────── */
-.comp-hdr{display:flex;align-items:center;justify-content:space-between;
-  background:white;border-radius:20px;padding:14px 20px;
-  margin-bottom:18px;box-shadow:0 2px 16px rgba(0,0,0,.06);
-  animation:fade-in .4s ease}
-.ch-left{display:flex;align-items:center;gap:12px}
-.ch-av{width:42px;height:42px;border-radius:50%;object-fit:cover;
-  border:2.5px solid #E8E4FF;animation:breathe 4s ease-in-out infinite;flex-shrink:0}
-.ch-name{font-size:15px;font-weight:900;color:#1A1A2E;margin:0 0 1px}
-.ch-sub{font-size:11px;color:#9E9E9E;margin:0;font-weight:600}
-.ch-pills{display:flex;gap:7px;flex-wrap:wrap}
-.ch-pill{display:inline-flex;align-items:center;gap:4px;
-  background:#F5F4FF;border:1.5px solid #E8E4FF;border-radius:20px;
-  padding:5px 11px;font-size:11.5px;font-weight:700;color:#4A3ACA}
-.ch-pill.green{background:#F0FFF4;border-color:#BBF7D0;color:#15803D}
-.ch-pill.orange{background:#FFF7ED;border-color:#FED7AA;color:#C2410C}
-
-/* ── SECTION SHARED ────────────────────────────────── */
-.sec-card{background:white;border-radius:20px;padding:18px 20px;
-  box-shadow:0 2px 16px rgba(0,0,0,.06);height:100%;box-sizing:border-box;
-  animation:slide-up .45s ease both}
-.sec-label{font-size:10.5px;font-weight:800;color:#9E9E9E;
-  text-transform:uppercase;letter-spacing:.8px;margin:0 0 14px;
-  display:flex;align-items:center;gap:6px}
-
-/* ── SECTION 1: MEMORY ─────────────────────────────── */
-.mem-list{display:flex;flex-direction:column;gap:0}
-.mem-row{display:flex;align-items:flex-start;gap:9px;
-  padding:8px 0;border-bottom:1px solid #F5F4FF;font-size:12.5px;
-  color:#333;line-height:1.55;font-weight:600}
-.mem-row:last-of-type{border-bottom:none}
-.mem-icon{font-size:14px;flex-shrink:0;margin-top:1px}
-.mem-footer{margin-top:10px;font-size:11px;color:#BDBDBD;font-weight:600;
-  display:flex;align-items:center;gap:5px;
-  border-top:1px solid #F5F4FF;padding-top:10px}
-
-/* ── SECTION 2: DREAM ──────────────────────────────── */
-.dream-name-big{font-size:19px;font-weight:900;color:#1A1A2E;
-  margin:0 0 14px;line-height:1.3}
-.dream-bar-wrap{background:#F0F0F0;border-radius:8px;height:10px;
-  overflow:hidden;margin-bottom:7px}
-.dream-bar-fill{height:100%;border-radius:8px;
-  background:linear-gradient(90deg,#7B61FF,#A78BFA);
-  transition:width .8s ease}
-.dream-pct{font-size:11.5px;font-weight:800;color:#7B61FF;
-  margin-bottom:12px;display:flex;justify-content:flex-end}
-.dream-stats-row{display:flex;gap:8px;margin-bottom:12px}
-.dream-stat{flex:1;background:#F5F4FF;border-radius:12px;
-  padding:8px 10px;text-align:center}
-.ds-val{font-size:13px;font-weight:800;color:#1A1A2E}
-.ds-lbl{font-size:10px;color:#9E9E9E;font-weight:600;margin-top:1px}
-.dream-sheep-msg{background:linear-gradient(135deg,#F5F4FF,#EDE8FF);
-  border-radius:12px;padding:10px 13px;font-size:12.5px;
-  color:#4A3ACA;font-weight:700;font-style:italic;
-  border-left:3px solid #7B61FF;line-height:1.55}
-.dream-milestone{display:flex;align-items:center;gap:6px;
-  font-size:11px;color:#7B61FF;font-weight:700;
-  margin-bottom:10px}
-.milestone-dot{width:8px;height:8px;border-radius:50%;
-  background:#7B61FF;animation:pulse-dot 2s infinite}
-
-/* ── SECTION 3: PROGRESS ───────────────────────────── */
-.prog-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
-.prog-item{background:#F7F5FF;border-radius:16px;padding:14px 12px;
-  text-align:center;border:1.5px solid #EDE8FF;
-  transition:transform .2s}
-.prog-item:hover{transform:translateY(-2px)}
-.pi-icon{font-size:22px;margin-bottom:6px}
-.pi-val{font-size:15px;font-weight:900;color:#1A1A2E;margin-bottom:3px}
-.pi-lbl{font-size:10.5px;color:#9E9E9E;font-weight:600}
-.pi-bar{height:4px;border-radius:2px;background:#E8E4FF;
-  margin-top:7px;overflow:hidden}
-.pi-bar-fill{height:100%;border-radius:2px;
-  background:linear-gradient(90deg,#7B61FF,#A78BFA)}
-
-/* ── SECTION 4: CHAT ───────────────────────────────── */
-.chat-section{background:white;border-radius:20px;padding:18px 20px;
-  box-shadow:0 2px 16px rgba(0,0,0,.06);margin-top:0;
-  animation:slide-up .45s ease .2s both}
-.chat-sec-hdr{font-size:10.5px;font-weight:800;color:#9E9E9E;
-  text-transform:uppercase;letter-spacing:.8px;margin:0 0 12px;
-  display:flex;align-items:center;gap:6px}
-.status-dot{width:6px;height:6px;border-radius:50%;background:#22C55E;
-  display:inline-block;animation:pulse-dot 1.5s infinite}
-
-/* Quick actions */
-.qa-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-div.qa-zone [data-testid="stButton"]>button{
-  background:#F7F5FF!important;border:1.5px solid #E8E4FF!important;
-  border-radius:20px!important;color:#4A3ACA!important;
-  font-size:12px!important;font-weight:700!important;
-  padding:8px 15px!important;
-  transition:all .2s!important;white-space:nowrap!important}
-div.qa-zone [data-testid="stButton"]>button:hover{
-  background:linear-gradient(135deg,#7B61FF,#A78BFA)!important;
-  color:white!important;border-color:#7B61FF!important;
-  transform:translateY(-1px)!important}
-
-/* ── FULL CHAT SCREEN ──────────────────────────────── */
-.chat-full-wrap{background:white;border-radius:20px;
-  padding:18px 22px;box-shadow:0 4px 24px rgba(0,0,0,.08);
-  max-width:780px;margin:0 auto}
-.chat-full-hdr{display:flex;align-items:center;gap:12px;
-  padding-bottom:12px;border-bottom:1.5px solid #F5F4FF;margin-bottom:14px}
-.cf-av{width:42px;height:42px;border-radius:50%;object-fit:cover;
-  border:2px solid #E8E4FF;animation:breathe 4s ease-in-out infinite}
-.cf-name{font-size:14px;font-weight:900;color:#1A1A2E}
-.cf-status{font-size:11px;color:#22C55E;font-weight:700;
-  display:flex;align-items:center;gap:4px}
-
-/* back btn */
-div.back-btn [data-testid="stButton"]>button{
-  background:white!important;border:1.5px solid #E8E4FF!important;
-  border-radius:12px!important;color:#555!important;
-  font-size:15px!important;padding:5px 12px!important;
-  box-shadow:0 2px 8px rgba(0,0,0,.06)!important;transition:all .2s!important}
-div.back-btn [data-testid="stButton"]>button:hover{
-  background:#F5F3FF!important;color:#7B61FF!important;
-  border-color:#7B61FF!important}
-
-/* QR full screen */
-div.qr5 [data-testid="stButton"]>button{
-  background:#F7F5FF!important;border:1.5px solid #E8E4FF!important;
-  border-radius:16px!important;color:#4A3ACA!important;
-  font-size:12px!important;font-weight:700!important;
-  padding:9px 11px!important;width:100%!important;
-  line-height:1.4!important;transition:all .2s!important}
-div.qr5 [data-testid="stButton"]>button:hover{
-  background:linear-gradient(135deg,#7B61FF,#A78BFA)!important;
-  color:white!important;border-color:#7B61FF!important}
-
-/* ── CHAT INPUT ────────────────────────────────────── */
-[data-testid="stChatInput"],
-[data-testid="stChatInput"]>div,
-[data-testid="stChatInput"]>div>div{
-  border:none!important;outline:none!important;
-  box-shadow:none!important;background:transparent!important}
-[data-testid="stChatInput"]{
-  border-radius:22px!important;border:2px solid #E8E4FF!important;
-  box-shadow:0 4px 20px rgba(123,97,255,.1)!important;
-  background:white!important;overflow:hidden!important}
-[data-testid="stChatInput"] textarea{
-  font-size:13.5px!important;color:#1A1A2E!important;
-  border:none!important;outline:none!important;background:transparent!important}
-[data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
-[data-testid="stChatInput"] textarea::placeholder{
-  color:#C4B5FD!important;font-style:italic!important}
-[data-testid="stChatInput"] button{
-  background:linear-gradient(135deg,#7B61FF,#A78BFA)!important;
-  border-radius:50%!important;width:36px!important;height:36px!important;
-  border:none!important;outline:none!important;
-  box-shadow:0 4px 12px rgba(123,97,255,.4)!important}
-
+/* === QR BUTTONS === */
 [data-testid="stHorizontalBlock"]{gap:6px!important}
-.disclaimer{font-size:10.5px;color:#C4B5FD;text-align:center;
-  padding:6px 0;font-style:italic}
+[data-testid="stColumn"]>div{padding:0!important}
+div.qr-zone [data-testid="stButton"]>button{
+  background:white!important;border:1.5px solid #E0E0E0!important;
+  border-radius:20px!important;color:#333!important;
+  font-size:12.5px!important;font-weight:500!important;
+  padding:6px 14px!important;white-space:nowrap!important;
+}
+div.qr-zone [data-testid="stButton"]>button:hover{
+  background:#D0021B!important;color:white!important;border-color:#D0021B!important;
+}
 
-/* ── OLD v5 classes — kept for compatibility ── */
-.sb5{display:none}.sb5-top{display:none}
-.sb5-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;
-  padding-bottom:12px;border-bottom:1px solid #F0EEFF}
-.sb5-top-av{width:34px;height:34px;border-radius:50%;object-fit:cover;
-  border:2px solid #E8E4FF;flex-shrink:0}
-.sb5-top-name{font-size:12.5px;font-weight:800;color:#1A1A2E;line-height:1.2}
-.sb5-top-sub{font-size:10px;color:#BDBDBD;margin-top:1px}
-.sb5-mascot{width:170px;display:block;margin:4px auto 8px;
-  filter:drop-shadow(0 10px 28px rgba(124,111,232,.22));
-  animation:float 4s ease-in-out infinite}
-.sb5-name{text-align:center;font-size:15px;font-weight:900;color:#1A1A2E;margin:0 0 2px}
-.sb5-sub{text-align:center;font-size:11px;color:#9E9E9E;margin:0 0 12px}
-.sb5-stats{background:#FAFAFA;border-radius:16px;padding:10px 13px;margin-bottom:10px}
-.sb5-stat{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 0;border-bottom:1px solid #F5F5F5}
-.sb5-stat:last-of-type{border-bottom:none}
-.sb5-sl{font-size:11.5px;color:#666;font-weight:600;display:flex;align-items:center;gap:5px}
-.sb5-sv{font-size:11.5px;font-weight:800}
-.sv-yellow{color:#F59E0B}.sv-green{color:#22C55E}.sv-orange{color:#F97316}.sv-purple{color:#7C6FE8}
-.sb5-bar{height:5px;border-radius:3px;background:#EEEEEE;margin-top:3px;overflow:hidden}
-.sb5-bar-g{height:100%;border-radius:3px;background:#22C55E}
-.sb5-bar-p{height:100%;border-radius:3px;background:linear-gradient(90deg,#7C6FE8,#a78bfa)}
-.sb5-xp{text-align:center;font-size:10px;color:#BDBDBD;margin:5px 0 2px}
-.sb5-tag{font-size:10.5px;color:#BDBDBD;text-align:center;
-  line-height:1.5;font-style:italic;padding:0 4px}
-.sb5-nav{display:flex;justify-content:space-around;margin-top:14px;
-  padding-top:12px;border-top:1px solid #F0EEFF}
-.sb5-ni{width:38px;height:38px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:17px}
-.sb5-ni.on{background:#7C6FE8;box-shadow:0 4px 14px rgba(124,111,232,.35)}
-
-/* ─── CENTER v5 ───────────────────── */
-.wcard{background:white;border-radius:22px;padding:22px 22px 0;
-  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
-  position:relative;overflow:hidden;animation:slide-up .4s ease}
-.wc-title{font-size:24px;font-weight:900;color:#1A1A2E;margin:0 0 4px}
-.wc-sub{font-size:13px;color:#7C6FE8;font-weight:700;
-  font-style:italic;margin:0 0 10px}
-.wc-body{font-size:12.5px;color:#555;line-height:1.8;margin:0 0 0;max-width:65%}
-.wc-img{position:absolute;right:0;bottom:0;width:42%;
-  pointer-events:none;display:block}
-
-.mcard{background:white;border-radius:22px;padding:16px 18px;
-  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
-  display:flex;align-items:center;gap:14px;animation:slide-up .4s ease .08s both}
-.mc-left{flex:1}
-.mc-tag{font-size:10px;font-weight:800;color:#888;
-  text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px;
-  display:flex;align-items:center;gap:5px}
-.mc-body{font-size:13px;color:#1A1A2E;line-height:1.7;font-weight:600}
-.mc-emoji{font-size:52px;flex-shrink:0;animation:float 4s ease-in-out infinite}
-
-.dcard{background:white;border-radius:22px;padding:16px 18px;
-  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
-  animation:slide-up .4s ease .16s both}
-.dc-tag{font-size:10px;font-weight:800;color:#888;
-  text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px;
-  display:flex;align-items:center;gap:5px}
-.dc-row{display:flex;align-items:flex-start;justify-content:space-between}
-.dc-goal{font-size:20px;font-weight:900;color:#1A1A2E;margin:0 0 12px}
-.dc-emoji{font-size:52px}
-.dc-segs{display:flex;gap:3px;margin-bottom:5px}
-.dc-seg{height:9px;border-radius:5px;flex:1}
-.dc-seg.on{background:#22C55E}
-.dc-seg.off{background:#E8E8E8}
-.dc-meta{display:flex;justify-content:space-between;
-  font-size:11px;color:#888;font-weight:600}
-
-.memcard{background:white;border-radius:22px;padding:16px 18px;
-  margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.06);
-  display:flex;gap:12px;animation:slide-up .4s ease .24s both}
-.mem-left{flex:1}
-.mem-tag{font-size:10px;font-weight:800;color:#888;
-  text-transform:uppercase;letter-spacing:.6px;margin:0 0 8px;
-  display:flex;align-items:center;gap:5px}
-.mem-item{display:flex;align-items:flex-start;gap:7px;
-  font-size:12px;color:#444;margin-bottom:7px;line-height:1.55}
-.mem-dot{width:6px;height:6px;border-radius:50%;background:#7C6FE8;
-  flex-shrink:0;margin-top:6px}
-.mem-emoji{font-size:58px;flex-shrink:0;align-self:center}
-
-/* ─── RIGHT PANEL v5 ──────────────── */
-.journey{background:linear-gradient(135deg,#7C6FE8 0%,#9B8DF5 100%);
-  border-radius:20px;padding:14px 14px 14px;margin-bottom:12px;
-  color:white;position:relative;overflow:hidden;animation:fade-in .5s ease}
-.journey::before{content:'✦';position:absolute;right:10px;top:8px;
-  font-size:20px;opacity:.3}
-.jy-label{font-size:10.5px;font-weight:700;opacity:.8;margin:0 0 3px;
-  display:flex;align-items:center;gap:4px}
-.jy-level{font-size:20px;font-weight:900;margin:0 0 6px}
-.jy-bar{height:5px;background:rgba(255,255,255,.28);border-radius:3px;
-  margin-bottom:4px;overflow:hidden}
-.jy-fill{height:100%;background:white;border-radius:3px;transition:width .6s ease}
-.jy-xp{font-size:10px;opacity:.72;margin:0 0 4px}
-.jy-tag{font-size:10.5px;opacity:.65;margin:0}
-.jy-av{position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  width:58px;height:58px;border-radius:50%;object-fit:cover;
-  border:2.5px solid rgba(255,255,255,.5)}
-
-.rp5{background:white;border-radius:20px;padding:14px 13px;
-  box-shadow:0 2px 16px rgba(0,0,0,.06);animation:slide-up .4s ease .1s both}
-.rp5-hdr{font-size:12.5px;font-weight:800;color:#1A1A2E;
-  margin:0 0 10px;display:flex;align-items:center;gap:5px}
-.mini-ai{display:flex;gap:7px;align-items:flex-start;margin-bottom:8px}
-.mini-user{display:flex;gap:7px;align-items:flex-start;
-  flex-direction:row-reverse;margin-bottom:8px}
-.mini-av{width:26px;height:26px;border-radius:50%;
-  border:1.5px solid #E8E4FF;overflow:hidden;flex-shrink:0}
-.mini-av img{width:100%;height:100%;object-fit:cover}
-.mini-av-u{width:26px;height:26px;border-radius:50%;
-  background:#F0EEFF;flex-shrink:0;display:flex;
-  align-items:center;justify-content:center;font-size:13px}
-.mini-bai{background:#F5F4FF;border-radius:12px 12px 12px 3px;
-  padding:8px 11px;font-size:11.5px;color:#1A1A2E;
-  max-width:82%;line-height:1.55}
-.mini-buser{background:#7C6FE8;border-radius:12px 12px 3px 12px;
-  padding:8px 11px;font-size:11.5px;color:white;
-  max-width:82%;line-height:1.55}
-.mini-time{font-size:9.5px;color:#BDBDBD;margin-top:2px;padding:0 3px}
-.rp5-prompt{font-size:11.5px;color:#888;margin:10px 0 7px;font-weight:600}
-.rp5-tip{background:linear-gradient(135deg,#FFFDE7,#FFF9C4);
-  border-radius:14px;padding:10px 13px;font-size:12px;font-weight:700;
-  color:#78650A;border:1px solid #FFE082;text-align:center;cursor:pointer;
-  margin-top:6px;transition:all .2s}
-
-/* QR zone in right panel */
-div.rp-qr [data-testid="stButton"]>button{
-  background:#F5F4FF!important;border:1.5px solid #DDD8FF!important;
-  border-radius:14px!important;color:#4A3ACA!important;
-  font-size:11.5px!important;font-weight:700!important;
-  padding:8px 10px!important;width:100%!important;
-  line-height:1.4!important;text-align:left!important;
-  transition:all .2s!important}
-div.rp-qr [data-testid="stButton"]>button:hover{
-  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
-  color:white!important;border-color:#7C6FE8!important}
-div.tip-btn [data-testid="stButton"]>button{
-  background:linear-gradient(135deg,#FFFDE7,#FFF3CC)!important;
-  border:1px solid #FFE082!important;border-radius:14px!important;
-  color:#78650A!important;font-size:12px!important;font-weight:800!important;
-  padding:11px!important;width:100%!important;transition:all .2s!important}
-
-/* ─── CHAT SCREEN v5 ─────────────── */
-.chat5-wrap{background:white;border-radius:22px;padding:18px 20px;
-  box-shadow:0 4px 28px rgba(0,0,0,.08);margin:0 auto}
-.chat5-hdr{display:flex;align-items:center;gap:12px;
-  padding-bottom:12px;border-bottom:1.5px solid #F0EEFF;margin-bottom:12px}
-.chat5-av{width:44px;height:44px;border-radius:50%;object-fit:cover;
-  border:2px solid #E8E4FF;animation:breathe 4s ease-in-out infinite}
-.chat5-name{font-size:14px;font-weight:900;color:#1A1A2E}
-.chat5-status{font-size:11px;color:#22C55E;font-weight:600;
-  display:flex;align-items:center;gap:4px}
-.status-dot{width:6px;height:6px;border-radius:50%;background:#22C55E;
-  display:inline-block;animation:pulse-dot 1.5s infinite}
-.pulse-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:#7C6FE8;animation:pulse-dot 1.2s infinite}
-
-/* ─── BACK + CHAT INPUT ──────────── */
-div.back-btn [data-testid="stButton"]>button{
-  background:white!important;border:1.5px solid #E8E4FF!important;
-  border-radius:12px!important;color:#555!important;
-  font-size:15px!important;padding:6px 12px!important;
-  transition:all .2s!important;box-shadow:0 2px 8px rgba(0,0,0,.06)!important}
-div.back-btn [data-testid="stButton"]>button:hover{
-  background:#F5F3FF!important;color:#7C6FE8!important;
-  border-color:#7C6FE8!important}
-
-[data-testid="stChatInput"],
-[data-testid="stChatInput"]>div,
-[data-testid="stChatInput"]>div>div{
-  border:none!important;outline:none!important;
-  box-shadow:none!important;background:transparent!important}
+/* chat_input */
 [data-testid="stChatInput"]{
-  border-radius:22px!important;border:2px solid #E8E4FF!important;
-  box-shadow:0 4px 20px rgba(124,111,232,.12)!important;
-  background:white!important;overflow:hidden!important}
-[data-testid="stChatInput"] textarea{
-  font-size:13.5px!important;color:#1A1A2E!important;
-  border:none!important;outline:none!important;box-shadow:none!important;
-  background:transparent!important}
-[data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
-[data-testid="stChatInput"] textarea::placeholder{
-  color:#C4B5FD!important;font-style:italic!important}
+  border-radius:16px!important;border:1.5px solid #E0E0E0!important;
+  box-shadow:0 2px 14px rgba(0,0,0,.09)!important;background:white!important;
+}
+[data-testid="stChatInput"] textarea{font-size:14px!important}
 [data-testid="stChatInput"] button{
-  background:linear-gradient(135deg,#7C6FE8,#a78bfa)!important;
-  border-radius:50%!important;width:36px!important;height:36px!important;
-  border:none!important;outline:none!important;
-  box-shadow:0 4px 12px rgba(124,111,232,.4)!important}
+  background:#D0021B!important;border-radius:50%!important;
+  width:38px!important;height:38px!important;
+  box-shadow:0 3px 9px rgba(208,2,27,.35)!important;
+}
 
-[data-testid="stHorizontalBlock"]{gap:6px!important}
-.disclaimer{font-size:10px;color:#C4B5FD;text-align:center;padding:4px 0}
+.disclaimer{font-size:11px;color:#BDBDBD;text-align:center;padding:4px 0 2px}
 </style>
 """, unsafe_allow_html=True)
 
@@ -438,13 +142,12 @@ body{
   padding:8px 2px 12px;
   scroll-behavior:smooth;
 }
-.msg-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.msg-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px}
 .msg-row.user{flex-direction:row-reverse}
 .av-sheep{
   width:36px;height:36px;border-radius:50%;background:#FFF0F0;
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;flex-shrink:0;box-shadow:0 2px 7px rgba(0,0,0,.12);
-  align-self:flex-start;margin-top:2px;
 }
 .av-user{
   width:34px;height:34px;border-radius:50%;background:#FCE4EC;
@@ -490,12 +193,6 @@ body{
   padding:9px;font-size:12.5px;font-weight:700;
   border-radius:0 0 13px 13px;cursor:pointer;
 }
-/* markdown tables inside bubbles */
-.msg-table{border-collapse:collapse;width:100%;font-size:12px;margin:8px 0;border-radius:8px;overflow:hidden}
-.msg-table th{background:#EDE7F6;color:#4A3ACA;font-weight:700;padding:6px 10px;text-align:left;font-size:11.5px}
-.msg-table td{padding:5px 10px;border-bottom:1px solid #F0F0F0;font-size:12px}
-.msg-table tr:last-child td{border-bottom:none}
-.msg-table tr:nth-child(even) td{background:#FAFAFA}
 </style>
 """
 
@@ -604,25 +301,7 @@ DAILY_TIPS = [
 QR_DEFAULT = ["So sánh iPower và iFund", "Đầu tư với 500k/tháng", "Lập mục tiêu tiết kiệm", "Tôi là người mới"]
 
 # ── SESSION STATE ─────────────────────────────────────
-_defaults = {
-    "messages":    [],
-    "qr":          QR_DEFAULT,
-    "qr_trigger":  None,
-    "mood_ctx":    "neutral",
-    "mood_score":  50,
-    "screen":      "home",      # "home" | "chat"
-    "selected_emotion": None,   # emoji string
-    "sheep_state": "calm",      # happy|excited|calm|concerned|worried|sad|listening
-    "second_brain": {
-        "goals":         [],    # mục tiêu KH đã đề cập
-        "events":        [],    # sự kiện KH vừa kể (tối đa 5)
-        "mood_timeline": [],    # [{date, score, label}]
-        "last_topic":    None,  # chủ đề lần cuối
-        "micro_streak":  0,     # số lần chat liên tiếp hôm nay
-        "pending_hook":  False, # đã đặt câu hỏi nhật ký chưa
-    },
-}
-for k, v in _defaults.items():
+for k, v in [("messages", []), ("qr", QR_DEFAULT), ("qr_trigger", None), ("mood_ctx", None)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -685,48 +364,20 @@ def recent_context() -> str:
 def md_to_html(text: str) -> str:
     text = html_lib.escape(text)
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-    text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-
-    # ── Markdown table parser ──────────────────────────
+    # Bullet points
     lines = text.split("\n")
     result_lines = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        # Separator row: |---|---|---|
-        if re.match(r"^\s*\|[\s\-|:]+\|\s*$", line):
-            # Previous line should be the header
-            if result_lines and "|" in result_lines[-1]:
-                header_raw = result_lines.pop()
-                headers = [h.strip() for h in header_raw.strip("|").split("|")]
-                table = '<table class="msg-table"><thead><tr>'
-                for h in headers:
-                    table += f"<th>{h}</th>"
-                table += "</tr></thead><tbody>"
-                i += 1
-                while i < len(lines) and "|" in lines[i] and not re.match(r"^\s*\|[\s\-|:]+\|\s*$", lines[i]):
-                    cells = [c.strip() for c in lines[i].strip("|").split("|")]
-                    table += "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
-                    i += 1
-                table += "</tbody></table>"
-                result_lines.append(table)
-                continue
-        # Bullet points
-        if re.match(r"^[•\-]\s", line) or re.match(r"^\d+\.\s", line):
+    for line in lines:
+        if re.match(r"^•\s", line) or re.match(r"^-\s", line) or re.match(r"^\d+\.\s", line):
             result_lines.append(f"<div style='padding-left:8px'>{line}</div>")
         else:
             result_lines.append(line)
-        i += 1
-
     text = "\n".join(result_lines)
     paras = text.split("\n\n")
     result = []
     for para in paras:
-        if para.strip().startswith("<table"):
-            result.append(para)
-        else:
-            lines2 = para.split("\n")
-            result.append("<p>" + "<br>".join(lines2) + "</p>")
+        lines2 = para.split("\n")
+        result.append("<p>" + "<br>".join(lines2) + "</p>")
     return "".join(result)
 
 def card_html(pid: str) -> str:
@@ -809,189 +460,74 @@ def build_chat_html(messages: list) -> str:
 </script>
 </body></html>"""
 
-# ══════════════════════════════════════════════════════════════════════
-#  AI PIPELINE  —  Companion-First, Financial-Second
-#
-#  process_message(text)
-#    ↓
-#  [Stage 1]  Emotional Mirroring  — cảm nhận, phản chiếu ngôn ngữ KH
-#    ↓
-#  [Stage 2]  Second Brain         — truy vấn mục tiêu + sự kiện gần nhất
-#    ↓
-#  [Stage 3]  Behavioral Nudge     — Micro-Commitment CTA, không mệnh lệnh
-#    ↓
-#  [Stage 4]  Retention Hook       — câu hỏi nhật ký + closer mở luồng
-#    ↓
-#  JSON output: {content, products, qr, mood_score}
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
+#  AI PIPELINE:  User → Emotion → Memory → Knowledge → LLM → Response
+# ══════════════════════════════════════════════════════
 
-# ── STAGE 1 · EMOTIONAL MIRRORING ────────────────────
+# ── STAGE 1 · EMOTION ANALYSIS ───────────────────────
 def analyze_emotion(t: str, ctx: str) -> dict:
     """
-    Stage 1 — Emotional Mirroring.
-    Không chỉ classify cảm xúc mà còn:
-    - Chấm mood_score (0–100) để theo dõi tâm lý KH theo ngày
-    - Phát hiện sự kiện cụ thể KH vừa kể (event extraction)
-    - Nhận ra sub-emotion để phản chiếu ngôn ngữ tự nhiên hơn
+    Phân tích cảm xúc từ input đã norm.
+    Trả về: {label, intensity, mood_shift}
+      label     : 'negative' | 'positive' | 'journal' | 'neutral'
+      intensity : 0–3  (0=không, 3=rất mạnh)
+      mood_shift: True nếu cảm xúc thay đổi so với memory
     """
-    # ── Keyword banks ──
-    very_neg = ["tuyet vong", "tram cam", "chiu khong noi", "muon bo cuoc",
-                "that vong hoan toan", "qua suc chiu dung", "suy sup"]
-    neg_kws  = ["buon", "stress", "met", "chan", "lo lang", "ap luc", "so hai",
-                "that vong", "kho khan", "nan long", "that bai", "bi quan",
-                "qua suc", "kiet suc", "mo mo", "co don", "cang thang",
-                "khong on", "mat ngu", "met moi", "lo au", "khong biet lam sao",
-                "roi loan", "khong yen", "tuc gian", "buc boi"]
-    pos_kws  = ["vui", "hanh phuc", "tu hao", "phan khich", "tuyet voi",
-                "on roi", "tot lam", "hom nay tot", "phan khoi", "sung suong",
-                "binh yen", "nhe nhom", "thanh thoi", "on dinh", "phuc khoi",
-                "mim cuoi", "cuoi", "vui ve", "yen tam", "tu tin"]
-    very_pos = ["hanh phuc nhat", "vo cung vui", "qua tuyet", "dinh cao",
-                "tuyet voi that su", "khong the tin duoc"]
-    jrn_kws  = ["tam su", "nhat ky", "ke cuuu", "ke cuu", "muon ke",
-                "can ai do", "can chia se", "muon noi", "toi cam thay",
-                "minh cam thay", "trong long", "khong biet ke ai", "ke ban nghe",
-                "muon tam su", "can nguoi nghe"]
+    neg_kws = ["buon", "stress", "met", "chan", "lo", "lo lang", "ap luc",
+               "so hai", "that vong", "tuyet vong", "kho khan", "nan long",
+               "that bai", "bi quan", "chiu khong noi", "qua suc", "kiet suc",
+               "mo mo", "roi", "co don", "cang thang", "tram cam", "kiet suc",
+               "khong on", "khong biet lam sao", "mat ngu"]
+    pos_kws = ["vui", "hanh phuc", "tu hao", "phan khich", "tuyet voi",
+               "on roi", "tot lam", "hom nay tot", "phan khoi", "sung suong",
+               "binh yen", "nhe nhom", "thanh thoi", "on dinh", "tot dep"]
+    jrn_kws = ["tam su", "nhat ky", "ke cuuu", "ke cuu", "nghe khong",
+               "can ai do", "can chia se", "muon noi", "toi cam thay",
+               "minh cam thay", "trong long", "khong biet ke ai"]
 
-    # ── Event extraction (sự kiện cụ thể KH kể) ──
-    event_patterns = {
-        "tang luong":   ["tang luong", "duoc tang luong", "luong cao hon"],
-        "mat viec":     ["mat viec", "bi sa thai", "bi cat giam", "nghi viec"],
-        "con om":       ["con om", "con bi benh", "dua tre om"],
-        "cuoi":         ["sap cuoi", "cuoi sap toi", "dam cuoi"],
-        "mua nha":      ["mua nha", "dat coc nha", "vay mua nha"],
-        "du lich":      ["di du lich", "sap di du lich", "ve du lich"],
-        "ho hoi":       ["buon chuyen", "cai nhau", "chia tay"],
-        "thanh cong":   ["thanh cong", "hoan thanh", "dat muc tieu", "thang"],
-    }
-    detected_event = None
-    for event_key, patterns in event_patterns.items():
-        if any(p in t for p in patterns):
-            detected_event = event_key
-            break
-
-    s_vneg = score(t, very_neg)
-    s_neg  = score(t, neg_kws)
-    s_pos  = score(t, pos_kws)
-    s_vpos = score(t, very_pos)
-    s_jrn  = score(t, jrn_kws)
-
-    # ── mood_score tính từ 0–100 ──
-    raw = 50
-    raw -= s_vneg * 20
-    raw -= s_neg  * 8
-    raw += s_pos  * 8
-    raw += s_vpos * 15
-    mood_score = max(0, min(100, raw))
-
-    # ── label ──
-    if s_jrn >= 1:
-        label, intensity = "journal", min(s_jrn, 3)
-    elif s_vneg >= 1 or (s_neg >= 2):
-        label, intensity = "very_negative", min(s_vneg + s_neg, 3)
-    elif s_neg >= 1:
-        label, intensity = "negative", min(s_neg, 3)
-    elif s_vpos >= 1 or (s_pos >= 2):
-        label, intensity = "very_positive", min(s_vpos + s_pos, 3)
-    elif s_pos >= 1:
-        label, intensity = "positive", min(s_pos, 3)
-    else:
-        label, intensity = "neutral", 0
+    neg = score(t, neg_kws)
+    pos = score(t, pos_kws)
+    jrn = score(t, jrn_kws)
 
     prev_mood = st.session_state.get("mood_ctx", "neutral")
-    mood_shift = (label not in ("neutral",)) and (label != prev_mood)
 
-    return {
-        "label":          label,
-        "intensity":      intensity,
-        "mood_score":     mood_score,
-        "mood_shift":     mood_shift,
-        "detected_event": detected_event,
-    }
+    if jrn >= 1:
+        label, intensity = "journal", min(jrn, 3)
+    elif neg >= pos and neg >= 1:
+        label = "negative"
+        intensity = min(neg, 3)
+    elif pos >= 1:
+        label = "positive"
+        intensity = min(pos, 3)
+    else:
+        label = "neutral"
+        intensity = 0
+
+    mood_shift = (label != prev_mood) and (label != "neutral")
+    return {"label": label, "intensity": intensity, "mood_shift": mood_shift}
 
 
-# ── STAGE 2 · SECOND BRAIN (Memory) ─────────────────
+# ── STAGE 2 · MEMORY ─────────────────────────────────
 def fetch_memory() -> dict:
     """
-    Stage 2 — Context Retrieval từ Second Brain.
-    Truy vấn: mục tiêu KH, sự kiện gần nhất, chuỗi mood,
-    chủ đề hôm qua — để phản hồi mang tính liên tục.
+    Truy xuất context từ session state.
+    Trả về: {history_text, prev_mood, turn_count, last_products}
     """
-    msgs   = st.session_state.messages
-    sb     = st.session_state.second_brain
-
-    history_text  = " ".join(norm(m["content"]) for m in msgs[-6:])
-    prev_mood     = st.session_state.get("mood_ctx", "neutral")
-    prev_score    = st.session_state.get("mood_score", 50)
-    turn_count    = len([m for m in msgs if m["role"] == "user"])
-
+    msgs = st.session_state.messages
+    history_text = " ".join(norm(m["content"]) for m in msgs[-6:])
+    prev_mood    = st.session_state.get("mood_ctx", "neutral")
+    turn_count   = len([m for m in msgs if m["role"] == "user"])
     last_products = []
     for m in reversed(msgs):
         if m["role"] == "ai" and m.get("products"):
             last_products = m["products"]
             break
-
-    # Mood trend: đang tốt lên hay xấu đi?
-    timeline = sb.get("mood_timeline", [])
-    mood_trend = "stable"
-    if len(timeline) >= 2:
-        diff = timeline[-1]["score"] - timeline[-2]["score"]
-        mood_trend = "improving" if diff > 10 else ("declining" if diff < -10 else "stable")
-
     return {
-        "history_text":   history_text,
-        "prev_mood":      prev_mood,
-        "prev_score":     prev_score,
-        "turn_count":     turn_count,
-        "last_products":  last_products,
-        "goals":          sb.get("goals", []),
-        "events":         sb.get("events", []),
-        "last_topic":     sb.get("last_topic"),
-        "micro_streak":   sb.get("micro_streak", 0),
-        "pending_hook":   sb.get("pending_hook", False),
-        "mood_trend":     mood_trend,
+        "history_text": history_text,
+        "prev_mood":    prev_mood,
+        "turn_count":   turn_count,
+        "last_products": last_products,
     }
-
-
-def update_second_brain(emotion: dict, knowledge: dict, text: str):
-    """Cập nhật Second Brain sau mỗi lượt chat."""
-    sb = st.session_state.second_brain
-    t  = norm(text)
-
-    # Cập nhật mood timeline
-    today = datetime.now().strftime("%Y-%m-%d")
-    timeline = sb.get("mood_timeline", [])
-    if not timeline or timeline[-1]["date"] != today:
-        timeline.append({"date": today, "score": emotion["mood_score"], "label": emotion["label"]})
-    else:
-        # Average với điểm cũ trong ngày
-        timeline[-1]["score"] = int((timeline[-1]["score"] + emotion["mood_score"]) / 2)
-    sb["mood_timeline"] = timeline[-14:]  # giữ 14 ngày
-
-    # Cập nhật sự kiện
-    if emotion.get("detected_event"):
-        events = sb.get("events", [])
-        events.append({"event": emotion["detected_event"], "date": today})
-        sb["events"] = events[-5:]  # giữ 5 sự kiện gần nhất
-
-    # Cập nhật goals nếu KH đề cập
-    goal_kws = {"mua xe": "Mua xe", "mua nha": "Mua nhà",
-                "du lich": "Du lịch", "huu tri": "Hưu trí",
-                "tu do tai chinh": "Tự do tài chính", "dam cuoi": "Đám cưới"}
-    for kw, label in goal_kws.items():
-        if kw in t and label not in sb.get("goals", []):
-            sb.setdefault("goals", []).append(label)
-
-    # Cập nhật last_topic
-    if knowledge.get("intent") not in ("unknown", None):
-        sb["last_topic"] = knowledge["intent"]
-
-    # Tăng streak
-    sb["micro_streak"] = sb.get("micro_streak", 0) + 1
-
-    st.session_state.second_brain = sb
-    st.session_state.mood_ctx     = emotion["label"]
-    st.session_state.mood_score   = emotion["mood_score"]
 
 
 # ── STAGE 3 · KNOWLEDGE SEARCH ───────────────────────
@@ -1070,373 +606,19 @@ def search_knowledge(t: str, ctx: str, amount) -> dict:
 # ── STAGE 4 · LLM / RESPONSE GENERATOR ──────────────
 def generate_response(text: str, emotion: dict, memory: dict, knowledge: dict) -> dict:
     """
-    Stage 4 — Companion-First Response Generator.
-    Mỗi response đi qua 3 bước ẩn:
-
-    Bước 1 · Emotional Mirroring
-      → Phản chiếu ngôn ngữ KH, không dùng câu công thức
-      → Đồng cảm tự nhiên như người bạn, không như bot
-
-    Bước 2 · Context Retrieval (Second Brain)
-      → Nhắc đến mục tiêu KH đã kể
-      → Kết nối sự kiện hôm nay với kế hoạch tài chính
-
-    Bước 3 · Behavioral CTA (Micro-Commitment)
-      → Gợi ý hành động nhỏ gắn với cảm xúc/sự kiện
-      → Không bảo "hãy đầu tư", hỏi "hay là mình thử...?"
-
-    + Retention Hook: câu hỏi nhật ký + closer mở luồng ngày mai
+    Tổng hợp response từ Emotion + Memory + Knowledge.
+    (Rule-based engine — có thể swap bằng GPT/Claude API call tại đây)
+    Trả về: {content, products, qr}
     """
-    t             = norm(text)
-    amount        = extract_amount(text)
-    intent        = knowledge["intent"]
+    t          = norm(text)
+    amount     = extract_amount(text)
+    intent     = knowledge["intent"]
     emotion_label = emotion["label"]
-    mood_score    = emotion["mood_score"]
-    detected_evt  = emotion.get("detected_event")
-    turn          = memory["turn_count"]
-    goals         = memory.get("goals", [])
-    prev_events   = memory.get("events", [])
-    mood_trend    = memory.get("mood_trend", "stable")
+    turn       = memory["turn_count"]
 
     def pick(*opts): return random.choice(opts)
-
-    def out(content, products=None, qr=None, mood_score=mood_score):
-        return {
-            "content":    content,
-            "products":   products or [],
-            "qr":         qr or QR_DEFAULT,
-            "mood_score": mood_score,
-        }
-
-    # ── Helper: Bước 3 · Micro-Commitment CTA ────────────
-    def micro_cta(event=None, mood=None, amount_hint=10_000) -> str:
-        """Tạo CTA gợi ý nhỏ, gắn với cảm xúc/sự kiện — không phải lệnh đầu tư."""
-        amt_str = fmtm(amount_hint)
-        event_map = {
-            "tang luong":  f"Vừa có tin vui tăng lương — hay là mình 'thưởng' bản thân bằng cách để {amt_str} vào iPower? Nhỏ thôi, nhưng bắt đầu là thắng rồi! 🌱",
-            "mat viec":    f"Giai đoạn này quan trọng lắm — hay là mình lập 'quỹ bình tĩnh' nhỏ, chỉ {amt_str}/tuần thôi, để cảm giác vững hơn một chút?",
-            "cuoi":        f"Sắp có đám cưới rồi! Hay là mình tạo một mục tiêu nhỏ hôm nay — {amt_str}/ngày, gọi là 'quỹ hạnh phúc'? Cừu tính toán giúp nha!",
-            "du lich":     f"Du lịch sắp tới — hay là thử thách: tiết kiệm {amt_str}/ngày từ hôm nay, Cừu sẽ đếm ngược cùng bạn đến ngày đó nhé?",
-            "thanh cong":  f"Xứng đáng được kỷ niệm! Hay là đánh dấu thành công bằng cách để {amt_str} vào iPower hôm nay — coi như 'hạt giống' cho thành công tiếp theo?",
-        }
-        mood_map = {
-            "very_negative": f"Hôm nay nặng nề vậy — Cừu có một gợi ý nhỏ thôi: thử thách bản thân với {fmtm(5_000)} hôm nay, gọi là 'quỹ bình yên'. Nhỏ lắm, nhưng đôi khi làm một việc nhỏ giúp mình thấy bớt bất lực hơn.",
-            "negative":      f"Hay là mình thử 'thử thách 10k hôm nay'? Chỉ {fmtm(10_000)} thôi — không phải vì số tiền, mà vì cảm giác tự chăm sóc bản thân. 🌱",
-            "positive":      f"Ngày đẹp như vầy xứng đáng được đánh dấu! Hay là để {amt_str} vào iPower hôm nay — gọi là 'quỹ kỷ niệm ngày vui'? 🎉",
-            "very_positive": f"Năng lượng tích cực như vậy phải chuyển thành hành động luôn! Thử thách: {amt_str} hôm nay, Cừu sẽ cổ vũ bạn! 💪",
-        }
-        if event and event in event_map:
-            return event_map[event]
-        if mood and mood in mood_map:
-            return mood_map[mood]
-        return pick(
-            f"Hay là mình thử thách nhỏ hôm nay: chỉ {amt_str} thôi, bắt đầu là thắng rồi! 🌱",
-            f"Cừu có một gợi ý vui: {amt_str} hôm nay, gọi là 'ngày bắt đầu'. Nhỉ?",
-        )
-
-    # ── Helper: Retention Hook ────────────────────────────
-    def retention_hook(mood=None) -> str:
-        """Câu hỏi nhật ký cuối mỗi response để tạo thói quen quay lại."""
-        positive_hooks = [
-            "\n\n💬 *Cừu tò mò: hôm nay điều gì khiến bạn mỉm cười nhất?*",
-            "\n\n💬 *À, kể Cừu nghe — hôm nay bạn làm được điều gì mà bạn tự hào?*",
-            "\n\n💬 *Ngày mai Cừu sẽ ở đây — kể tiếp nhé! Hôm nay bạn kết thúc thế nào?*",
-        ]
-        neutral_hooks = [
-            "\n\n💬 *Nhân tiện — hôm nay của bạn bắt đầu thế nào? Cừu muốn biết thiệt.*",
-            "\n\n💬 *Cừu đặt một câu hỏi nhỏ: gần đây bạn đang vui, buồn, hay đang trong giai đoạn 'cứ trôi'?*",
-            "\n\n💬 *Tuần này bạn có một khoảnh khắc nào đáng nhớ không? Nhỏ thôi cũng được — kể Cừu nghe.*",
-        ]
-        negative_hooks = [
-            "\n\n💙 *Cừu sẽ ở đây ngày mai — nếu muốn kể tiếp, Cừu luôn lắng nghe nhé.*",
-            "\n\n💙 *Câu hỏi nhỏ thôi: hôm nay có một khoảnh khắc nào khiến bạn thở phào không?*",
-        ]
-        if mood in ("positive", "very_positive"):
-            return pick(*positive_hooks)
-        if mood in ("negative", "very_negative"):
-            return pick(*negative_hooks)
-        return pick(*neutral_hooks)
-
-    # ── Helper: Goal Reminder (Bước 2) ───────────────────
-    def goal_reminder() -> str:
-        if not goals:
-            return ""
-        g = goals[-1]  # mục tiêu gần nhất
-        return pick(
-            f"\n\n🎯 *Nhớ lại mục tiêu '{g}' bạn kể lần trước — mỗi bước nhỏ hôm nay là đang tiến về đó đó.*",
-            f"\n\n🎯 *Cừu đang giữ mục tiêu '{g}' của bạn trong lòng — mình cùng nhích thêm một chút hôm nay nha.*",
-        )
-
-    # ══════════════════════════════════════════════════════
-    #  XỬ LÝ THEO PRIORITY: Cảm xúc → Mục tiêu → Hành động
-    # ══════════════════════════════════════════════════════
-
-    # ── [PRIORITY 1] Cảm xúc tiêu cực / Tâm sự ──────────
-    if emotion_label in ("very_negative", "negative", "journal"):
-        # Bước 1: Emotional Mirroring — không dùng câu công thức
-        if detected_evt == "mat viec":
-            opener = pick(
-                "Trời, mất việc không bao giờ dễ — dù hoàn cảnh nào đi nữa cũng sốc lắm.",
-                "Nghe chuyện mà Cừu thấy nặng hộ bạn rồi. Giai đoạn này thật sự không dễ.",
-            )
-        elif detected_evt == "ho hoi":
-            opener = pick(
-                "Chuyện tình cảm mà... nhiều khi nặng hơn cả chuyện tiền nữa.",
-                "Nghe vậy Cừu thấy bạn đang gánh nhiều lắm. Kể tiếp đi, Cừu nghe.",
-            )
-        elif emotion_label == "very_negative":
-            opener = pick(
-                "Bạn đang trải qua giai đoạn thật sự nặng nề — Cừu không muốn nói câu 'Cừu hiểu' rỗng tuếch. Chỉ muốn nói: Cừu ở đây.",
-                "Nghe bạn kể mà Cừu thấy... không biết nói gì hơn ngoài việc ở bên bạn lúc này.",
-            )
-        else:
-            opener = pick(
-                "Trời, nghe vậy mà Cừu cũng thấy nặng theo.",
-                "Ừ, đôi khi mọi thứ cứ dồn vào một lúc không biết bắt đầu từ đâu nhỉ.",
-                "Kể được ra như vậy là dũng cảm lắm đó bạn — không phải ai cũng làm được.",
-            )
-
-        # Bước 2: Nhắc mục tiêu (nhẹ nhàng nếu mood rất tiêu cực)
-        goal_note = ""
-        if goals and emotion_label != "very_negative":
-            goal_note = pick(
-                f"\n\nCừu vẫn đang giữ mục tiêu '{goals[-1]}' của bạn trong lòng đây — khi bạn sẵn sàng, mình cùng tiếp tục nhé.",
-                f"\n\nMục tiêu '{goals[-1]}' vẫn ở đó, không đi đâu hết — hôm nay chỉ cần lo cho bản thân thôi.",
-            )
-
-        # Bước 3: Micro-Commitment CTA (không ép)
-        cta = ""
-        if emotion_label == "negative":  # chỉ gợi ý khi không quá nặng
-            cta = "\n\n" + micro_cta(event=detected_evt, mood=emotion_label, amount_hint=10_000)
-
-        # Retention Hook
-        hook = retention_hook(mood=emotion_label)
-
-        content = opener + goal_note + cta + hook
-        return out(content,
-                   qr=["Kể thêm với Cừu", "Viết nhật ký cảm xúc", "Giúp tôi lập kế hoạch nhỏ", "Tôi chỉ cần được lắng nghe"],
-                   mood_score=mood_score)
-
-    # ── [PRIORITY 1b] Cảm xúc tích cực ──────────────────
-    if emotion_label in ("positive", "very_positive"):
-        if detected_evt == "tang luong":
-            opener = pick(
-                "Ôi, tăng lương! Xứng đáng lắm — chắc bạn đã làm việc rất chăm chỉ rồi!",
-                "Tăng lương rồi! Cừu thay bạn mà cũng phấn khích nè!",
-            )
-        elif detected_evt == "thanh cong":
-            opener = pick(
-                "Nghe tin vui mà Cừu cũng thấy vui lây!",
-                "Thành công mà — đáng được ăn mừng lắm chứ!",
-            )
-        else:
-            opener = pick(
-                "Ôi, hôm nay của bạn nghe vui vậy! Cừu cũng phấn chấn theo.",
-                "Ngày đẹp như vầy thì phải tận dụng chứ nhỉ!",
-                "Wow, năng lượng của bạn hôm nay lan sang Cừu rồi đó!",
-            )
-
-        # Bước 3: Micro-Commitment CTA gắn với niềm vui
-        cta = "\n\n" + micro_cta(event=detected_evt, mood=emotion_label, amount_hint=50_000)
-
-        # Bước 2: Goal connection
-        goal_note = goal_reminder()
-
-        hook = retention_hook(mood=emotion_label)
-        content = opener + cta + goal_note + hook
-        return out(content,
-                   products=["ipower"],
-                   qr=["Tôi muốn bắt đầu ngay!", "Tính toán chi tiết hơn", "Kể Cừu nghe thêm", "Đặt mục tiêu mới"],
-                   mood_score=mood_score)
-
-    # ── [PRIORITY 2] Nhật ký / Tâm sự ───────────────────
-    if intent == "journal" or re.search(r"nhat ky|viet nhat|tam su|ke cuu|ke cuuu|muon tam su", t):
-        return out(
-            pick(
-                "Cừu rất vui khi bạn muốn kể! 📝 Đây là không gian chỉ có hai đứa mình — bạn nói gì Cừu cũng nghe, không phán xét gì đâu.\n\n**Hôm nay của bạn bắt đầu thế nào?**" + retention_hook("neutral"),
-                "Tốt quá! Cừu thích nghe bạn kể lắm.\n\nBắt đầu bằng một câu thôi — *\"Hôm nay tôi cảm thấy...\"* — Cừu sẽ ở đây đọc và phản hồi từ trái tim. 💙" + retention_hook("neutral"),
-            ),
-            qr=["Hôm nay tôi cảm thấy...", "Tôi đang lo về tài chính", "Tôi muốn thay đổi thói quen", "Kể chuyện vui hôm nay"]
-        )
-
-    # ── [PRIORITY 3] Xử lý theo Intent từ Knowledge ──────
-    # Greeting
-    if intent == "greeting":
-        hour = datetime.now().hour
-        gr = "Buổi sáng" if hour < 11 else ("Buổi trưa" if hour < 13 else ("Buổi chiều" if hour < 18 else "Buổi tối"))
-        is_return = turn > 1
-        if is_return:
-            opener = pick(
-                f"{gr} bạn! Cừu nhớ bạn đó — hôm nay thế nào rồi? 😊",
-                f"Bạn quay lại rồi! {gr} nhé — kể Cừu nghe hôm nay của bạn đi.",
-            )
-        else:
-            opener = pick(
-                f"{gr} bạn! ✨ Cừu đây — không chỉ là trợ lý tài chính, mà là người bạn muốn thực sự hiểu bạn.\n\nHôm nay bạn đang cảm thấy thế nào?",
-                f"{gr}! 🌸 Mình là Cừu — bạn có thể tâm sự tự do về tiền bạc, cảm xúc, hay mục tiêu.\n\nCừu muốn hỏi ngay: hôm nay của bạn bắt đầu ra sao? 😊",
-            )
-        return out(opener + retention_hook("neutral"),
-                   qr=["Tôi đang stress về tiền", "Muốn bắt đầu đầu tư", "Kể chuyện hôm nay", "Giúp tôi lập mục tiêu"])
-
-    # Số tiền
-    if intent == "amount" and amount:
-        if amount <= 200_000:
-            yearly = amount * 365
-            body = pick(
-                f"**{fmtm(amount)}** — nhỏ thôi nhưng bắt đầu là thắng rồi! ✨\n\n🌱 **iPower** sinh ra để dành cho những bước đầu này: tối thiểu 50k, lãi cộng dồn hằng ngày, rút bất kỳ lúc.\n\nNếu để dành {fmtm(amount)}/ngày → sau 1 năm là **{fmtm(yearly)}** + lãi ~5–6%. Không cần nhiều, cần đều! 🌱",
-                f"Với **{fmtm(amount)}** bạn đã bắt đầu được rồi — đừng nghĩ nhỏ, nghĩ 'đều' mới đúng!\n\n🌱 **iPower**: tối thiểu 50k · lãi hằng ngày · rút bất kỳ lúc.\n\nTiết kiệm đều {fmtm(amount)}/ngày → 1 năm = **{fmtm(yearly)}** + lãi!",
-            )
-            cta = "\n\n" + micro_cta(event=detected_evt, mood=emotion_label, amount_hint=amount)
-            hook = goal_reminder() + retention_hook(emotion_label)
-            return out(body + cta + hook, products=["ipower"],
-                       qr=["Cách mở tài khoản TCBS", "Lãi suất iPower bao nhiêu?", "Nạp tiền vào iPower", "Tôi muốn lập mục tiêu"])
-
-        if amount <= 5_000_000:
-            body = pick(
-                f"**{fmtm(amount)} mỗi tháng** — con số tốt lắm, đủ để tạo ra thay đổi thật sự! 💪\n\nCừu gợi ý chia đôi:\n• 50% → **iPower** (quỹ dự phòng, rút được khi cần)\n• 50% → **iFund** (tăng trưởng dài hạn ~12–18%/năm)\n\nSau 5 năm ước tính: **~{fmtm(int(amount * 12 * 5 * 1.35))}** 🚀",
-                f"Wow, {fmtm(amount)}/tháng! Với số này, bạn có thể xây dựng cả một danh mục nhỏ.\n\n🌱 **iPower** — an toàn, rút được · 📊 **iFund** — tăng trưởng theo thời gian\n\nBạn đang có mục tiêu gì? Cừu sẽ tính toán phù hợp với mục tiêu đó nhé.",
-            )
-            cta = "\n\n" + micro_cta(event=detected_evt, mood=emotion_label, amount_hint=min(amount // 10, 100_000))
-            hook = goal_reminder() + retention_hook(emotion_label)
-            return out(body + cta + hook, products=["ipower", "ifund"],
-                       qr=["Tính toán theo mục tiêu cụ thể", "Tôi muốn mua nhà", "Mục tiêu 5 năm", "So sánh iPower và iFund"])
-
-        body = (f"**{fmtm(amount)}** — đây là số vốn đủ để xây danh mục bài bản rồi! 💎\n\n"
-                f"Cừu gợi ý đa dạng hóa:\n• 🌱 **iPower** (~20%) — quỹ dự phòng linh hoạt\n"
-                f"• 📊 **iFund** (~50%) — tăng trưởng dài hạn\n• 📋 **iBond** (~30%) — thu nhập cố định 8–11%/năm\n\n"
-                "Bạn muốn Cừu phân tích chi tiết hơn theo mục tiêu không?")
-        return out(body + goal_reminder() + retention_hook(emotion_label),
-                   products=["ipower", "ifund", "ibond"],
-                   qr=["Phân tích danh mục", "Tôi muốn thu nhập cố định", "Mục tiêu hưu trí", "Tìm hiểu iBond"])
-
-    # So sánh
-    if intent == "compare":
-        body = ("Cừu so sánh thật sự khách quan cho bạn nha! 📊\n\n"
-                "| | 🌱 iPower | 📊 iFund |\n|---|---|---|\n"
-                "| Tối thiểu | 50.000đ | 100.000đ |\n"
-                "| Sinh lời | ~5–6%/năm | ~12–18%/năm |\n"
-                "| Rủi ro | Thấp | Trung bình |\n"
-                "| Rút tiền | Bất kỳ lúc | T+3 |\n"
-                "| Phù hợp | Ngắn hạn, dự phòng | Dài hạn 3–10 năm |\n\n"
-                "**Gợi ý:** Chưa chắc thì bắt đầu iPower — quen rồi phân bổ thêm sang iFund. Không bao giờ là 'quá muộn' để bắt đầu! 🌱")
-        return out(body + goal_reminder() + retention_hook(emotion_label),
-                   products=["ipower", "ifund"],
-                   qr=["Bắt đầu với iPower", "Tìm hiểu iFund", "Tôi muốn cả hai", "Cần bao nhiêu để bắt đầu?"])
-
-    # Onboarding
-    if intent == "onboarding":
-        body = ("Chào mừng bạn đến với hành trình đầu tư! 🌱 Cừu đồng hành từng bước — không cần biết nhiều, chỉ cần bắt đầu đúng chỗ.\n\n"
-                "**3 bước siêu đơn giản:**\n\n"
-                "**1.** Mở tài khoản TCBS miễn phí — 3 phút qua TCInvest App\n\n"
-                "**2.** Nạp tối thiểu **50.000đ** (bất kỳ ngân hàng nào)\n\n"
-                "**3.** Gửi vào **iPower** — lãi chạy ngay từ ngày đầu, rút bất kỳ lúc\n\n"
-                + micro_cta(event=detected_evt, mood=emotion_label, amount_hint=50_000))
-        return out(body + retention_hook(emotion_label), products=["ipower"],
-                   qr=["Cách mở tài khoản TCBS", "Cách nạp tiền đầu tiên", "iPower hoạt động thế nào?", "Mất bao lâu để thấy lãi?"])
-
-    # How-to / Nạp tiền
-    if intent == "how_to":
-        body = ("Nạp tiền vào TCBS — chỉ 2 phút thôi! 💰\n\n"
-                "**Qua TCInvest App:**\n1. Tài khoản → Nạp tiền\n"
-                "2. Chọn ngân hàng (hỗ trợ 20+)\n3. Nhập số tiền → Xác nhận\n\n"
-                "**Qua TCB Mobile:** Đầu tư → Tài khoản CK → Chuyển tiền vào\n\nTiền về ngay lập tức! ✅")
-        return out(body + retention_hook(emotion_label),
-                   qr=["Tải TCInvest App ở đâu?", "Tôi dùng ngân hàng khác được không?", "Sau khi nạp làm gì tiếp?", "Hỗ trợ ngân hàng nào?"])
-
-    # Rates / Lãi suất
-    if intent == "rates":
-        return out(
-            "Lãi suất các sản phẩm TCBS: 📋\n\n"
-            "🌱 **iPower:** ~5–6%/năm, cộng dồn hàng ngày\n"
-            "📊 **iFund/TCEF:** ~12–18%/năm (lịch sử)\n"
-            "📋 **iBond:** 8–11%/năm cố định\n"
-            "🆓 **Cổ phiếu (Zero Fee):** Tiềm năng không giới hạn, rủi ro cao\n"
-            "📐 **Margin 789:** Vay từ 7.89%/năm\n\n"
-            + micro_cta(event=detected_evt, mood=emotion_label)
-            + retention_hook(emotion_label),
-            qr=["Chi tiết iPower", "Chi tiết iFund", "Chi tiết iBond", "Tôi muốn lợi nhuận cao nhất"]
-        )
-
-    # Bank compare
-    if intent == "bank_compare":
-        return out(
-            "So sánh TCBS vs Gửi ngân hàng truyền thống: 📊\n\n"
-            "**Ngân hàng thường:** ~4–5%/năm · kỳ hạn cố định · rút sớm mất lãi\n\n"
-            "**iPower TCBS:** ~5–6%/năm · **không kỳ hạn** · rút bất kỳ lúc\n\n"
-            "**iBond TCBS:** 8–11%/năm · cố định · biết trước thu nhập\n\n"
-            "**iFund TCBS:** ~12–18%/năm · biến động nhưng tiềm năng cao hơn nhiều\n\n"
-            + micro_cta(event=detected_evt, mood=emotion_label)
-            + retention_hook(emotion_label),
-            products=["ipower", "ibond"],
-            qr=["Mở tài khoản iPower ngay", "Tìm hiểu iBond", "Rủi ro của iPower?", "Có bảo hiểm tiền gửi không?"]
-        )
-
-    # Product intents — iPower, iFund, iBond, ZeroFee, Margin
-    product_map = {
-        "ipower":   ("ipower",    KB["ipower"]["detail"]   + "\n\nTóm lại: **iPower là điểm khởi đầu zero-risk nhất** — tiền sinh lời trong khi bạn học thêm. 💡",
-                     ["Cách nạp tiền vào iPower", "Lãi suất cụ thể?", "So sánh với gửi ngân hàng", "Bước tiếp theo?"]),
-        "ifund":    ("ifund",     KB["ifund"]["detail"]    + "\n\n**Chiến lược DCA:** đầu tư đều mỗi tháng, bất kể thị trường — cách giảm rủi ro hiệu quả nhất. 📈",
-                     ["Đầu tư 300k/tháng vào iFund", "Rủi ro thực sự?", "iFund vs gửi tiết kiệm", "Bắt đầu ngay"]),
-        "ibond":    ("ibond",     KB["ibond"]["detail"]    + "\n\niBond phù hợp nếu bạn muốn **biết trước** mình nhận được bao nhiêu. 💡",
-                     ["Lãi suất iBond hiện tại", "Mua iBond cần bao nhiêu?", "Kỳ hạn nào tốt?", "So sánh iBond và iPower"]),
-        "zerofee":  ("zerofee",  "Cổ phiếu — tiềm năng cao nhưng cần kiến thức! 📈\n\n" + KB["zerofee"]["detail"] + "\n\nNếu chưa có kinh nghiệm, Cừu gợi ý bắt đầu bằng iFund trước — được chuyên gia quản lý, ít rủi ro hơn. 😊",
-                     ["Chưa có kinh nghiệm — bắt đầu thế nào?", "Tôi đã giao dịch rồi", "Muốn dùng margin", "iFund vs tự mua cổ phiếu"]),
-        "margin":   ("margin789", "Margin — công cụ mạnh, dùng cần cẩn thận! ⚠️\n\n" + KB["margin789"]["detail"] + "\n\n**Nhắc nhở:** Margin nhân đôi lãi nhưng cũng nhân đôi lỗ. Chỉ dùng khi hiểu rõ rủi ro. 💡",
-                     ["Điều kiện dùng Margin 789", "Rủi ro margin là gì?", "Tôi chưa muốn dùng margin", "Tìm hiểu thêm"]),
-    }
-    if intent in product_map:
-        prod_key, body, qrs = product_map[intent]
-        cta = "\n\n" + micro_cta(event=detected_evt, mood=emotion_label)
-        return out(body + cta + goal_reminder() + retention_hook(emotion_label),
-                   products=[prod_key], qr=qrs)
-
-    # Goal intent
-    if intent == "goal":
-        goal_info = knowledge.get("goal")
-        if goal_info:
-            gname, grange, gyears = goal_info
-            body = (f"Mục tiêu **{gname}** — Cừu sẽ đồng hành đến đó cùng bạn! 🎯\n\n"
-                    f"Thường cần: **{grange}** trong **{gyears}–{gyears+3} năm**.\n\n"
-                    f"**Bước nhỏ đầu tiên:**\n• Xác định số tiền mục tiêu\n"
-                    f"• Chia thành khoản tiết kiệm hàng tháng\n"
-                    f"• Chọn iPower (linh hoạt) + iFund (tăng trưởng)\n\n"
-                    + micro_cta(event=gname.lower().replace(" ", "_") if gname else None, mood=emotion_label))
-            return out(body + retention_hook(emotion_label), products=["ipower", "ifund"],
-                       qr=[f"Tính tiết kiệm cho {gname}", "Tôi cần bao nhiêu mỗi tháng?", "Xem sản phẩm phù hợp", "Tôi muốn mục tiêu khác"])
-        return out(
-            "Mục tiêu rõ ràng giúp tiết kiệm hiệu quả hơn **3 lần** so với không có mục tiêu. 🎯\n\n"
-            "**Mục tiêu lớn nhất của bạn trong 3–5 năm tới?** Mua xe? Mua nhà? Du lịch? Tự do tài chính?\n\n"
-            "Kể Cừu nghe — Cừu sẽ tính toán cụ thể giúp bạn nhé!" + retention_hook(emotion_label),
-            qr=["Mua xe", "Mua nhà", "Du lịch nước ngoài", "Tự do tài chính"]
-        )
-
-    # ── FALLBACK — dùng Second Brain context ─────────────
-    # Nếu có mood trend xấu nhiều ngày, ưu tiên đồng cảm
-    if mood_trend == "declining":
-        return out(
-            pick(
-                "Cừu để ý bạn có vẻ mệt hơn mấy hôm nay — không cần phải ổn, chỉ cần kể Cừu nghe thôi. 💙",
-                "Hôm nay bạn thế nào? Cừu đang để ý và quan tâm đó.",
-            ) + retention_hook("negative"),
-            qr=["Kể Cừu nghe", "Lập kế hoạch nhỏ", "Tôi muốn thay đổi", "Tôi ổn hơn rồi"]
-        )
-
-    if memory["prev_mood"] in ("negative", "very_negative"):
-        return out(
-            pick(
-                "Cừu vẫn ở đây nhé — hôm nay bạn thế nào rồi? 💙",
-                "Hôm nay nhẹ hơn hôm qua chút không? Cừu đang nghĩ đến bạn đó.",
-            ) + retention_hook("negative"),
-            qr=["Kể thêm", "Hôm nay tốt hơn rồi", "Giúp tôi lập kế hoạch", "Tôi muốn tâm sự"]
-        )
-
-    return out(
-        pick(
-            "Cừu đang lắng nghe! 💙\n\nBạn có thể hỏi về sản phẩm, lập mục tiêu, tính toán tiết kiệm — hoặc chỉ tâm sự cũng được.\n\nHôm nay bạn muốn bắt đầu từ đâu?" + retention_hook(emotion_label),
-            "Cừu chưa hiểu rõ lắm — bạn có thể nói cụ thể hơn không? 😊\n\nVí dụ: 'Tôi có 500k muốn đầu tư' hay 'Tôi đang stress về tiền' — Cừu sẽ phản hồi phù hợp nhất." + retention_hook(emotion_label),
-        ),
-        qr=["So sánh sản phẩm TCBS", "Tôi có 500k muốn đầu tư", "Giúp tôi lập mục tiêu", "Tôi muốn tâm sự"]
-    )
+    def out(content, products=None, qr=None):
+        return {"content": content, "products": products or [], "qr": qr or QR_DEFAULT}
 
     # ── Emotion ghi nhớ vào Memory ──
     if emotion_label in ("negative", "positive", "journal"):
@@ -1633,474 +815,132 @@ def generate_response(text: str, emotion: dict, memory: dict, knowledge: dict) -
 
 # ── STAGE 5 · ORCHESTRATOR ───────────────────────────
 def get_resp(text: str) -> dict:
-    """Orchestrator: chạy pipeline 4 stage, trả về JSON chuẩn."""
+    """
+    Pipeline chính:
+      User → Emotion Analysis → Memory → Knowledge Search → LLM → Response
+    """
     now = datetime.now().strftime("%H:%M")
+
+    # Stage 1 — Emotion Analysis
     t   = norm(text)
     ctx = " ".join(norm(m["content"]) for m in st.session_state.messages[-6:])
+    emotion   = analyze_emotion(t, ctx)
 
-    emotion   = analyze_emotion(t, ctx)                    # Stage 1
-    memory    = fetch_memory()                              # Stage 2
-    knowledge = search_knowledge(t, ctx, extract_amount(text))  # Stage 3
-    result    = generate_response(text, emotion, memory, knowledge)  # Stage 4
+    # Stage 2 — Memory
+    memory    = fetch_memory()
 
-    # Cập nhật Second Brain sau khi có đầy đủ context
-    update_second_brain(emotion, knowledge, text)
+    # Stage 3 — Knowledge Search
+    knowledge = search_knowledge(t, ctx, extract_amount(text))
 
+    # Stage 4 — LLM / Response Generator
+    result    = generate_response(text, emotion, memory, knowledge)
+
+    # Stage 5 — Format & return
     return {
-        "content":    result["content"],
-        "time":       now,
-        "products":   result.get("products", []),
-        "qr":         result.get("qr", QR_DEFAULT),
-        "mood_score": result.get("mood_score", emotion["mood_score"]),
+        "content":  result["content"],
+        "time":     now,
+        "products": result.get("products", []),
+        "qr":       result.get("qr", QR_DEFAULT),
     }
 
-
-# ── process_message — entry point chính ──────────────
-def process_message(text: str):
-    """
-    Entry point chính. Priority order:
-      [1] Kết nối cảm xúc
-      [2] Nhắc nhở mục tiêu (từ Second Brain)
-      [3] Gợi ý hành động nhỏ (Micro-Commitment)
-    Output JSON bao gồm mood_score để theo dõi tâm lý KH.
-    """
+def process(text: str):
     now = datetime.now().strftime("%H:%M")
     st.session_state.messages.append({"role": "user", "content": text, "time": now})
-
     resp = get_resp(text)
-
     st.session_state.messages.append({
-        "role":       "ai",
-        "content":    resp["content"],
-        "time":       resp["time"],
-        "products":   resp["products"],
-        "mood_score": resp["mood_score"],   # ← trường mới theo dõi tâm lý
+        "role": "ai",
+        "content": resp["content"],
+        "time": resp["time"],
+        "products": resp["products"]
     })
-    st.session_state.qr         = resp["qr"]
-    st.session_state.mood_score = resp["mood_score"]
+    st.session_state.qr = resp["qr"]
 
-# ── QR TRIGGER ─────────────────────────────────────────
+# ── QR TRIGGER (trước render) ─────────────────────────
 if st.session_state.qr_trigger:
-    process_message(st.session_state.qr_trigger)
+    process(st.session_state.qr_trigger)
     st.session_state.qr_trigger = None
-    st.session_state.screen = "chat"
     st.rerun()
 
-# ══════════════════════════════════════════════════════
-# UI CONSTANTS
-# ══════════════════════════════════════════════════════
+# ── LAYOUT ───────────────────────────────────────────
+col_left, col_main = st.columns([1.05, 4.5])
 
-LANDSCAPE_SVG = """
-<svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg" class="hero-svg">
-  <defs>
-    <linearGradient id="sky-g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#B8D4F8"/>
-      <stop offset="55%" stop-color="#FFD9B4"/>
-      <stop offset="100%" stop-color="#FFBD80"/>
-    </linearGradient>
-    <linearGradient id="hill-far" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#81C784"/>
-      <stop offset="100%" stop-color="#4CAF50"/>
-    </linearGradient>
-    <linearGradient id="hill-near" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#A5D6A7"/>
-      <stop offset="100%" stop-color="#66BB6A"/>
-    </linearGradient>
-  </defs>
-  <rect fill="url(#sky-g)" width="900" height="240"/>
-  <circle cx="738" cy="54" r="34" fill="#FFE082" opacity=".6"/>
-  <circle cx="738" cy="54" r="23" fill="#FFD54F" opacity=".75"/>
-  <g style="animation:float-h 8s ease-in-out infinite">
-    <ellipse cx="130" cy="64" rx="58" ry="25" fill="white" opacity=".92"/>
-    <ellipse cx="166" cy="54" rx="38" ry="23" fill="white" opacity=".92"/>
-    <ellipse cx="95" cy="69" rx="30" ry="18" fill="white" opacity=".92"/>
-  </g>
-  <g style="animation:float-h 11s ease-in-out infinite reverse">
-    <ellipse cx="438" cy="46" rx="50" ry="21" fill="white" opacity=".85"/>
-    <ellipse cx="472" cy="38" rx="35" ry="20" fill="white" opacity=".85"/>
-    <ellipse cx="406" cy="50" rx="28" ry="16" fill="white" opacity=".85"/>
-  </g>
-  <g style="animation:float-h 13s ease-in-out infinite">
-    <ellipse cx="618" cy="76" rx="34" ry="14" fill="white" opacity=".7"/>
-    <ellipse cx="645" cy="69" rx="23" ry="13" fill="white" opacity=".7"/>
-  </g>
-  <ellipse cx="450" cy="285" rx="560" ry="155" fill="url(#hill-far)" opacity=".65"/>
-  <ellipse cx="90" cy="295" rx="230" ry="110" fill="#88D49A" opacity=".55"/>
-  <ellipse cx="840" cy="290" rx="210" ry="100" fill="#88D49A" opacity=".55"/>
-  <ellipse cx="450" cy="305" rx="580" ry="115" fill="url(#hill-near)"/>
-  <path d="M 30 226 Q 180 208 330 216 Q 480 224 630 208 Q 750 198 870 214"
-        stroke="rgba(255,255,255,.65)" stroke-width="5" fill="none"
-        stroke-dasharray="14,9" stroke-linecap="round"/>
-  <g transform="translate(638,148)">
-    <rect x="0" y="20" width="46" height="34" fill="#FFCCBC" rx="3"/>
-    <polygon points="23,0 -5,22 51,22" fill="#EF9A9A"/>
-    <rect x="31" y="-10" width="9" height="15" fill="#BCAAA4"/>
-    <rect x="29" y="-13" width="13" height="5" fill="#A1887F" rx="1.5"/>
-    <rect x="18" y="32" width="10" height="22" fill="#BCAAA4" rx="3"/>
-    <rect x="3" y="26" width="11" height="11" fill="#B3E5FC" rx="2"/>
-    <line x1="5" y1="28" x2="5" y2="35" stroke="white" stroke-width="1.5" opacity=".7"/>
-    <rect x="32" y="26" width="11" height="11" fill="#B3E5FC" rx="2"/>
-    <line x1="34" y1="28" x2="34" y2="35" stroke="white" stroke-width="1.5" opacity=".7"/>
-    <path d="M35.5,-14 Q38,-22 35,-30 Q32,-38 35,-46"
-          stroke="#BDBDBD" stroke-width="2.5" fill="none" opacity=".65" stroke-linecap="round"/>
-  </g>
-  <g transform="translate(175,174)">
-    <rect x="6" y="24" width="8" height="18" fill="#8D6E63"/>
-    <ellipse cx="10" cy="20" rx="16" ry="24" fill="#66BB6A" opacity=".9"/>
-    <ellipse cx="10" cy="12" rx="11" ry="16" fill="#81C784"/>
-  </g>
-  <g transform="translate(748,180)">
-    <rect x="5" y="20" width="7" height="16" fill="#8D6E63"/>
-    <ellipse cx="8" cy="16" rx="14" ry="20" fill="#66BB6A" opacity=".9"/>
-    <ellipse cx="8" cy="9" rx="10" ry="14" fill="#81C784"/>
-  </g>
-  <circle cx="74" cy="224" r="7" fill="#F8BBD9" opacity=".9"/>
-  <circle cx="74" cy="224" r="3.5" fill="#FFE082"/>
-  <circle cx="99" cy="231" r="6" fill="#CE93D8" opacity=".8"/>
-  <circle cx="99" cy="231" r="3" fill="#FFE082"/>
-  <circle cx="51" cy="233" r="5" fill="#80DEEA" opacity=".8"/>
-  <circle cx="51" cy="233" r="2.5" fill="#FFE082"/>
-  <circle cx="820" cy="227" r="7" fill="#F8BBD9" opacity=".9"/>
-  <circle cx="820" cy="227" r="3.5" fill="#FFE082"/>
-  <circle cx="845" cy="234" r="6" fill="#CE93D8" opacity=".8"/>
-  <circle cx="845" cy="234" r="3" fill="#FFE082"/>
-  <g transform="translate(268,210)">
-    <ellipse cx="0" cy="0" rx="12" ry="10" fill="white" opacity=".95"/>
-    <ellipse cx="0" cy="-8" rx="9" ry="8" fill="white" opacity=".95"/>
-    <circle cx="-3" cy="-12" r="3" fill="#6D4C41"/>
-    <circle cx="3" cy="-12" r="3" fill="#6D4C41"/>
-    <circle cx="-4" cy="2" r="2" fill="#6D4C41"/>
-    <circle cx="4" cy="2" r="2" fill="#6D4C41"/>
-  </g>
-</svg>
-"""
-
-EMOTIONS = [
-    ("😊", "Bình yên"),
-    ("😌", "Ổn hơn hôm qua"),
-    ("🥲", "Hơi mệt"),
-    ("😣", "Căng thẳng"),
-    ("😭", "Buồn"),
-    ("😍", "Rất vui"),
+# ═══ LEFT PANEL ═══
+# Fix #1: "Tìm sản phẩm" đã được xoá khỏi nav
+nav_items = [
+    ("💬", "Chat cùng Cừu", True),
+    ("🎯", "Kế hoạch tiết kiệm", False),
+    ("❤️", "Nhật ký cảm xúc", False),
+    ("🕐", "Lịch sử hội thoại", False),
+    ("⚙️", "Cài đặt", False),
 ]
-
-EMOTION_SHEEP = {
-    "😊": "happy", "😌": "calm", "🥲": "concerned",
-    "😣": "worried", "😭": "sad", "😍": "excited",
-}
-
-SHEEP_EMOJI = {
-    "happy": "😊", "excited": "🤩", "calm": "😌",
-    "concerned": "🥺", "worried": "😟", "sad": "😢",
-    "listening": "👂",
-}
-
-SHEEP_BUBBLE = {
-    "happy":     "Cừu vui vì bạn vui! 😊",
-    "excited":   "Tin vui rồi! Kể Cừu nghe đi! ✨",
-    "calm":      "Hôm nay bạn thế nào rồi? 🌸",
-    "concerned": "Cừu đang ở đây với bạn nhé 🥺",
-    "worried":   "Cừu hiểu cảm giác đó 😟",
-    "sad":       "Cừu hiểu... Mình ở đây nha 💙",
-    "listening": "Bạn muốn tâm sự gì hôm nay? 💬",
-}
-
-
-def detect_sheep_from_message(text: str) -> str:
-    """Phát hiện trạng thái cừu từ nội dung tin nhắn người dùng."""
-    t = norm(text)
-    if any(w in t for w in ["vui", "thuong", "tang luong", "tot", "cam on", "tuyet", "hanh phuc"]):
-        return "happy"
-    if any(w in t for w in ["met", "ap luc", "stress", "kho"]):
-        return "concerned"
-    if any(w in t for w in ["buon", "that vong", "te", "chan", "khoc"]):
-        return "sad"
-    return "listening"
-
-
-def get_sheep_state() -> str:
-    """Lấy trạng thái cừu hiện tại — ưu tiên tin nhắn gần nhất."""
-    msgs = st.session_state.messages
-    for m in reversed(msgs):
-        if m["role"] == "user":
-            return detect_sheep_from_message(m["content"])
-    return st.session_state.get("sheep_state", "calm")
-
-
-# ══════════════════════════════════════════════════════
-# SCREEN 1 — HOME COMPANION v6
-# Priority: Memory → Dream → Progress → Chat
-# ══════════════════════════════════════════════════════
-def render_home():
-    _sb      = st.session_state.second_brain
-    _mood    = st.session_state.mood_score
-    _streak  = max(_sb.get("micro_streak", 0), 3)
-    _turns   = max(len(st.session_state.messages) // 2, 0)
-    _level   = _turns // 5 + 1
-    _xp      = (_turns % 5) * 20
-    _goals   = _sb.get("goals", [])
-    _events  = _sb.get("events", [])
-    _msgs    = st.session_state.messages
-
-    # Mood label & pill color
-    if _mood < 30:
-        _mood_label, _pill_cls = "Buồn 😔", ""
-    elif _mood < 50:
-        _mood_label, _pill_cls = "Hơi mệt 😌", ""
-    elif _mood < 70:
-        _mood_label, _pill_cls = "Bình thường 🙂", "green"
-    else:
-        _mood_label, _pill_cls = "Vui 😊", "green"
-
-    _energy_pct = min(max(_mood, 10), 95)
-
-    # ── COMPANION HEADER ─────────────────────────────
+nav_html = "".join(
+    f'<div class="nav-item {"active" if a else ""}"><span class="nav-icon">{ic}</span>{lb}</div>'
+    for ic, lb, a in nav_items
+)
+with col_left:
     st.markdown(f"""
-<div class="comp-hdr">
-  <div class="ch-left">
-    <img src="{MASCOT_SRC}" class="ch-av" alt="Cừu">
-    <div>
-      <div class="ch-name">🐑 Cừu Cần Cù</div>
-      <div class="ch-sub">AI Financial Companion · TCBS</div>
-    </div>
+<div class="left-panel">
+  <div class="sheep-header">
+    <img src="{MASCOT_SRC}" class="sheep-img" alt="Cừu Cần Cù">
+    <div class="sheep-name">Cừu Cần Cù</div>
+    <div class="sheep-sub">Người bạn đồng hành tài chính ❤️</div>
   </div>
-  <div class="ch-pills">
-    <span class="ch-pill {_pill_cls}">😊 {_mood_label}</span>
-    <span class="ch-pill orange">🔥 {_streak} ngày liên tiếp</span>
-    <span class="ch-pill">⭐ Cấp {_level}</span>
+  <div class="nav-section">
+    <div class="nav-label">Tính năng</div>
+    {nav_html}
+  </div>
+  <div class="tip-green">
+    <div class="tip-green-title">🌱 Tích tiểu thành đại</div>
+    <div class="tip-green-text">Bắt đầu từ những khoản nhỏ mỗi ngày, Cừu sẽ giúp bạn đầu tư thông minh để đạt mục tiêu lớn! 🌱</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── ROW 1: Memory | Dream ─────────────────────────
-    col_mem, col_dream = st.columns([1, 1])
-
-    _mem1 = _goals[0] if _goals else "Muốn mua nhà"
-    _mem2 = "Tiết kiệm 2 triệu đ/tháng đều đặn"
-    _mem3 = _events[-1]["event"].replace("_"," ").title() if _events else "Lo lắng về tài chính tương lai"
-    _mem4 = "Thích tích lũy từng bước nhỏ, bền vững"
-
-    with col_mem:
-        st.markdown(f"""
-<div class="sec-card">
-  <div class="sec-label">🐑 Cừu nhớ về bạn</div>
-  <div class="mem-list">
-    <div class="mem-row"><span class="mem-icon">🎯</span><span>{_mem1}</span></div>
-    <div class="mem-row"><span class="mem-icon">💰</span><span>{_mem2}</span></div>
-    <div class="mem-row"><span class="mem-icon">💭</span><span>{_mem3}</span></div>
-    <div class="mem-row"><span class="mem-icon">🌱</span><span>{_mem4}</span></div>
-  </div>
-  <div class="mem-footer">🕐 Cập nhật lúc {datetime.now().strftime("%H:%M")} · Hôm nay</div>
-</div>
-""", unsafe_allow_html=True)
-
-    _save_per_month = 2_000_000
-    _goal_total     = 500_000_000
-    _saved_total    = _save_per_month * max(_turns * 2, 1)
-    _dc_pct         = min(int(_saved_total / _goal_total * 100), 99)
-    _months_left    = max(1, int((_goal_total - _saved_total) / _save_per_month))
-    _sheep_dream_msg = SHEEP_BUBBLE.get(get_sheep_state(), "Mỗi bước nhỏ đang đưa bạn gần hơn nhé! 🌱")
-
-    with col_dream:
-        st.markdown(f"""
-<div class="sec-card">
-  <div class="sec-label">🎯 Ước mơ của bạn</div>
-  <div class="dream-name-big">🏡 Mua căn nhà đầu tiên</div>
-  <div class="dream-milestone">
-    <span class="milestone-dot"></span>
-    Còn {_months_left} tháng · Đang tiến đến đây!
-  </div>
-  <div class="dream-bar-wrap">
-    <div class="dream-bar-fill" style="width:{_dc_pct}%"></div>
-  </div>
-  <div class="dream-pct">{_dc_pct}% hoàn thành</div>
-  <div class="dream-stats-row">
-    <div class="dream-stat">
-      <div class="ds-val">{fmtm(_saved_total)}</div>
-      <div class="ds-lbl">Đã tích lũy</div>
-    </div>
-    <div class="dream-stat">
-      <div class="ds-val">{fmtm(_goal_total)}</div>
-      <div class="ds-lbl">Mục tiêu</div>
-    </div>
-    <div class="dream-stat">
-      <div class="ds-val">{fmtm(_save_per_month)}/th</div>
-      <div class="ds-lbl">Mỗi tháng</div>
-    </div>
-  </div>
-  <div class="dream-sheep-msg">💬 "{_sheep_dream_msg}"</div>
-</div>
-""", unsafe_allow_html=True)
-
-    # ── ROW 2: Progress ───────────────────────────────
+# ═══ MAIN PANEL ═══
+with col_main:
+    # Welcome banner — Fix #6: đổi tagline, không lặp "tích tiểu thành đại"
+    tip = DAILY_TIPS[datetime.now().weekday() % len(DAILY_TIPS)]
     st.markdown(f"""
-<div class="sec-card" style="margin-top:12px">
-  <div class="sec-label">📈 Tiến độ hành trình</div>
-  <div class="prog-row">
-    <div class="prog-item">
-      <div class="pi-icon">🔥</div>
-      <div class="pi-val">{_streak}</div>
-      <div class="pi-lbl">Ngày liên tiếp</div>
-      <div class="pi-bar"><div class="pi-bar-fill" style="width:{min(_streak*10,100)}%"></div></div>
-    </div>
-    <div class="prog-item">
-      <div class="pi-icon">⭐</div>
-      <div class="pi-val">Cấp {_level}</div>
-      <div class="pi-lbl">Cấp độ</div>
-      <div class="pi-bar"><div class="pi-bar-fill" style="width:{_xp}%"></div></div>
-    </div>
-    <div class="prog-item">
-      <div class="pi-icon">💬</div>
-      <div class="pi-val">{_turns}</div>
-      <div class="pi-lbl">Cuộc trò chuyện</div>
-      <div class="pi-bar"><div class="pi-bar-fill" style="width:{min(_turns*20,100)}%"></div></div>
-    </div>
-    <div class="prog-item">
-      <div class="pi-icon">😊</div>
-      <div class="pi-val">{_energy_pct}%</div>
-      <div class="pi-lbl">Năng lượng</div>
-      <div class="pi-bar"><div class="pi-bar-fill" style="width:{_energy_pct}%"></div></div>
-    </div>
+<div class="welcome-banner">
+  <div class="wb-left">
+    <h2>👋 Xin chào!</h2>
+    <p>Mình là <strong>Cừu Cần Cù</strong>, người bạn đồng hành tài chính của bạn.</p>
+    <p class="wb-red">Hãy để Cừu đồng hành cùng bạn mỗi ngày — tài chính vững, cuộc sống nhẹ! 💙</p>
+  </div>
+  <div class="tip-yellow">
+    <div class="ty-label">💡 Tip của Cừu</div>
+    <div class="ty-text">{tip}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # ── ROW 3: Chat section ───────────────────────────
-    st.markdown("""
-<div class="chat-section">
-  <div class="chat-sec-hdr">
-    <span class="status-dot"></span>
-    💬 Cuộc trò chuyện hôm nay
-  </div>
-""", unsafe_allow_html=True)
+    # ── CHAT MESSAGES — Fix #3: chiều cao cố định 460px, scroll-to-bottom qua JS ──
+    chat_iframe_html = build_chat_html(st.session_state.messages)
+    components.html(chat_iframe_html, height=460, scrolling=False)
 
-    _preview_msgs = _msgs[-4:] if _msgs else []
-    if _preview_msgs:
-        _preview_html = ""
-        for _pm in _preview_msgs[-3:]:
-            if _pm["role"] == "user":
-                _preview_html += f"""
-<div class="mini-user">
-  <div class="mini-av-u">👤</div>
-  <div><div class="mini-buser">{_pm["content"][:90]}{"…" if len(_pm["content"])>90 else ""}</div>
-  <div class="mini-time" style="text-align:right">{_pm.get("time","")}</div></div>
-</div>"""
-            else:
-                _av_html = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
-                _preview_html += f"""
-<div class="mini-ai">
-  <div class="mini-av">{_av_html}</div>
-  <div><div class="mini-bai">{_pm["content"][:100]}{"…" if len(_pm["content"])>100 else ""}</div>
-  <div class="mini-time">{_pm.get("time","")}</div></div>
-</div>"""
-        st.markdown(_preview_html, unsafe_allow_html=True)
-    else:
-        _av_html2 = f'<img src="{MASCOT_SRC}" style="width:100%;height:100%;object-fit:cover">' if MASCOT_SRC else "🐑"
-        st.markdown(f"""
-<div class="mini-ai">
-  <div class="mini-av">{_av_html2}</div>
-  <div><div class="mini-bai">Hôm nay bạn cảm thấy thế nào? Kể Cừu nghe nhé 🌸</div></div>
-</div>""", unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)  # close .chat-section
-
-    # Quick action buttons
-    _qr_home = [
-        "💬 Tôi muốn tâm sự",
-        "😔 Hôm nay tôi hơi mệt",
-        "🎯 Tôi có một mục tiêu",
-        "💰 Tôi lo về tiền bạc",
-        "📊 So sánh sản phẩm",
-        "🌱 Bắt đầu đầu tư",
-    ]
-    st.markdown('<div class="qa-zone">', unsafe_allow_html=True)
-    _qr_cols = st.columns(3)
-    for i, lbl in enumerate(_qr_home):
-        with _qr_cols[i % 3]:
-            if st.button(lbl, key=f"hqa_{i}"):
-                st.session_state.qr_trigger = lbl
-                st.session_state.screen = "chat"
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════
-# SCREEN 2 — FULL CHAT EXPERIENCE v6
-# ══════════════════════════════════════════════════════
-def render_chat():
-    _ss      = get_sheep_state()
-    _s_emoji = SHEEP_EMOJI.get(_ss, "👂")
-    _qr_list = st.session_state.qr
-
-    # Back button
-    st.markdown('<div class="back-btn">', unsafe_allow_html=True)
-    if st.button("◀ Về trang chính", key="back_home"):
-        st.session_state.screen = "home"
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Chat container
-    st.markdown(f"""
-<div class="chat-full-wrap">
-  <div class="chat-full-hdr">
-    <img src="{MASCOT_SRC}" class="cf-av" alt="Cừu">
-    <div style="flex:1">
-      <div class="cf-name">Cừu Cần Cù</div>
-      <div class="cf-status">
-        <span class="status-dot"></span> Đang lắng nghe bạn {_s_emoji}
-      </div>
-    </div>
-  </div>
-""", unsafe_allow_html=True)
-
-    # Chat messages — dynamic height
-    _msg_count = len(st.session_state.messages)
-    _chat_h = max(220, min(520, _msg_count * 100 + 120))
-    components.html(build_chat_html(st.session_state.messages), height=_chat_h, scrolling=False)
-
-    st.markdown('</div>', unsafe_allow_html=True)  # close chat-full-wrap
-
-    # Quick replies
-    if _qr_list:
-        st.markdown('<div class="qr5">', unsafe_allow_html=True)
-        qr1, qr2 = st.columns(2)
-        for i, txt in enumerate(_qr_list[:4]):
-            _col = qr1 if i % 2 == 0 else qr2
-            with _col:
+    # ── QUICK REPLIES ──
+    qr_list = st.session_state.qr
+    st.markdown('<div class="qr-zone">', unsafe_allow_html=True)
+    if qr_list:
+        cols = st.columns(len(qr_list) + 1)
+        for i, txt in enumerate(qr_list):
+            with cols[i]:
                 if st.button(txt, key=f"qr_{i}_{txt[:6]}"):
                     st.session_state.qr_trigger = txt
                     st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        with cols[-1]:
+            if st.button("🔄", key="qr_reset"):
+                st.session_state.qr = QR_DEFAULT
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Chat input override (inject close to element for specificity)
-    st.markdown("""<style>
-[data-testid="stChatInput"]{border:2px solid #E8E4FF!important;
-  border-radius:22px!important;background:white!important;outline:none!important;
-  box-shadow:0 4px 20px rgba(123,97,255,.12)!important}
-[data-testid="stChatInput"] textarea,
-[data-testid="stChatInput"]>div,
-[data-testid="stChatInput"]>div>div{
-  border:none!important;outline:none!important;box-shadow:none!important}
-[data-testid="stChatInput"] textarea:focus{border:none!important;outline:none!important}
-</style>""", unsafe_allow_html=True)
-
-    user_input = st.chat_input("Hôm nay bạn muốn tâm sự điều gì với Cừu? 🌸", key="cin")
+    # ── CHAT INPUT ──
+    user_input = st.chat_input("Nhắn tin cho Cừu...", key="cin")
     if user_input:
-        process_message(user_input)
-        st.session_state.sheep_state = detect_sheep_from_message(user_input)
+        process(user_input)
         st.rerun()
 
     st.markdown(
-        '<div class="disclaimer">🛡️ Cừu Cần Cù cung cấp thông tin tham khảo, không phải lời khuyên đầu tư. 💙</div>',
+        '<div class="disclaimer">🛡️ Cừu Cần Cù cung cấp thông tin, không phải lời khuyên đầu tư. Bạn nên cân nhắc kỹ trước khi ra quyết định.</div>',
         unsafe_allow_html=True
     )
-
-
-# ══════════════════════════════════════════════════════
-# SCREEN ROUTER
-# ══════════════════════════════════════════════════════
-_screen = st.session_state.get("screen", "home")
-if _screen == "home":
-    render_home()
-else:
-    render_chat()
