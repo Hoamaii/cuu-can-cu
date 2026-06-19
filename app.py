@@ -31,11 +31,11 @@ def get_image_base64(path: str):
     return None
 
 MASCOT_CANDIDATES = [
+    MASCOT_CANDIDATES = [
+    "Pasted Graphic.png",
     "mascot.png",
     "mascot.jpg",
     "mascot.jpeg",
-    "st.image("Pasted Graphic.png", width=180)",
-    "st.image("Pasted Graphic.png", width=180)",
     "cuu.png",
     "cuu.jpg",
     "cuu.jpeg",
