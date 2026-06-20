@@ -76,6 +76,8 @@ _MOOD_PATTERNS: dict[str, list[str]] = {
     "celebrate":  ["sheep_celebrate", "celebrate", "sheep_happy"],
     "determined": ["sheep_determined", "determined", "sheep_goal"],
     "goal":       ["sheep_determined", "sheep_goal", "determined"],
+    # Nhật ký
+    "diary":  ["sheep_diary",  "diary"],
     # Giai đoạn trưởng thành
     "baby":   ["sheep_baby",   "baby"],
     "child":  ["sheep_child",  "child"],
@@ -151,6 +153,7 @@ def show_sheep(mood: str | None = None, width: int = 160, show_badge: bool = Tru
         "saving":     "💰 Tích tiểu thành đại!",
         "celebrate":  "🎉 Bê bê~ Cừu ăn mừng cùng bạn!",
         "determined": "💪 Cùng chinh phục mục tiêu!",
+        "diary":      "📔 Cừu đang giữ nhật ký cho bạn...",
     }.get(m, "")
     st.markdown(
         f'<div style="text-align:center;margin:8px 0 6px;">'
@@ -377,7 +380,10 @@ def _init():
         "sheep_mood":   "default",
         "_quick_reply": None,
         "feeding_celebration": False,
-        "feeding_refused": False,
+        "feeding_refused":     False,
+        "diary_mood_sel":      None,
+        "diary_just_saved":    False,
+        "diary_last_entry":    None,
     }
     for k, v in defs.items():
         if k not in st.session_state:
@@ -445,6 +451,83 @@ def get_smart_suggestion(messages: list, mem: dict) -> str | None:
         return f"💭 **Gợi ý:** Bạn có giấc mơ '{dreams[0]['name'].title()}' rồi — cho Cừu ăn hôm nay để bắt đầu nhé!"
 
     return None  # No relevant context → show nothing
+
+
+# ═══════════════════════════════════════════════════════
+# DIARY HELPERS
+# ═══════════════════════════════════════════════════════
+def _diary_streak(entries: list[dict]) -> int:
+    """Consecutive days with diary entries (today counts; allow 1-day gap)."""
+    if not entries:
+        return 0
+    today = datetime.now().date()
+    dates = sorted(
+        {datetime.fromisoformat(e["date_raw"]).date() for e in entries},
+        reverse=True,
+    )
+    if not dates or dates[0] < today - timedelta(days=1):
+        return 0
+    streak, check = 0, today
+    for d in dates:
+        if d >= check - timedelta(days=1):
+            streak += 1
+            check   = d
+        else:
+            break
+    return streak
+
+
+def _top_diary_theme(entries: list[dict]) -> str:
+    """Most common life-event tag across all diary entries."""
+    from collections import Counter
+    all_tags = [t for e in entries for t in e.get("tags", [])]
+    return Counter(all_tags).most_common(1)[0][0] if all_tags else ""
+
+
+def _top_diary_dream(entries: list[dict]) -> str:
+    """Most frequently mentioned dream across diary entries."""
+    from collections import Counter
+    dreams = [e["dream"] for e in entries if e.get("dream")]
+    return Counter(dreams).most_common(1)[0][0] if dreams else ""
+
+
+def _build_diary_insights(mood: str, tags: list, dream: str, content: str) -> list[str]:
+    """Return up to 4 human-readable insight bullets from a diary entry."""
+    insights: list[str] = []
+    mood_map = {
+        "rất vui":        "Bạn đang trong trạng thái rất vui ✨",
+        "áp lực":         "Bạn đang chịu một chút áp lực",
+        "hơi mệt":        "Bạn đang cảm thấy mệt mỏi",
+        "bực":            "Có điều gì đó đang làm bạn khó chịu",
+        "quyết tâm":      "Bạn đang rất quyết tâm 💪",
+        "được lắng nghe": "Bạn cần được lắng nghe hôm nay",
+    }
+    for k, v in mood_map.items():
+        if k in mood.lower():
+            insights.append(v)
+            break
+    tag_map = {
+        "cashflow":       "Bạn đang áp lực công việc / tài chính",
+        "stress":         "Bạn đang có stress cần giải tỏa",
+        "dream_travel":   "Bạn muốn đi du lịch",
+        "dream_house":    "Bạn mong có ngôi nhà riêng",
+        "dream_car":      "Bạn mong có xe riêng",
+        "dream_business": "Bạn đang ấp ủ khởi nghiệp",
+        "education":      "Bạn đang lo về học hành / thi cử",
+        "career":         "Bạn đang suy nghĩ về sự nghiệp",
+        "emotional":      "Bạn đang có chuyện cảm xúc",
+        "family":         "Bạn đang nghĩ về gia đình",
+        "health":         "Bạn đang chú ý đến sức khỏe",
+        "milestone":      "Bạn vừa trải qua một cột mốc quan trọng",
+    }
+    for tag in tags:
+        if tag in tag_map and len(insights) < 3:
+            insights.append(tag_map[tag])
+    if dream and len(insights) < 4:
+        insights.append(f"Bạn có giấc mơ: **{dream}** 💭")
+    if not insights:
+        insights.append("Bạn đã dành thời gian ghi lại hôm nay — đó là điều tuyệt vời 🌿")
+    return insights[:4]
 
 
 # ═══════════════════════════════════════════════════════
@@ -694,6 +777,52 @@ strong { color:#333 !important; }
     50% { transform:scale(1.02);box-shadow:0 0 0 12px rgba(255,150,200,0); }
     100%{ transform:scale(1);   box-shadow:0 0 0 0 rgba(255,150,200,0); }
 }
+
+/* ── Diary-specific components ── */
+.diary-prompt {
+    background: rgba(255,240,200,0.45);
+    border-left: 3px solid #FFB5C8;
+    border-radius: 0 10px 10px 0;
+    padding: 9px 14px;
+    margin: 14px 0 5px;
+    font-size: 0.93rem;
+    font-weight: 700;
+    color: #C4607F;
+    line-height: 1.4;
+}
+.insight-card {
+    background: linear-gradient(135deg, #FFF5FA, #F0F7FF);
+    border: 2px solid #FFD6E8;
+    border-radius: 20px;
+    padding: 24px 20px;
+    text-align: center;
+    margin: 12px 0 16px;
+    animation: pulse 0.8s ease-in-out;
+}
+.diary-stat-mini {
+    background: white;
+    border: 1.5px solid #FFD6E8;
+    border-radius: 12px;
+    padding: 10px 10px 8px;
+    text-align: center;
+    min-height: 62px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+.diary-entry-card {
+    background: white;
+    border: 1.5px solid #F0E6F0;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin: 6px 0 4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.diary-entry-card:hover {
+    border-color: #FFB5C8;
+    box-shadow: 0 2px 10px rgba(255,150,200,0.15);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -853,52 +982,211 @@ with tab1:
 
 
 # ═══════════════════════════════════════════════════════
-# TAB 2 — NHẬT KÝ TÂM SỰ
-# UX: "Cuốn nhật ký cá nhân — ghi lại, lưu trữ, nhìn lại"
+# TAB 2 — NHẬT KÝ TÂM SỰ  v3.1
+# UX: "Mình đang viết cho Cừu" — KHÔNG phải "điền form"
 # ═══════════════════════════════════════════════════════
 with tab2:
-    col_diary_img, col_diary_hdr = st.columns([1, 4])
-    with col_diary_img:
-        # Dùng ảnh "listening" nhưng context khác hoàn toàn
-        show_sheep("listening", width=160, show_badge=False)
-    with col_diary_hdr:
-        st.title("📔 Nhật Ký Tâm Sự")
+    diary_entries: list[dict] = mem.get("diary_entries", [])
+
+    # ── PHẦN 1: HERO — sheep_diary + tagline ──
+    col_dimg, col_dhdr = st.columns([1, 4])
+    with col_dimg:
+        show_sheep("diary", width=180, show_badge=False)
+    with col_dhdr:
+        st.title("🐑 Nhật Ký Tâm Sự")
         st.markdown(
             '<div class="diary-framing">'
-            '📖 <strong>Ghi lại hôm nay — để nhìn lại hành trình</strong><br/>'
-            '<span style="color:#888;font-size:0.88rem;">'
-            'Không phải trò chuyện realtime. Đây là không gian riêng tư của bạn — '
-            'viết để nhẹ lòng, Cừu sẽ đọc và phản hồi sau khi bạn lưu.</span>'
+            '<strong style="color:#5A7A4A;font-size:1rem;">'
+            '📖 Cừu sẽ giữ giúp bạn những điều của hôm nay.</strong><br/>'
+            '<span style="color:#777;font-size:0.88rem;">'
+            'Để sau này nhìn lại, bạn sẽ thấy mình đã trưởng thành như thế nào.<br/>'
+            '<em>Không phải chat realtime — đây là không gian riêng tư của bạn.</em>'
+            '</span>'
             '</div>',
             unsafe_allow_html=True,
         )
 
-    st.markdown("---")
-    diary_entries: list[dict] = mem.get("diary_entries", [])
+    # ── PHẦN 6: PROGRESS STATS — chỉ hiện khi có entries ──
+    if diary_entries:
+        d_streak  = _diary_streak(diary_entries)
+        d_theme   = _top_diary_theme(diary_entries)
+        d_dream   = _top_diary_dream(diary_entries)
+        d_last_r  = diary_entries[0].get("reply", "") if diary_entries else ""
+        top_lbl   = LIFE_EVENT_LABELS.get(d_theme, d_theme) if d_theme else "—"
+        dream_lbl = d_dream.title() if d_dream else "—"
 
-    DIARY_MOODS = ["😊 Vui", "😐 Bình thường", "😔 Buồn", "😤 Bực",
-                   "😴 Mệt", "🥺 Lo lắng", "💪 Quyết tâm"]
+        st.markdown("---")
+        sc1, sc2, sc3, sc4, sc5 = st.columns(5)
+        sc1.markdown(
+            f'<div class="diary-stat-mini">'
+            f'<div style="font-size:1.3rem;font-weight:800;color:#C4607F;">{len(diary_entries)}</div>'
+            f'<div style="font-size:0.76rem;color:#888;">📖 Tổng trang</div>'
+            f'</div>', unsafe_allow_html=True,
+        )
+        sc2.markdown(
+            f'<div class="diary-stat-mini">'
+            f'<div style="font-size:1.3rem;font-weight:800;color:#C4607F;">{d_streak}</div>'
+            f'<div style="font-size:0.76rem;color:#888;">🔥 Streak</div>'
+            f'</div>', unsafe_allow_html=True,
+        )
+        sc3.markdown(
+            f'<div class="diary-stat-mini">'
+            f'<div style="font-size:0.85rem;font-weight:700;color:#4E7DB8;">{top_lbl[:16]}</div>'
+            f'<div style="font-size:0.76rem;color:#888;">💙 Hay tâm sự</div>'
+            f'</div>', unsafe_allow_html=True,
+        )
+        sc4.markdown(
+            f'<div class="diary-stat-mini">'
+            f'<div style="font-size:0.85rem;font-weight:700;color:#4E7DB8;">{dream_lbl[:16]}</div>'
+            f'<div style="font-size:0.76rem;color:#888;">🎯 Giấc mơ thường</div>'
+            f'</div>', unsafe_allow_html=True,
+        )
+        preview_r = f'"{d_last_r[:36]}..."' if len(d_last_r) > 36 else f'"{d_last_r}"'
+        sc5.markdown(
+            f'<div class="diary-stat-mini">'
+            f'<div style="font-size:0.78rem;color:#666;font-style:italic;">{preview_r}</div>'
+            f'<div style="font-size:0.76rem;color:#888;">🐑 Cừu nhớ nhất</div>'
+            f'</div>', unsafe_allow_html=True,
+        )
+
+    st.markdown("---")
+
+    DIARY_MOODS_V2 = [
+        ("😊", "Mình rất vui"),
+        ("😔", "Có chút áp lực"),
+        ("😴", "Hơi mệt"),
+        ("😡", "Bực một chuyện"),
+        ("💪", "Đang quyết tâm"),
+        ("🥹", "Muốn được lắng nghe"),
+    ]
 
     col_write, col_history = st.columns([3, 2])
 
+    # ─────────────────────────────────────────────────────
+    # LEFT: WRITING SECTION
+    # ─────────────────────────────────────────────────────
     with col_write:
-        st.subheader("✍️ Viết tâm sự hôm nay")
-        diary_title = st.text_input("Tiêu đề (tuỳ chọn)",
-                                     placeholder="Hôm nay mình cảm thấy...", key="diary_title")
-        diary_mood_sel = st.radio("Tâm trạng hôm nay:", DIARY_MOODS,
-                                   horizontal=True, label_visibility="collapsed", key="d_mood")
-        diary_text = st.text_area(
-            "Viết ra những điều trong lòng 🌿",
-            placeholder=(
-                "Hôm nay mình cảm thấy...\n"
-                "Chuyện xảy ra là...\n"
-                "Mình muốn ghi lại điều này vì..."
-            ),
-            height=240, key="diary_text",
-        )
 
-        if st.button("💾 Lưu vào nhật ký", type="primary", use_container_width=True):
-            if diary_text.strip():
+        # ── PHẦN 4: INSIGHT CARD — hiển thị sau khi lưu ──
+        if st.session_state.get("diary_just_saved") and st.session_state.get("diary_last_entry"):
+            last_e   = st.session_state.diary_last_entry
+            insights = _build_diary_insights(
+                last_e.get("mood", ""),
+                last_e.get("tags", []),
+                last_e.get("dream", ""),
+                last_e.get("content", ""),
+            )
+            diary_src = _b64(_pick_mascot("diary"))
+
+            insight_html = "".join(
+                f'<div style="display:flex;align-items:flex-start;gap:8px;margin:5px 0;text-align:left;">'
+                f'<span style="color:#FF8FAF;font-weight:700;flex-shrink:0;">•</span>'
+                f'<span style="font-size:0.9rem;color:#444;line-height:1.5;">{ins}</span>'
+                f'</div>'
+                for ins in insights
+            )
+            st.markdown(
+                f'<div class="insight-card">'
+                f'<img src="{diary_src}" width="88" '
+                f'style="border-radius:50%;border:4px solid #FFB5C8;margin-bottom:12px;" /><br/>'
+                f'<strong style="color:#C4607F;font-size:1.08rem;">'
+                f'🐑 Hôm nay mình hiểu thêm về bạn</strong>'
+                f'<div style="margin:14px 0 10px;padding:0 4px;">{insight_html}</div>'
+                f'<div style="color:#4E7DB8;font-size:0.92rem;font-style:italic;">'
+                f'💙 Mình sẽ nhớ điều này giúp bạn.</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            if last_e.get("reply"):
+                st.markdown(
+                    f'<div style="background:rgba(255,182,210,0.15);border-radius:14px;'
+                    f'padding:12px 16px;margin:6px 0 14px;font-style:italic;color:#C4607F;">'
+                    f'🐑 Cừu nhắn: <strong>{last_e["reply"]}</strong>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            if last_e.get("dream"):
+                st.markdown(
+                    f'<div style="background:rgba(200,240,200,0.3);border-radius:12px;'
+                    f'padding:10px 14px;margin:6px 0;">'
+                    f'✨ Cừu phát hiện giấc mơ: <strong>{last_e["dream"]}</strong>!'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            if st.button("✏️ Viết thêm hôm nay", type="primary", use_container_width=True):
+                st.session_state.diary_just_saved = False
+                st.session_state.diary_last_entry = None
+                for k in ("dq1", "dq2", "dq3"):
+                    st.session_state.pop(k, None)
+                st.session_state.diary_mood_sel = None
+                st.rerun()
+
+        else:
+            # ── PHẦN 2: CHỌN CẢM XÚC — mood chips ──
+            st.markdown(
+                '<div style="font-size:1rem;font-weight:700;color:#C4607F;margin-bottom:10px;">'
+                '🐑 Hôm nay bạn thế nào?</div>',
+                unsafe_allow_html=True,
+            )
+            mood_cols = st.columns(3)
+            for i, (emoji, label) in enumerate(DIARY_MOODS_V2):
+                full_label = f"{emoji} {label}"
+                is_sel     = (st.session_state.get("diary_mood_sel") == full_label)
+                if mood_cols[i % 3].button(
+                    full_label,
+                    key=f"dmood_{i}",
+                    use_container_width=True,
+                    type="primary" if is_sel else "secondary",
+                ):
+                    st.session_state.diary_mood_sel = full_label
+                    st.rerun()
+
+            current_mood = st.session_state.get("diary_mood_sel") or ""
+
+            # ── PHẦN 3: 3 KHUNG VIẾT CÓ GỢI MỞ ──
+            st.markdown(
+                '<div class="diary-prompt">🐑 Hôm nay điều gì khiến bạn nhớ nhất?</div>',
+                unsafe_allow_html=True,
+            )
+            q1 = st.text_area(
+                "",
+                placeholder="Kể cho mình nghe... (không cần viết nhiều)",
+                height=100, key="dq1", label_visibility="collapsed",
+            )
+
+            st.markdown(
+                '<div class="diary-prompt">🐑 Có điều gì khiến bạn vui, buồn hoặc lo lắng không?</div>',
+                unsafe_allow_html=True,
+            )
+            q2 = st.text_area(
+                "",
+                placeholder="Vài dòng thôi cũng được...",
+                height=100, key="dq2", label_visibility="collapsed",
+            )
+
+            st.markdown(
+                '<div class="diary-prompt">🐑 Có điều gì bạn muốn nhắn cho chính mình trong tương lai?</div>',
+                unsafe_allow_html=True,
+            )
+            q3 = st.text_area(
+                "",
+                placeholder="Ghi lại điều bạn muốn nhớ...",
+                height=100, key="dq3", label_visibility="collapsed",
+            )
+
+            # ── PHẦN 4: SAVE CTA ──
+            has_content = any([q1.strip(), q2.strip(), q3.strip()])
+            if st.button(
+                "💾 Lưu vào nhật ký của Cừu",
+                type="primary",
+                use_container_width=True,
+                disabled=not has_content,
+            ):
+                combined = "\n\n".join(filter(None, [
+                    f"Điều nhớ nhất: {q1.strip()}"       if q1.strip() else "",
+                    f"Cảm xúc hôm nay: {q2.strip()}"     if q2.strip() else "",
+                    f"Nhắn cho tương lai: {q3.strip()}"   if q3.strip() else "",
+                ]))
                 sheep_reply  = "Bê bê~ 🐑 Cừu đã đọc rồi! Cảm ơn bạn đã tin tưởng 💙"
                 emotion_tag  = "bình_thường"
                 dream_det    = ""
@@ -907,9 +1195,7 @@ with tab2:
                 if st.session_state.api_key:
                     with st.spinner("Cừu đang đọc nhật ký... 📖"):
                         r = _call_llm(
-                            f"Nhật ký:\nTiêu đề: {diary_title or '(trống)'}\n"
-                            f"Tâm trạng: {diary_mood_sel}\n"
-                            f"Nội dung: {diary_text[:500]}",
+                            f"Nhật ký hôm nay:\nTâm trạng: {current_mood}\n{combined[:600]}",
                             _SYS_DIARY,
                         )
                         sheep_reply = r.get("sheep_reply") or sheep_reply
@@ -923,9 +1209,9 @@ with tab2:
                     "id":       datetime.now().isoformat(),
                     "date":     datetime.now().strftime("%d/%m/%Y %H:%M"),
                     "date_raw": datetime.now().isoformat(),
-                    "title":    diary_title.strip() or f"Ngày {datetime.now().strftime('%d/%m')}",
-                    "mood":     diary_mood_sel,
-                    "content":  diary_text.strip(),
+                    "title":    f"Ngày {datetime.now().strftime('%d/%m')}",
+                    "mood":     current_mood or "🐑 Bình thường",
+                    "content":  combined,
                     "emotion":  emotion_tag,
                     "tags":     entry_tags,
                     "dream":    dream_det,
@@ -935,61 +1221,114 @@ with tab2:
                 mem["diary_entries"] = diary_entries
                 _save()
 
-                st.success(f"🐑 **Cừu nhắn:** {sheep_reply}")
-                if dream_det:
-                    st.info(f"✨ Cừu phát hiện giấc mơ: **{dream_det}**!")
+                st.session_state.diary_just_saved = True
+                st.session_state.diary_last_entry = entry
                 st.rerun()
-            else:
-                st.warning("Bạn chưa viết gì! Cừu muốn nghe chuyện của bạn nè 🐑")
 
-        if diary_entries:
-            dl = json.dumps(diary_entries, ensure_ascii=False, indent=2)
-            st.download_button("⬇️ Tải nhật ký về máy", dl,
-                               "nhat_ky_tam_su.json", "application/json")
+            if not has_content:
+                st.caption("Viết ít nhất một điều để Cừu có thể lưu giúp bạn 🌿")
 
+            if diary_entries:
+                dl = json.dumps(diary_entries, ensure_ascii=False, indent=2)
+                st.download_button(
+                    "⬇️ Tải nhật ký về máy", dl,
+                    "nhat_ky_tam_su.json", "application/json",
+                )
+
+    # ─────────────────────────────────────────────────────
+    # RIGHT: TIMELINE — PHẦN 5 & 7
+    # ─────────────────────────────────────────────────────
     with col_history:
-        st.subheader(f"📅 Timeline ({len(diary_entries)} trang)")
         if not diary_entries:
-            show_sheep("miss_you", width=130)
-            st.caption("Chưa có trang nhật ký nào. Bắt đầu viết đi bạn! 🌿")
+            # Empty state: emotional hook
+            st.markdown(
+                '<div style="text-align:center;padding:40px 16px 20px;">'
+                '<div style="font-size:2.4rem;margin-bottom:8px;">🌱</div>'
+                '<div style="font-weight:800;color:#5A7A4A;font-size:1.05rem;margin-bottom:10px;">'
+                'Trang đầu tiên đang chờ bạn.</div>'
+                '<div style="color:#888;font-size:0.88rem;line-height:1.7;font-style:italic;">'
+                '"Mọi giấc mơ lớn đều bắt đầu<br/>từ một dòng nhật ký nhỏ."'
+                '</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
         else:
+            st.markdown(
+                '<div style="font-weight:800;color:#4E7DB8;font-size:1.05rem;margin-bottom:6px;">'
+                '📖 Hành trình trưởng thành</div>',
+                unsafe_allow_html=True,
+            )
             now = datetime.now()
             filter_opt = st.radio(
-                "Xem:", ["📅 Hôm nay", "📆 Tuần này", "🗓️ Tháng này", "📚 Tất cả"],
-                horizontal=True, label_visibility="collapsed", key="d_filter",
+                "Xem:",
+                ["Hôm nay", "Tuần này", "Tháng này", "Tất cả"],
+                horizontal=True,
+                label_visibility="collapsed",
+                key="d_filter",
             )
             filtered = diary_entries
-            if filter_opt == "📅 Hôm nay":
+            if filter_opt == "Hôm nay":
                 filtered = [e for e in diary_entries
                             if e["date_raw"][:10] == now.strftime("%Y-%m-%d")]
-            elif filter_opt == "📆 Tuần này":
+            elif filter_opt == "Tuần này":
                 ago = (now - timedelta(days=7)).isoformat()
                 filtered = [e for e in diary_entries if e["date_raw"] >= ago]
-            elif filter_opt == "🗓️ Tháng này":
-                m_start = now.strftime("%Y-%m")
-                filtered = [e for e in diary_entries if e["date_raw"][:7] == m_start]
+            elif filter_opt == "Tháng này":
+                ms = now.strftime("%Y-%m")
+                filtered = [e for e in diary_entries if e["date_raw"][:7] == ms]
 
-            search = st.text_input("🔍 Tìm kiếm", placeholder="Từ khoá...", key="d_search")
+            search = st.text_input(
+                "🔍", placeholder="Tìm kiếm...", key="d_search",
+                label_visibility="collapsed",
+            )
             if search:
+                sl = search.lower()
                 filtered = [e for e in filtered
-                            if search.lower() in e["content"].lower()
-                            or search.lower() in e["title"].lower()]
+                            if sl in e["content"].lower() or sl in e["title"].lower()]
 
-            st.caption(f"Hiển thị {len(filtered)} trang")
+            st.caption(f"{len(filtered)} trang nhật ký")
+
             for entry in filtered:
-                with st.expander(f"{entry['mood']} **{entry['title']}** — {entry['date']}"):
-                    st.markdown(entry["content"])
-                    if entry.get("reply"):
-                        st.info(f"🐑 Cừu: {entry['reply']}")
-                    if entry.get("dream"):
-                        st.success(f"✨ Giấc mơ: {entry['dream']}")
-                    tags_str = " ".join(LIFE_EVENT_LABELS.get(t, t) for t in entry.get("tags", []))
-                    if tags_str:
-                        st.caption(tags_str)
-                    if st.button("🗑️ Xoá", key=f"del_{entry['id']}"):
-                        mem["diary_entries"] = [e for e in diary_entries if e["id"] != entry["id"]]
-                        _save()
-                        st.rerun()
+                preview = entry["content"][:110] + ("..." if len(entry["content"]) > 110 else "")
+                dream_line = (
+                    f'<div style="color:#5A7A4A;font-size:0.82rem;margin-top:4px;">✨ {entry["dream"]}</div>'
+                    if entry.get("dream") else ""
+                )
+                tags_line = " ".join(
+                    LIFE_EVENT_LABELS.get(t, t)
+                    for t in entry.get("tags", [])[:2]
+                )
+                reply_preview = ""
+                if entry.get("reply"):
+                    rp = entry["reply"]
+                    reply_preview = (
+                        f'<div style="color:#C4607F;font-size:0.82rem;'
+                        f'margin-top:6px;font-style:italic;">'
+                        f'🐑 {rp[:55]}{"..." if len(rp)>55 else ""}</div>'
+                    )
+
+                tags_div = (
+                    f'<div style="font-size:0.76rem;color:#aaa;margin-top:3px;">{tags_line}</div>'
+                    if tags_line else ""
+                )
+                st.markdown(
+                    f'<div class="diary-entry-card">'
+                    f'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+                    f'<span style="font-weight:700;color:#444;font-size:0.88rem;">{entry["mood"]}</span>'
+                    f'<span style="font-size:0.76rem;color:#bbb;">{entry["date"][:8]}</span>'
+                    f'</div>'
+                    f'<div style="font-size:0.85rem;color:#666;margin:6px 0 2px;line-height:1.55;">'
+                    f'{preview}</div>'
+                    f'{dream_line}'
+                    f'{tags_div}'
+                    f'{reply_preview}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button("🗑️", key=f"del_{entry['id']}", help="Xoá trang này"):
+                    mem["diary_entries"] = [e for e in diary_entries if e["id"] != entry["id"]]
+                    _save()
+                    st.rerun()
 
 
 # ═══════════════════════════════════════════════════════
