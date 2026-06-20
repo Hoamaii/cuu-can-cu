@@ -4,6 +4,7 @@ import json
 import random
 import re
 import base64
+import urllib.request
 from datetime import datetime
 
 # ─────────────────────────────────────────────
@@ -40,23 +41,51 @@ MOOD_EMOJI_BADGE = {
     "miss_you":  ("🐑", "💙 Cừu nhớ bạn lắm..."),
 }
 
-def get_sheep_img(mood: str = None) -> str:
-    """Return sheep image URL — uses GitHub asset if available, else MASCOT_URL."""
-    m = mood or st.session_state.get("sheep_mood", "default")
-    return SHEEP_IMAGES.get(m, MASCOT_URL)
+# ── SVG emoji fallback khi GitHub không tải được ──
+_SHEEP_SVG = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+    "viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='82'%3E%F0%9F%90%91%3C/text%3E%3C/svg%3E"
+)
 
-def show_sheep(mood: str = None, width: int = 120):
-    """Render sheep avatar dùng HTML img — to hơn, có viền pastel, không lỗi st.image()."""
+@st.cache_data(ttl=3600, show_spinner=False)
+def _img_b64(url: str) -> str:
+    """
+    Fetch ảnh từ URL → base64 data URI để nhúng thẳng vào HTML.
+    Cách này bypass hoàn toàn CSP của Streamlit Community Cloud
+    (trình duyệt KHÔNG cần tải từ GitHub nữa).
+    """
+    try:
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            raw = r.read()
+        ext = url.rsplit(".", 1)[-1].lower()
+        mime = {"png": "image/png", "jpg": "image/jpeg",
+                "jpeg": "image/jpeg", "gif": "image/gif",
+                "webp": "image/webp"}.get(ext, "image/png")
+        return f"data:{mime};base64,{base64.b64encode(raw).decode()}"
+    except Exception:
+        return _SHEEP_SVG
+
+def get_sheep_img(mood: str = None) -> str:
+    """Return base64 data URI cho sheep avatar (dùng trong st.chat_message avatar=)."""
+    m = mood or st.session_state.get("sheep_mood", "default")
+    url = SHEEP_IMAGES.get(m, MASCOT_URL)
+    return _img_b64(url)
+
+def show_sheep(mood: str = None, width: int = 140):
+    """Render sheep avatar — base64 embedded, không bị CSP chặn, kích thước to."""
     actual_mood = mood or st.session_state.get("sheep_mood", "default")
     url = SHEEP_IMAGES.get(actual_mood, MASCOT_URL)
+    src = _img_b64(url)
     st.markdown(
-        f'<div style="text-align:center;margin-bottom:6px;">'
-        f'<img src="{url}" width="{width}" '
+        f'<div style="text-align:center;margin-bottom:10px;">'
+        f'<img src="{src}" width="{width}" '
         f'style="border-radius:50%;'
-        f'border:3px solid #FFB5C8;'
-        f'box-shadow:0 6px 20px rgba(255,150,200,0.4), 0 0 0 6px rgba(255,182,193,0.15);'
-        f'display:inline-block;" '
-        f'onerror="this.src=\'{MASCOT_URL}\';"/>'
+        f'border:4px solid #FFB5C8;'
+        f'box-shadow:0 8px 28px rgba(255,140,190,0.5), 0 0 0 8px rgba(255,182,193,0.18);'
+        f'display:inline-block;" />'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -89,10 +118,11 @@ st.markdown("""
         #DCF0FF 100%) !important;
     border-right: 2px solid #FFCCE0 !important;
 }
-h1 { font-size: 1.6rem !important; font-weight: 700 !important; color: #C75B8A !important; }
-h2 { font-size: 1.25rem !important; font-weight: 600 !important; color: #5B8AC7 !important; }
-h3 { font-size: 1.05rem !important; font-weight: 600 !important; color: #555 !important; }
-p, .stMarkdown p, label { font-size: 0.9rem !important; }
+h1 { font-size: 1.65rem !important; font-weight: 800 !important; color: #C4607F !important; letter-spacing: -0.3px !important; }
+h2 { font-size: 1.3rem !important; font-weight: 700 !important; color: #5080B8 !important; }
+h3 { font-size: 1.08rem !important; font-weight: 700 !important; color: #666 !important; }
+p, .stMarkdown p, label { font-size: 0.92rem !important; color: #444 !important; line-height: 1.6 !important; }
+strong { color: #333 !important; }
 .stButton > button {
     border-radius: 20px !important;
     border: 1.5px solid #FFB7D5 !important;
@@ -680,7 +710,7 @@ def send_message(text: str):
 # ─────────────────────────────────────────────
 with st.sidebar:
     # FIX 1.5 — sidebar avatar = same branded image as chat
-    show_sheep(width=90)
+    show_sheep(width=110)
     st.title("Cừu Cần Cù")
     stage = st.session_state.current_stage
     st.caption(STAGE_LABELS.get(stage, ""))
@@ -750,6 +780,35 @@ with st.sidebar:
     st.caption("Được tạo bởi Claude 💙")
 
 # ─────────────────────────────────────────────
+# DEMO NAVIGATION BAR — hiển thị ngay đầu main, dễ click thử từng giai đoạn
+# ─────────────────────────────────────────────
+_cur_stage = st.session_state.current_stage
+st.markdown(
+    '<div style="background:linear-gradient(90deg,rgba(255,182,210,0.25),rgba(200,230,255,0.25));\
+border:1.5px dashed #FFB5C8;border-radius:14px;padding:8px 14px 4px 14px;margin-bottom:14px;">\
+<span style="font-size:0.72rem;font-weight:700;color:#C4607F;letter-spacing:0.5px;">🎮 DEMO — Chọn giai đoạn để xem thử:</span></div>',
+    unsafe_allow_html=True,
+)
+_demo_cols = st.columns(7)
+_DEMO_LABELS = {
+    1: "💬 Gắn cảm xúc",
+    2: "🧠 Cừu nhớ bạn",
+    3: "🎯 Chuyển giấc mơ",
+    4: "❤️ Nuôi Cừu",
+    5: "🔄 Thói quen",
+    6: "🌟 Hành trình",
+    7: "🧬 Hồ Sơ",
+}
+for _i, _col in enumerate(_demo_cols):
+    _s = _i + 1
+    _type = "primary" if _cur_stage == _s else "secondary"
+    if _col.button(_DEMO_LABELS[_s], key=f"topnav_{_s}", use_container_width=True, type=_type):
+        st.session_state.current_stage = _s
+        st.session_state.show_diary = False
+        st.rerun()
+st.markdown("")
+
+# ─────────────────────────────────────────────
 # FEATURE 3.1 — NHẬT KÝ TÂM SỰ
 # ─────────────────────────────────────────────
 if st.session_state.show_diary:
@@ -759,7 +818,7 @@ if st.session_state.show_diary:
     col_write, col_history = st.columns([3, 2])
 
     with col_write:
-        show_sheep("listening", width=130)
+        show_sheep("listening", width=150)
         st.markdown("**Cừu đang lắng nghe...** Bạn muốn ghi lại điều gì hôm nay?")
 
         diary_title = st.text_input("Tiêu đề (tuỳ chọn)", placeholder="Hôm nay mình cảm thấy...")
@@ -809,7 +868,7 @@ if st.session_state.show_diary:
     with col_history:
         st.subheader(f"📅 Các trang nhật ký ({len(st.session_state.diary_entries)})")
         if not st.session_state.diary_entries:
-            show_sheep("miss_you", width=110)
+            show_sheep("miss_you", width=130)
             st.caption("Chưa có trang nhật ký nào. Bắt đầu viết đi bạn! 🌿")
         else:
             search = st.text_input("🔍 Tìm kiếm", placeholder="Tìm theo từ khoá...")
@@ -841,7 +900,7 @@ if stage <= 2:
     # FIX 1.1 — left-aligned greeting row (avatar left, text right)
     col_img, col_text = st.columns([1, 4])
     with col_img:
-        show_sheep(width=96)
+        show_sheep(width=160)
     with col_text:
         with st.container(border=True):
             st.markdown(f"### {greeting_title}")
@@ -881,7 +940,7 @@ if stage <= 2:
 # ── STAGE 3 ───────────────────────────────────
 elif stage == 3:
     col_img, col_title = st.columns([1, 5])
-    with col_img: show_sheep("goal", width=90)
+    with col_img: show_sheep("goal", width=140)
     with col_title:
         st.title("🎯 Cùng biến giấc mơ thành kế hoạch")
         st.caption("Mình sẽ giúp bạn tính toán – không phán xét, chỉ đồng hành 🐑")
@@ -933,7 +992,7 @@ elif stage == 4:
     current_mood = st.session_state.get("sheep_mood", "default")
     col_img, col_main = st.columns([1, 4])
     with col_img:
-        show_sheep(current_mood, width=100)
+        show_sheep(current_mood, width=140)
 
     with col_main:
         st.markdown("## ❤️ Nuôi Cừu Cần Cù hôm nay")
@@ -993,7 +1052,7 @@ elif stage == 5:
     st.caption("Tích tiểu thành đại – mỗi ngày một hành động nhỏ 🐑")
     h = datetime.now().hour
     col_img, col_main = st.columns([1, 4])
-    with col_img: show_sheep(width=90)
+    with col_img: show_sheep(width=140)
     with col_main:
         if 5 <= h < 12:
             with st.container(border=True):
@@ -1048,7 +1107,7 @@ elif stage == 5:
 # ── STAGE 6 ───────────────────────────────────
 elif stage == 6:
     col_img6, col_title6 = st.columns([1, 5])
-    with col_img6: show_sheep("goal", width=90)
+    with col_img6: show_sheep("goal", width=140)
     with col_title6:
         st.title("🌟 Hành trình giấc mơ của bạn")
         st.caption("Cừu Cần Cù sẽ cho bạn thấy từng bước trên con đường đến giấc mơ 🐑")
@@ -1106,7 +1165,7 @@ elif stage == 6:
 # ── STAGE 7 ───────────────────────────────────
 elif stage == 7:
     col_img, col_title = st.columns([1, 5])
-    with col_img: show_sheep(width=90)
+    with col_img: show_sheep(width=140)
     with col_title:
         st.title("🧬 Hồ Sơ Tài Chính Của Bạn")
         st.caption(f"Sau {len(mem['notes'])} cuộc trò chuyện, Cừu Cần Cù đã hiểu bạn hơn 🐑")
