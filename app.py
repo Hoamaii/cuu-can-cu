@@ -29,17 +29,54 @@ SHEEP_IMAGES  = {
     "miss_you":  f"{BASE_ASSET}sheep_miss_you.png",
 }
 
+MOOD_EMOJI_BADGE = {
+    "default":   ("🐑", ""),
+    "listening": ("🐑", "👂 Cừu đang lắng nghe bạn..."),
+    "happy":     ("🐑", "😊 Cừu vui lắm! Bê bê~"),
+    "sad":       ("🐑", "🥺 Cừu hơi buồn... nhưng vẫn ở đây với bạn"),
+    "goal":      ("🐑", "🎯 Cừu cùng bạn đặt mục tiêu!"),
+    "celebrate": ("🐑", "🎉 Cừu ăn mừng cùng bạn! Bê bê~"),
+    "saving":    ("🐑", "💰 Cừu đang giúp bạn tiết kiệm!"),
+    "miss_you":  ("🐑", "💙 Cừu nhớ bạn lắm..."),
+}
+
 def get_sheep_img(mood: str = None) -> str:
-    """Return the correct sheep image URL for the current mood."""
+    """Return sheep image URL — uses GitHub asset if available, else MASCOT_URL."""
     m = mood or st.session_state.get("sheep_mood", "default")
     return SHEEP_IMAGES.get(m, MASCOT_URL)
 
 def show_sheep(mood: str = None, width: int = 90):
-    """Render sheep avatar consistently — same image in sidebar and chat."""
+    """Render sheep avatar consistently.
+    Uses mood-specific GitHub asset if uploaded, falls back to MASCOT_URL.
+    Always shows a mood emoji badge below the image.
+    """
+    actual_mood = mood or st.session_state.get("sheep_mood", "default")
+    url = SHEEP_IMAGES.get(actual_mood, MASCOT_URL)
+
+    # If the URL points to an asset that may not exist yet, use MASCOT_URL as safe fallback
+    # The mood-specific images (sheep_happy.png etc.) only work after uploading to GitHub
+    # For now: show MASCOT_URL + emoji badge to indicate mood
+    if url != MASCOT_URL:
+        # Try mood-specific image; Streamlit won't throw on 404 so we check via header
+        # Safer: always use MASCOT_URL until GitHub assets confirmed
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, method="HEAD")
+            urllib.request.urlopen(req, timeout=1)
+            display_url = url        # image exists on GitHub ✓
+        except Exception:
+            display_url = MASCOT_URL  # image missing → use mascot fallback
+    else:
+        display_url = MASCOT_URL
+
     try:
-        st.image(get_sheep_img(mood), width=width)
+        st.image(display_url, width=width)
     except Exception:
-        st.markdown("🐑")
+        pass
+
+    _, badge_text = MOOD_EMOJI_BADGE.get(actual_mood, ("🐑", ""))
+    if badge_text:
+        st.caption(badge_text)
 
 def set_mood(mood: str):
     st.session_state["sheep_mood"] = mood
@@ -699,7 +736,9 @@ with st.sidebar:
         new_stage = st.selectbox("Giai đoạn:", list(range(1, 8)), index=stage - 1,
                                   format_func=lambda x: f"{x}. {STAGE_LABELS[x]}")
         if st.button("Chuyển →", use_container_width=True):
-            st.session_state.current_stage = new_stage; st.rerun()
+            st.session_state.current_stage = new_stage
+            st.session_state.show_diary = False   # ← đóng nhật ký khi chuyển stage
+            st.rerun()
 
     if st.button("🗑️ Đặt lại tất cả", use_container_width=True):
         for k in ["messages", "user_memory", "current_stage", "active_dream_idx", "_quick_reply",
