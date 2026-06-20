@@ -74,20 +74,20 @@ st.markdown("""
 <style>
 [data-testid="stApp"] {
     background: linear-gradient(145deg,
-        #FFE4F0 0%,
-        #FADADD 15%,
-        #F5E6FF 35%,
-        #DCF0FF 60%,
-        #D6EEFF 80%,
-        #E8F7FF 100%) !important;
+        #FFF5F9 0%,
+        #FFF0F3 20%,
+        #FAF0FF 45%,
+        #EEF7FF 70%,
+        #EAF4FF 85%,
+        #F2FBFF 100%) !important;
 }
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg,
-        #FFD6E8 0%,
-        #F8C8E0 25%,
-        #EDD6F5 55%,
-        #C8E6FF 100%) !important;
-    border-right: 2px solid #FFB5C8 !important;
+        #FFF0F7 0%,
+        #FFE8F3 30%,
+        #F5E8FF 60%,
+        #DCF0FF 100%) !important;
+    border-right: 2px solid #FFCCE0 !important;
 }
 h1 { font-size: 1.6rem !important; font-weight: 700 !important; color: #C75B8A !important; }
 h2 { font-size: 1.25rem !important; font-weight: 600 !important; color: #5B8AC7 !important; }
@@ -759,7 +759,7 @@ if st.session_state.show_diary:
     col_write, col_history = st.columns([3, 2])
 
     with col_write:
-        show_sheep("listening", width=70)
+        show_sheep("listening", width=130)
         st.markdown("**Cừu đang lắng nghe...** Bạn muốn ghi lại điều gì hôm nay?")
 
         diary_title = st.text_input("Tiêu đề (tuỳ chọn)", placeholder="Hôm nay mình cảm thấy...")
@@ -809,7 +809,7 @@ if st.session_state.show_diary:
     with col_history:
         st.subheader(f"📅 Các trang nhật ký ({len(st.session_state.diary_entries)})")
         if not st.session_state.diary_entries:
-            show_sheep("miss_you", width=80)
+            show_sheep("miss_you", width=110)
             st.caption("Chưa có trang nhật ký nào. Bắt đầu viết đi bạn! 🌿")
         else:
             search = st.text_input("🔍 Tìm kiếm", placeholder="Tìm theo từ khoá...")
@@ -1047,8 +1047,11 @@ elif stage == 5:
 
 # ── STAGE 6 ───────────────────────────────────
 elif stage == 6:
-    st.title("🌟 Hành trình giấc mơ của bạn")
-    st.caption("Cừu Cần Cù sẽ cho bạn thấy từng bước trên con đường đến giấc mơ 🐑")
+    col_img6, col_title6 = st.columns([1, 5])
+    with col_img6: show_sheep("goal", width=90)
+    with col_title6:
+        st.title("🌟 Hành trình giấc mơ của bạn")
+        st.caption("Cừu Cần Cù sẽ cho bạn thấy từng bước trên con đường đến giấc mơ 🐑")
     if mem["dreams"]:
         for d in mem["dreams"]:
             with st.container(border=True):
