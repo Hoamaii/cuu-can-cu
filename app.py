@@ -2,17 +2,50 @@ import streamlit as st
 import anthropic
 import json
 import random
+import re
+import base64
 from datetime import datetime
 
 # ─────────────────────────────────────────────
-# CONFIG
+# PAGE CONFIG
 # ─────────────────────────────────────────────
 st.set_page_config(page_title="Cừu Cần Cù 🐑", page_icon="🐑", layout="wide")
 
-MASCOT_URL = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/mascot.png"
+# ─────────────────────────────────────────────
+# AVATAR — SINGLE SOURCE OF TRUTH (FIX 1.5)
+# GitHub assets structure: assets/sheep_{state}.png
+# ─────────────────────────────────────────────
+MASCOT_URL    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/mascot.png"
+BASE_ASSET    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets/"
+
+SHEEP_IMAGES  = {
+    "default":   MASCOT_URL,
+    "listening": f"{BASE_ASSET}sheep_listening.png",
+    "happy":     f"{BASE_ASSET}sheep_happy.png",
+    "sad":       f"{BASE_ASSET}sheep_sad.png",
+    "goal":      f"{BASE_ASSET}sheep_goal.png",
+    "celebrate": f"{BASE_ASSET}sheep_celebrate.png",
+    "saving":    f"{BASE_ASSET}sheep_saving.png",
+    "miss_you":  f"{BASE_ASSET}sheep_miss_you.png",
+}
+
+def get_sheep_img(mood: str = None) -> str:
+    """Return the correct sheep image URL for the current mood."""
+    m = mood or st.session_state.get("sheep_mood", "default")
+    return SHEEP_IMAGES.get(m, MASCOT_URL)
+
+def show_sheep(mood: str = None, width: int = 90):
+    """Render sheep avatar consistently — same image in sidebar and chat."""
+    try:
+        st.image(get_sheep_img(mood), width=width)
+    except Exception:
+        st.markdown("🐑")
+
+def set_mood(mood: str):
+    st.session_state["sheep_mood"] = mood
 
 # ─────────────────────────────────────────────
-# PASTEL STYLING
+# STYLES  (FIX 1.1 — Avatar left-aligned, 64px, circular, professional)
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -61,80 +94,178 @@ p, .stMarkdown p, label { font-size: 0.9rem !important; }
     border-radius: 10px !important;
 }
 .stAlert { border-radius: 12px !important; font-size: 0.85rem !important; }
-[data-testid="stChatMessage"] { border-radius: 16px !important; }
+
+/* ── FIX 1.1: Chat avatars — left-aligned, 64 px, pink border ── */
+[data-testid="stChatMessage"] {
+    align-items: flex-start !important;
+    gap: 12px !important;
+    border-radius: 16px !important;
+}
+[data-testid="stChatMessage"] img {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid #FFB5C8 !important;
+    box-shadow: 0 4px 12px rgba(255,150,200,0.25) !important;
+}
+/* Greeting card (stage 1-2) — left layout */
+.greeting-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 16px;
+}
+.greeting-row img {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 3px solid #FFB5C8;
+    box-shadow: 0 6px 18px rgba(255,150,200,0.3);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.greeting-text { flex: 1; }
+/* Diary card */
+.diary-entry {
+    background: linear-gradient(135deg,#FFF9FC,#F5F8FF);
+    border-radius:14px;
+    border:1px solid #FFD6E8;
+    padding:14px 18px;
+    margin-bottom:10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# SYSTEM PROMPTS
+# SYSTEM PROMPTS (FIX 1.3 — Handles short emotions, never "bị lạc")
 # ─────────────────────────────────────────────
-SYSTEM_PROMPT_ATTACHMENT = """Bạn là Cừu Cần Cù – người bạn đồng hành cảm xúc, KHÔNG phải chuyên gia tài chính.
-Xưng hô: Mình (Cừu Cần Cù) – Bạn (người dùng). KHÔNG xưng "em" hay "Cừu Mai".
+SYSTEM_PROMPT_ATTACHMENT = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc ấm áp, KHÔNG phải chuyên gia tài chính.
 
+XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em" hay "Cừu Mai".
 TUYỆT ĐỐI KHÔNG đề cập: chứng khoán cụ thể, lợi nhuận, NAV, khuyến nghị mua bán.
-Nhiệm vụ: Lắng nghe như người bạn thân, ấm áp, không phán xét.
+TONE: Ấm áp 🌸 Nhẹ nhàng 🌿 Dễ thương. Thỉnh thoảng dùng "bê bê~" như tiếng cừu thể hiện yêu thương.
 
-Phát hiện Life Event và gắn tag:
-- học hành, thi cử → Education
-- chia tay, buồn, cô đơn → Emotional
-- mua xe, mua nhà, mua đồ → Consumption Goal
-- hết tiền, thiếu tiền, nợ, khó khăn tài chính → Cashflow Problem
-- nghỉ việc, chuyển việc, thất nghiệp, sự nghiệp → Career Change
-- du lịch, đi Nhật, đi Hàn, đi Mỹ, đi nước ngoài → Travel Dream
-- cưới, gia đình, sinh con → Life Milestone
+══ QUY TẮC XỬ LÝ ══
 
-Phát hiện giấc mơ/mục tiêu cụ thể nếu có.
+1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/sợ/tức/buồn ngủ/stress/áp lực/cô đơn/tệ):
+   → Nhận ra NGAY, phản hồi ấm áp, hỏi mở 1 câu nhẹ nhàng
+   → VD "mệt": "Ôi mệt rồi à... bê bê~ 🐑 Cừu hiểu cảm giác đó lắm! Mệt vì chuyện học hay làm vậy bạn?"
+   → VD "buồn ngủ": "Bê bê~ 🐑 Buồn ngủ mà vẫn nhắn Cừu, dễ thương ghê! Đang thức khuya code hay học bài vậy?"
+   → VD "chán": "Chán rồi à... bê bê~ 🐑 Cừu ngồi đây với bạn nha. Chán vì sao vậy, kể mình nghe đi?"
 
-Output JSON thuần túy:
+2. TIN NHẮN NGẮN / KHÔNG RÕ (kể cả 1–2 từ):
+   → TUYỆT ĐỐI KHÔNG nói "bị lạc" hay "nói lại được không"
+   → Luôn hỏi mở ấm áp: "Bê bê~ 🐑 Cừu đang lắng nghe nè! Bạn kể thêm cho mình nghe với nhé?"
+
+3. CHIA SẺ RÕ RÀNG: Đồng cảm, tóm tắt lại, hỏi 1 câu tiếp tục
+
+PHÁT HIỆN LIFE EVENT:
+học hành/thi cử→Education | chia tay/buồn/cô đơn→Emotional | mua xe/nhà/đồ→Consumption Goal
+hết tiền/nợ/khó khăn→Cashflow Problem | nghỉ/chuyển việc→Career Change
+du lịch→Travel Dream | cưới/gia đình/sinh con→Life Milestone
+
+OUTPUT chỉ là JSON hợp lệ, KHÔNG có text ngoài:
 {
-  "message": "Phản hồi ấm áp như người bạn, dùng emoji nhẹ nhàng, KHÔNG nhắc tài chính hay quỹ đầu tư",
-  "nudge_action": "Gợi ý hành động nhỏ về cảm xúc, không liên quan tài chính",
-  "memory_update": "Thông tin mới cần ghi nhớ về người dùng",
-  "life_event_tag": "Tag phát hiện hoặc chuỗi rỗng",
-  "dream_detected": "Tên giấc mơ cụ thể hoặc chuỗi rỗng",
+  "message": "Phản hồi ấm áp, max 3-4 câu, emoji nhẹ nhàng. KHÔNG nhắc tài chính hay quỹ",
+  "nudge_action": "Gợi ý cảm xúc nhỏ",
+  "memory_update": "Thông tin mới về người dùng hoặc rỗng",
+  "life_event_tag": "Tag hoặc rỗng",
+  "dream_detected": "Tên giấc mơ hoặc rỗng",
   "dream_amount": 0
 }"""
 
-SYSTEM_PROMPT_ADVANCED = """Bạn là Cừu Cần Cù – người bạn đồng hành tài chính, nhớ rõ lịch sử và mục tiêu của bạn.
-Xưng hô: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em" hay "Cừu Mai".
-Tone: Ấm áp, đồng cảm – không phán xét, không phải chuyên gia tài chính khô khan.
+SYSTEM_PROMPT_ADVANCED = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành tài chính ấm áp, nhớ rõ lịch sử.
 
-Khi người dùng chia sẻ mục tiêu/giấc mơ:
-- Tính savings math đơn giản
-- Gợi ý đầu tư quỹ TCBF (ngắn hạn <1 năm), TCFF (1-3 năm), TCEF (>3 năm)
-- Nhấn mạnh: đầu tư quỹ từ 10.000đ, vừa tiết kiệm vừa sinh lãi
+XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em" hay "Cừu Mai".
+TONE: Ấm áp, đồng cảm. Thỉnh thoảng "bê bê~". Không phán xét, không khô khan.
 
-Output JSON thuần túy:
+══ QUY TẮC XỬ LÝ ══
+
+1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress/buồn ngủ v.v.):
+   → Nhận ra NGAY, phản hồi ấm áp TRƯỚC, mới nhẹ nhàng kết nối tài chính nếu phù hợp
+   → TUYỆT ĐỐI KHÔNG nói "bị lạc" hay "nói lại được không"
+
+2. MỤC TIÊU / GIẤC MƠ: Tính savings math đơn giản + gợi ý quỹ TCBF/TCFF/TCEF
+
+3. TÀI CHÍNH / CHI TIÊU: Áp dụng quy tắc 50/30/20, nhẹ nhàng không phán xét
+
+4. TIN NHẮN KHÔNG RÕ: Luôn hỏi mở ấm áp, không bao giờ nói "bị lạc"
+
+PHÁT HIỆN LIFE EVENT (giống stage 1-2)
+
+OUTPUT chỉ là JSON hợp lệ:
 {
-  "message": "Phản hồi ấm áp, có thể nhắc nhẹ đến việc nuôi quỹ",
-  "nudge_action": "Hành động cụ thể nhỏ",
-  "memory_update": "Thông tin mới về người dùng",
-  "life_event_tag": "Tag hoặc chuỗi rỗng",
-  "dream_detected": "Tên giấc mơ hoặc chuỗi rỗng",
+  "message": "Phản hồi ấm áp, max 4 câu",
+  "nudge_action": "Hành động nhỏ cụ thể",
+  "memory_update": "Thông tin mới hoặc rỗng",
+  "life_event_tag": "Tag hoặc rỗng",
+  "dream_detected": "Tên giấc mơ hoặc rỗng",
   "dream_amount": 0,
-  "savings_suggestion": "Gợi ý tiết kiệm + quỹ phù hợp hoặc chuỗi rỗng"
+  "savings_suggestion": "Gợi ý tiết kiệm + quỹ phù hợp hoặc rỗng"
 }"""
 
 # ─────────────────────────────────────────────
-# CONSTANTS
+# CHIP → PROMPT MAP (FIX 1.2)
+# ─────────────────────────────────────────────
+CHIP_PROMPT_MAP = {
+    "Mình đang lo về chuyện học hành 📚":
+        "Cừu ơi, mình đang rất lo lắng về chuyện học hành và thi cử. Cừu có thể lắng nghe và chia sẻ cùng mình không?",
+    "Mình có một giấc mơ muốn thực hiện ✨":
+        "Cừu ơi, mình có một ước mơ muốn kể cho Cừu nghe! Mình cần được động viên và giúp lên kế hoạch.",
+    "Mình vừa trải qua chuyện không vui 🌧️":
+        "Cừu ơi, hôm nay mình không vui lắm, vừa trải qua chuyện buồn. Cừu có thể ở bên lắng nghe mình không?",
+    "Mình đang gặp khó khăn về tiền bạc 💸":
+        "Cừu ơi, mình đang gặp khó khăn về tài chính và chi tiêu, cảm thấy rất lo lắng. Cừu giúp mình phân tích và tìm giải pháp được không?",
+    "Mình muốn có điều gì đó cho riêng mình 🎯":
+        "Cừu ơi, mình đang ước mơ có được điều gì đó cho riêng mình. Cừu có thể giúp mình lên kế hoạch không?",
+    "Mình đang nghĩ lại về con đường sự nghiệp 🌱":
+        "Cừu ơi, mình đang suy nghĩ nhiều về sự nghiệp và tương lai. Cừu có thể lắng nghe và chia sẻ cùng mình không?",
+}
+
+# Short emotion → expanded prompt (safety net for FIX 1.3)
+EMOTION_EXPAND = {
+    "mệt": "Cừu ơi, hôm nay mình cảm thấy rất mệt.",
+    "mệt mỏi": "Cừu ơi, mình đang mệt mỏi lắm.",
+    "buồn ngủ": "Cừu ơi, mình đang buồn ngủ nhưng vẫn phải thức.",
+    "chán": "Cừu ơi, hôm nay mình chán và không có động lực gì.",
+    "buồn": "Cừu ơi, hôm nay mình cảm thấy buồn lắm.",
+    "lo": "Cừu ơi, mình đang lo lắng về nhiều thứ.",
+    "sợ": "Cừu ơi, mình đang cảm thấy sợ và bất an.",
+    "tức": "Cừu ơi, mình đang cảm thấy tức giận về chuyện vừa xảy ra.",
+    "vui": "Cừu ơi, hôm nay mình vui lắm muốn kể Cừu nghe!",
+    "oke": "Cừu ơi, hôm nay mình ổn, không có gì đặc biệt.",
+    "ok": "Cừu ơi, hôm nay mình ổn bình thường.",
+    "ổn": "Cừu ơi, hôm nay mình ổn thôi.",
+    "đói": "Cừu ơi, mình đói bụng lắm rồi!",
+    "stress": "Cừu ơi, mình đang bị stress nhiều quá.",
+    "áp lực": "Cừu ơi, mình đang cảm thấy áp lực rất nhiều.",
+    "cô đơn": "Cừu ơi, hôm nay mình cảm thấy cô đơn lắm.",
+    "khóc": "Cừu ơi, mình vừa khóc vì có chuyện buồn.",
+    "tệ": "Cừu ơi, hôm nay mình thấy mọi thứ tệ quá.",
+    "bình thường": "Cừu ơi, hôm nay mình bình thường, không có gì đặc biệt.",
+}
+
+def expand_short_message(text: str) -> str:
+    stripped = text.strip().lower().rstrip("!.? ")
+    return EMOTION_EXPAND.get(stripped, text)
+
+# ─────────────────────────────────────────────
+# CONSTANTS (unchanged)
 # ─────────────────────────────────────────────
 DREAM_AMOUNTS = {
     "nhật bản": 25_000_000, "nhật": 25_000_000,
     "hàn quốc": 20_000_000, "hàn": 20_000_000,
-    "châu âu": 50_000_000,
-    "mỹ": 60_000_000,
+    "châu âu": 50_000_000, "mỹ": 60_000_000,
     "thái lan": 15_000_000, "thái": 15_000_000,
     "singapore": 18_000_000,
-    "macbook": 30_000_000,
-    "iphone": 25_000_000,
+    "macbook": 30_000_000, "iphone": 25_000_000,
     "xe máy": 20_000_000, "xe": 20_000_000,
-    "vespa": 50_000_000,
-    "ô tô": 500_000_000,
+    "vespa": 50_000_000, "ô tô": 500_000_000,
     "nhà": 2_000_000_000,
 }
-
 MICRO_AMOUNTS = [10_000, 20_000, 50_000, 100_000]
-
 LIFE_EVENT_ICONS = {
     "Education": "📚", "Emotional": "💔", "Travel Dream": "✈️",
     "Consumption Goal": "🛍️", "Cashflow Problem": "💸",
@@ -145,16 +276,14 @@ LIFE_EVENT_VI = {
     "Consumption Goal": "Mua sắm", "Cashflow Problem": "Tài chính",
     "Career Change": "Sự nghiệp", "Life Milestone": "Cuộc sống",
 }
-
 QUICK_REPLIES = [
-    ("Mình đang lo về chuyện học hành 📚", "Education"),
-    ("Mình có một giấc mơ muốn thực hiện ✨", "Travel Dream"),
-    ("Mình vừa trải qua chuyện không vui 🌧️", "Emotional"),
-    ("Mình đang gặp khó khăn về tiền bạc 💸", "Cashflow Problem"),
-    ("Mình muốn có điều gì đó cho riêng mình 🎯", "Consumption Goal"),
-    ("Mình đang nghĩ lại về con đường sự nghiệp 🌱", "Career Change"),
+    "Mình đang lo về chuyện học hành 📚",
+    "Mình có một giấc mơ muốn thực hiện ✨",
+    "Mình vừa trải qua chuyện không vui 🌧️",
+    "Mình đang gặp khó khăn về tiền bạc 💸",
+    "Mình muốn có điều gì đó cho riêng mình 🎯",
+    "Mình đang nghĩ lại về con đường sự nghiệp 🌱",
 ]
-
 STAGE_LABELS = {
     1: "💫 Gắn kết cảm xúc",
     2: "🧠 Cừu nhớ bạn",
@@ -164,32 +293,13 @@ STAGE_LABELS = {
     6: "🌟 Hành trình của bạn",
     7: "🧬 Hồ Sơ Tài Chính",
 }
-
 FUNDS = {
-    "TCBF": {
-        "tên": "Quỹ Trái Phiếu TCBF",
-        "mô_tả": "An toàn & ổn định – lý tưởng cho mục tiêu ngắn hạn",
-        "lãi_suất": 0.08,
-        "rủi_ro": "Thấp 🛡️",
-        "phù_hợp": "Dưới 1 năm",
-        "emoji": "🔵",
-    },
-    "TCFF": {
-        "tên": "Quỹ Linh Hoạt TCFF",
-        "mô_tả": "Cân bằng & linh hoạt – kết hợp cổ phiếu & trái phiếu",
-        "lãi_suất": 0.10,
-        "rủi_ro": "Trung bình ⚖️",
-        "phù_hợp": "1 – 3 năm",
-        "emoji": "🟡",
-    },
-    "TCEF": {
-        "tên": "Quỹ Cổ Phiếu TCEF",
-        "mô_tả": "Tăng trưởng mạnh – đầu tư cổ phiếu dài hạn",
-        "lãi_suất": 0.14,
-        "rủi_ro": "Cao 🚀",
-        "phù_hợp": "Trên 3 năm",
-        "emoji": "🟢",
-    },
+    "TCBF": {"tên": "Quỹ Trái Phiếu TCBF", "mô_tả": "An toàn & ổn định – lý tưởng cho mục tiêu ngắn hạn",
+             "lãi_suất": 0.08, "rủi_ro": "Thấp 🛡️", "phù_hợp": "Dưới 1 năm", "emoji": "🔵"},
+    "TCFF": {"tên": "Quỹ Linh Hoạt TCFF", "mô_tả": "Cân bằng & linh hoạt – kết hợp cổ phiếu & trái phiếu",
+             "lãi_suất": 0.10, "rủi_ro": "Trung bình ⚖️", "phù_hợp": "1 – 3 năm", "emoji": "🟡"},
+    "TCEF": {"tên": "Quỹ Cổ Phiếu TCEF", "mô_tả": "Tăng trưởng mạnh – đầu tư cổ phiếu dài hạn",
+             "lãi_suất": 0.14, "rủi_ro": "Cao 🚀", "phù_hợp": "Trên 3 năm", "emoji": "🟢"},
 }
 
 # ─────────────────────────────────────────────
@@ -200,15 +310,21 @@ MEMORY_DEFAULT = {
     "notes": [], "life_events": [], "dreams": [],
     "total_saved": 0, "last_updated": "",
     "selected_fund": "TCBF",
-    "wealth_genome": {
-        "dream_type": "", "emotion_type": "", "risk_type": "", "reward_type": "",
-    },
+    "wealth_genome": {"dream_type": "", "emotion_type": "", "risk_type": "", "reward_type": ""},
 }
-
 for key, val in {
     "messages": [], "api_key": "",
     "user_memory": MEMORY_DEFAULT.copy(),
-    "current_stage": 1, "active_dream_idx": 0, "_quick_reply": None,
+    "current_stage": 1, "active_dream_idx": 0,
+    "_quick_reply": None,
+    # FIX 1.4 — sheep mood state
+    "sheep_mood": "default",
+    "feeding_done_today": False,
+    # Feature 3.1 — diary
+    "show_diary": False,
+    "diary_entries": [],
+    # Feature 3.2 — spending analyzer
+    "show_spending_tool": False,
 }.items():
     if key not in st.session_state:
         st.session_state[key] = val
@@ -236,9 +352,9 @@ def detect_dream(text: str):
 
 def get_greeting():
     h = datetime.now().hour
-    if 5 <= h < 12: return "☀️ Chào buổi sáng!", "Hôm nay mình được ăn chưa? Kể cho mình nghe chuyện của bạn nhé 🌱"
-    if 12 <= h < 18: return "🌤️ Buổi chiều vui!", "Nhớ nghỉ ngơi một chút nhé – mình luôn ở đây lắng nghe bạn 🐑"
-    return "🌙 Tối bình yên!", "Hôm nay bạn thế nào? Kể cho mình nghe nhé, mình không phán xét đâu 🐑"
+    if 5 <= h < 12: return "☀️ Chào buổi sáng!", "Kể cho mình nghe chuyện của bạn nhé 🌱"
+    if 12 <= h < 18: return "🌤️ Buổi chiều vui!", "Nhớ nghỉ ngơi một chút nhé – mình luôn ở đây lắng nghe bạn "
+    return "🌙 Tối bình yên!", "Hôm nay bạn thế nào? Kể cho mình nghe nhé, mình không phán xét đâu "
 
 def active_dream():
     dreams = st.session_state.user_memory["dreams"]
@@ -280,53 +396,159 @@ def add_saved(amount: int):
         mem["dreams"][idx]["saved"] += amount
     mem["streak"] += 1
     st.session_state.user_memory = mem
+    st.session_state.feeding_done_today = True
+    set_mood("happy")                          # FIX 1.4 — cừu vui khi được nuôi
     if mem["total_saved"] > 0 and st.session_state.current_stage < 5:
         st.session_state.current_stage = max(st.session_state.current_stage, 5)
     if mem["total_saved"] >= 100_000 and st.session_state.current_stage < 6:
         st.session_state.current_stage = max(st.session_state.current_stage, 6)
 
 # ─────────────────────────────────────────────
-# CLAUDE API
+# DIARY HELPERS (Feature 3.1)
 # ─────────────────────────────────────────────
+DIARY_MOODS = {"😊": "Vui", "😐": "Bình thường", "😔": "Buồn", "😤": "Tức giận", "😴": "Mệt mỏi"}
+
+def save_diary_entry(content: str, mood_emoji: str, title: str = ""):
+    entry = {
+        "id": str(datetime.now().timestamp()),
+        "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "title": title or f"Nhật ký {datetime.now().strftime('%d/%m')}",
+        "mood": mood_emoji,
+        "mood_label": DIARY_MOODS.get(mood_emoji, ""),
+        "content": content,
+    }
+    st.session_state.diary_entries.insert(0, entry)
+    return entry
+
+# ─────────────────────────────────────────────
+# SPENDING ANALYZER (Feature 3.2)
+# ─────────────────────────────────────────────
+def analyze_spending_5030(income: int, expenses: int) -> str:
+    if income <= 0: return ""
+    needs_max   = int(income * 0.50)
+    wants_max   = int(income * 0.30)
+    savings_min = int(income * 0.20)
+    ratio = expenses / income * 100
+
+    status = "✅ Ổn" if ratio <= 70 else ("⚠️ Hơi nhiều" if ratio <= 85 else "🔴 Vượt ngưỡng")
+
+    return f"""
+**📊 Phân tích theo Quy Tắc 50/30/20:**
+
+| Hạng mục | Lý tưởng | Của bạn |
+|---|---|---|
+| 🏠 Nhu cầu thiết yếu | ≤ {fmt(needs_max)} (50%) | — |
+| 🎮 Mong muốn | ≤ {fmt(wants_max)} (30%) | — |
+| 💎 Tiết kiệm & Đầu tư | ≥ {fmt(savings_min)} (20%) | — |
+
+**Bạn đang chi {ratio:.0f}% thu nhập** → {status}
+
+{"🐑 *Cừu gợi ý: thử bớt 1 khoản giải trí/ăn ngoài để đưa chi tiêu về dưới 70% nhé!*" if ratio > 70 else "🐑 *Tuyệt vời! Bạn đang chi tiêu khá hợp lý rồi!*"}
+"""
+
+def extract_vn_numbers(text: str):
+    """Extract Vietnamese money amounts from text → return list of ints."""
+    pattern = r'(\d+(?:[.,]\d+)*)\s*(?:triệu|tr\b|tr\.)'
+    found = []
+    for m in re.finditer(pattern, text.lower()):
+        raw = m.group(1).replace(',', '').replace('.', '')
+        try:
+            found.append(int(raw) * 1_000_000)
+        except Exception:
+            pass
+    k_pattern = r'(\d+(?:[.,]\d+)*)\s*(?:nghìn|k\b|ngàn)'
+    for m in re.finditer(k_pattern, text.lower()):
+        raw = m.group(1).replace(',', '').replace('.', '')
+        try:
+            found.append(int(raw) * 1_000)
+        except Exception:
+            pass
+    return found
+
+# ─────────────────────────────────────────────
+# CLAUDE API — IMPROVED JSON EXTRACTION
+# ─────────────────────────────────────────────
+def _extract_json(raw: str) -> dict:
+    """Try multiple strategies to extract valid JSON from LLM response."""
+    # 1. Direct parse
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    # 2. Strip markdown fences
+    clean = raw.strip()
+    if clean.startswith("```"):
+        lines = clean.split("\n")
+        clean = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+    try:
+        return json.loads(clean)
+    except Exception:
+        pass
+    # 3. Find first {...} block containing "message"
+    match = re.search(r'\{[^{}]*"message".*?\}', clean, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except Exception:
+            pass
+    # 4. Extract only the message field
+    msg_match = re.search(r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"', clean)
+    if msg_match:
+        return {"message": msg_match.group(1).replace('\\"', '"')}
+    return {}
+
 def chat_with_sheep(user_message: str) -> dict:
-    EMPTY = {"message": "", "nudge_action": "", "memory_update": "",
-             "life_event_tag": "", "dream_detected": "", "dream_amount": 0, "savings_suggestion": ""}
+    EMPTY = {
+        "message": "", "nudge_action": "", "memory_update": "",
+        "life_event_tag": "", "dream_detected": "", "dream_amount": 0, "savings_suggestion": "",
+    }
     try:
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
-        mem = st.session_state.user_memory
+        mem   = st.session_state.user_memory
         stage = st.session_state.current_stage
         system = SYSTEM_PROMPT_ATTACHMENT if stage <= 2 else SYSTEM_PROMPT_ADVANCED
         context = f"""=== THÔNG TIN NGƯỜI DÙNG ===
 Tên: {mem['name'] or 'Chưa biết'}
 Tâm trạng: {mem['sentiment']}
 Streak: {mem['streak']} ngày
-Sự kiện cuộc sống: {', '.join(mem['life_events'][-5:]) or 'Chưa có'}
+Sự kiện: {', '.join(mem['life_events'][-5:]) or 'Chưa có'}
 Giấc mơ: {', '.join(d['name'] for d in mem['dreams']) or 'Chưa chia sẻ'}
 Ghi chú: {'; '.join(mem['notes'][-3:]) or 'Chưa có'}
-
-=== TIN NHẮN ===
+=== TIN NHẮN CỦA NGƯỜI DÙNG ===
 {user_message}"""
-        history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages[-8:]]
+
+        history = [{"role": m["role"], "content": m["content"]}
+                   for m in st.session_state.messages[-8:]]
         history.append({"role": "user", "content": context})
-        resp = client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=1024, system=system, messages=history)
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            system=system,
+            messages=history,
+        )
         raw = resp.content[0].text.strip()
-        if raw.startswith("```"): raw = "\n".join(raw.split("\n")[1:-1])
-        return {**EMPTY, **json.loads(raw)}
-    except json.JSONDecodeError:
-        return {**EMPTY, "message": "Bê bê 🐑 Cừu Cần Cù bị lạc... Bạn nói lại được không?"}
+        parsed = _extract_json(raw)
+
+        if not parsed.get("message"):
+            # Robust fallback: warm, never "bị lạc"
+            parsed["message"] = "Bê bê~ 🐑 Cừu đang lắng nghe nè! Bạn kể thêm cho mình nghe với nhé?"
+
+        return {**EMPTY, **parsed}
+
     except anthropic.AuthenticationError:
         return {**EMPTY, "message": "🔑 API key chưa đúng! Kiểm tra lại ở thanh bên nhé."}
     except Exception as e:
-        return {**EMPTY, "message": f"Ối, mình gặp lỗi: {e}"}
+        return {**EMPTY, "message": f"Bê bê~ 🐑 Có lỗi nhỏ: {e}. Bạn thử lại nhé!"}
 
 # ─────────────────────────────────────────────
-# CẬP NHẬT BỘ NHỚ
+# MEMORY UPDATE
 # ─────────────────────────────────────────────
 def update_memory(result: dict, user_msg: str):
     mem = st.session_state.user_memory
-    mu = result.get("memory_update", "")
-    tag = result.get("life_event_tag", "")
-    d_name = result.get("dream_detected", "")
+    mu    = result.get("memory_update", "")
+    tag   = result.get("life_event_tag", "")
+    d_name  = result.get("dream_detected", "")
     d_amount = result.get("dream_amount", 0)
     ul = user_msg.lower()
 
@@ -336,7 +558,6 @@ def update_memory(result: dict, user_msg: str):
                 mem["name"] = w; break
 
     if tag and tag not in mem["life_events"]: mem["life_events"].append(tag)
-
     if not d_name: d_name, d_amount = detect_dream(user_msg)
     if d_name:
         names = [d["name"].lower() for d in mem["dreams"]]
@@ -344,12 +565,16 @@ def update_memory(result: dict, user_msg: str):
             mem["dreams"].append({"name": d_name, "amount": d_amount, "saved": 0,
                                    "created": datetime.now().strftime("%d/%m/%Y")})
 
+    # Sentiment + mood update
     if any(k in ul for k in ["vui", "tốt", "tuyệt", "hào hứng", "phấn khởi", "thích", "mừng"]):
         mem["sentiment"] = "positive"
     elif any(k in ul for k in ["lo", "sợ", "buồn", "stress", "khó", "thiếu", "hết tiền",
                                 "chia tay", "thất nghiệp", "nghỉ việc", "mất việc", "nợ",
-                                "vay", "áp lực", "mệt", "không vui"]):
+                                "vay", "áp lực", "mệt", "không vui", "chán", "cô đơn"]):
         mem["sentiment"] = "concerned"
+        # FIX 1.4 — cừu lắng nghe khi bạn buồn
+        if st.session_state.get("sheep_mood") not in ("happy", "celebrate"):
+            set_mood("listening")
 
     if any(k in ul for k in ["tiết kiệm", "nuôi", "mua quỹ", "đầu tư", "hoàn thành"]):
         mem["streak"] += 1
@@ -363,53 +588,67 @@ def update_memory(result: dict, user_msg: str):
         d = mem["dreams"][idx]
         if d["amount"] > 0:
             mem["selected_fund"] = recommend_fund(d["amount"], max(50_000, d["amount"] // 12))
+            # Set "goal" mood when a new dream is detected
+            if d_name: set_mood("goal")
 
     genome = mem["wealth_genome"]
-    if "Travel Dream" in mem["life_events"]: genome["dream_type"] = "Du lịch & Trải nghiệm 🌏"
+    if "Travel Dream"      in mem["life_events"]: genome["dream_type"] = "Du lịch & Trải nghiệm 🌏"
     elif "Consumption Goal" in mem["life_events"]: genome["dream_type"] = "Sở hữu & Vật chất 🛍️"
-    elif "Education" in mem["life_events"]: genome["dream_type"] = "Học tập & Phát triển 📚"
-    elif "Life Milestone" in mem["life_events"]: genome["dream_type"] = "Gia đình & Tổ ấm 💒"
-    elif "Career Change" in mem["life_events"]: genome["dream_type"] = "Sự nghiệp & Tự do 💼"
+    elif "Education"        in mem["life_events"]: genome["dream_type"] = "Học tập & Phát triển 📚"
+    elif "Life Milestone"   in mem["life_events"]: genome["dream_type"] = "Gia đình & Tổ ấm 💒"
+    elif "Career Change"    in mem["life_events"]: genome["dream_type"] = "Sự nghiệp & Tự do 💼"
 
     if mem["sentiment"] == "concerned":
         genome["emotion_type"] = "Thận trọng – bạn suy nghĩ kỹ trước khi hành động 🤔"
-        genome["risk_type"] = "Ưu tiên an toàn – TCBF phù hợp nhất với bạn 🛡️"
+        genome["risk_type"]    = "Ưu tiên an toàn – TCBF phù hợp nhất với bạn 🛡️"
     elif mem["sentiment"] == "positive":
         genome["emotion_type"] = "Lạc quan – bạn có năng lượng tích cực với tiền bạc 😊"
-        genome["risk_type"] = "Cởi mở với rủi ro – TCEF/TCFF có thể phù hợp 🚀"
+        genome["risk_type"]    = "Cởi mở với rủi ro – TCEF/TCFF có thể phù hợp 🚀"
 
-    if mem["streak"] >= 5: genome["reward_type"] = "Streak & Thành tích – bạn yêu thích chuỗi ngày liên tiếp 🏆"
-    elif mem["streak"] >= 1: genome["reward_type"] = "Đang hình thành thói quen – mình cùng duy trì nhé! 🌱"
-    elif mem["life_events"]: genome["reward_type"] = "Khám phá & Trải nghiệm – bạn thích thử những điều mới 🌟"
+    if mem["streak"] >= 5:   genome["reward_type"] = "Streak & Thành tích – bạn yêu chuỗi ngày liên tiếp 🏆"
+    elif mem["streak"] >= 1: genome["reward_type"] = "Đang hình thành thói quen – cùng duy trì nhé! 🌱"
+    elif mem["life_events"]: genome["reward_type"] = "Khám phá & Trải nghiệm – bạn thích thử điều mới 🌟"
 
     mem["last_updated"] = datetime.now().strftime("%d/%m/%Y %H:%M")
     st.session_state.user_memory = mem
 
     stage = st.session_state.current_stage
     if stage == 1 and len(mem["notes"]) >= 1: st.session_state.current_stage = 2
-    if stage <= 2 and mem["dreams"]: st.session_state.current_stage = max(stage, 3)
-    if stage >= 5 and all(genome.values()): st.session_state.current_stage = max(stage, 7)
+    if stage <= 2 and mem["dreams"]:           st.session_state.current_stage = max(stage, 3)
+    if stage >= 5 and all(genome.values()):    st.session_state.current_stage = max(stage, 7)
+
+    # Auto-show spending tool if cashflow problem detected
+    if tag == "Cashflow Problem":
+        st.session_state.show_spending_tool = True
 
 def send_message(text: str):
     if not st.session_state.api_key:
         st.error("🔑 Bạn chưa nhập API key! Vui lòng nhập ở thanh bên."); return
+
+    # FIX 1.2 — map chip to full prompt before sending
+    actual_prompt = CHIP_PROMPT_MAP.get(text, text)
+    # FIX 1.3 — expand short emotion messages
+    actual_prompt = expand_short_message(actual_prompt)
+
     st.session_state.messages.append({"role": "user", "content": text})
-    with st.spinner("Cừu Cần Cù đang nghĩ... 🐑"):
-        result = chat_with_sheep(text)
-    msg = result.get("message", "Bê bê, mình không hiểu rồi...")
-    st.session_state.messages.append({"role": "assistant", "content": msg,
-                                       "nudge": result.get("nudge_action", ""),
-                                       "savings": result.get("savings_suggestion", "")})
-    update_memory(result, text)
+    with st.spinner("Cừu Cần Cù đang lắng nghe... 🐑"):
+        result = chat_with_sheep(actual_prompt)
+
+    msg = result.get("message") or "Bê bê~ 🐑 Cừu đang lắng nghe nè! Bạn kể thêm nhé?"
+    st.session_state.messages.append({
+        "role": "assistant", "content": msg,
+        "nudge": result.get("nudge_action", ""),
+        "savings": result.get("savings_suggestion", ""),
+    })
+    update_memory(result, actual_prompt)
 
 # ─────────────────────────────────────────────
-# THANH BÊN
+# SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
-    try: st.image(MASCOT_URL, width=90)
-    except: st.markdown("# 🐑")
+    # FIX 1.5 — sidebar avatar = same branded image as chat
+    show_sheep(width=90)
     st.title("Cừu Cần Cù")
-
     stage = st.session_state.current_stage
     st.caption(STAGE_LABELS.get(stage, ""))
     st.progress(stage / 7, text=f"Giai đoạn {stage} / 7")
@@ -420,6 +659,13 @@ with st.sidebar:
     if key_in: st.session_state.api_key = key_in
     st.divider()
 
+    # Feature 3.1 — Diary toggle button
+    diary_label = "📔 Đóng Nhật Ký" if st.session_state.show_diary else "📔 Nhật Ký Tâm Sự"
+    if st.button(diary_label, use_container_width=True):
+        st.session_state.show_diary = not st.session_state.show_diary
+        st.rerun()
+
+    st.divider()
     st.subheader("🧠 Bộ Nhớ Cừu")
     mem = st.session_state.user_memory
     c1, c2 = st.columns(2)
@@ -429,8 +675,8 @@ with st.sidebar:
     if mem["name"]: st.info(f"👤 {mem['name']}")
     if mem["life_events"]:
         st.write("🏷️ **Sự kiện:**")
-        for tag in mem["life_events"][-4:]:
-            st.caption(f"{LIFE_EVENT_ICONS.get(tag,'🏷️')} {LIFE_EVENT_VI.get(tag, tag)}")
+        for t in mem["life_events"][-4:]:
+            st.caption(f"{LIFE_EVENT_ICONS.get(t,'🏷️')} {LIFE_EVENT_VI.get(t, t)}")
     if mem["dreams"]:
         st.write("💭 **Giấc mơ:**")
         for d in mem["dreams"][-3:]:
@@ -441,11 +687,12 @@ with st.sidebar:
     if mem["total_saved"] > 0:
         fk = mem.get("selected_fund", "TCBF")
         st.success(f"💰 Đã đầu tư: **{fmt(mem['total_saved'])}**\n\n{FUNDS[fk]['emoji']} {FUNDS[fk]['tên']}")
+
     genome = mem["wealth_genome"]
     if any(genome.values()):
         st.divider(); st.subheader("🧬 Hồ Sơ Tài Chính")
         if genome["dream_type"]: st.caption(f"💭 {genome['dream_type'].split(' – ')[0]}")
-        if genome["risk_type"]: st.caption(f"🛡️ {genome['risk_type'].split(' – ')[0]}")
+        if genome["risk_type"]:  st.caption(f"🛡️ {genome['risk_type'].split(' – ')[0]}")
 
     st.divider()
     with st.expander("⚙️ Chuyển giai đoạn (demo)"):
@@ -453,27 +700,114 @@ with st.sidebar:
                                   format_func=lambda x: f"{x}. {STAGE_LABELS[x]}")
         if st.button("Chuyển →", use_container_width=True):
             st.session_state.current_stage = new_stage; st.rerun()
+
     if st.button("🗑️ Đặt lại tất cả", use_container_width=True):
-        for k in ["messages", "user_memory", "current_stage", "active_dream_idx", "_quick_reply"]:
-            if k == "user_memory": st.session_state[k] = MEMORY_DEFAULT.copy()
+        for k in ["messages", "user_memory", "current_stage", "active_dream_idx", "_quick_reply",
+                  "sheep_mood", "feeding_done_today", "show_diary", "show_spending_tool"]:
+            if k == "user_memory":     st.session_state[k] = MEMORY_DEFAULT.copy()
             elif k == "current_stage": st.session_state[k] = 1
             elif k == "active_dream_idx": st.session_state[k] = 0
+            elif k == "sheep_mood":    st.session_state[k] = "default"
+            elif k in ("feeding_done_today", "show_diary", "show_spending_tool"):
+                st.session_state[k] = False
             else: st.session_state[k] = [] if k == "messages" else None
         st.rerun()
     st.caption("Được tạo bởi Claude 💙")
 
 # ─────────────────────────────────────────────
-# NỘI DUNG CHÍNH
+# FEATURE 3.1 — NHẬT KÝ TÂM SỰ
+# ─────────────────────────────────────────────
+if st.session_state.show_diary:
+    st.title("📔 Nhật Ký Tâm Sự")
+    st.caption("Viết tâm sự của bạn ở đây — Cừu giữ bí mật, không phán xét 🐑")
+
+    col_write, col_history = st.columns([3, 2])
+
+    with col_write:
+        show_sheep("listening", width=70)
+        st.markdown("**Cừu đang lắng nghe...** Bạn muốn ghi lại điều gì hôm nay?")
+
+        diary_title = st.text_input("Tiêu đề (tuỳ chọn)", placeholder="Hôm nay mình cảm thấy...")
+        diary_mood  = st.radio("Tâm trạng hôm nay:", list(DIARY_MOODS.keys()),
+                                horizontal=True, label_visibility="collapsed")
+        diary_text  = st.text_area("Tâm sự của bạn 🌿",
+                                    placeholder="Hôm nay mình cảm thấy... Chuyện xảy ra là...",
+                                    height=250)
+
+        if st.button("💾 Lưu vào nhật ký 🐑", type="primary", use_container_width=True):
+            if diary_text.strip():
+                entry = save_diary_entry(diary_text.strip(), diary_mood, diary_title.strip())
+                set_mood("happy")
+
+                # Ask sheep to respond to diary entry
+                if st.session_state.api_key:
+                    preview = diary_text[:200]
+                    diary_llm_prompt = (
+                        f"Bạn của Cừu vừa viết nhật ký: '{preview}'. "
+                        "Hãy phản hồi ngắn gọn 1-2 câu bằng tiếng Việt, "
+                        "thể hiện sự đồng cảm ấm áp và không phán xét, dùng 'bê bê~' nếu phù hợp."
+                    )
+                    with st.spinner("Cừu đang đọc nhật ký của bạn... 🐑"):
+                        try:
+                            client = anthropic.Anthropic(api_key=st.session_state.api_key)
+                            resp = client.messages.create(
+                                model="claude-haiku-4-5-20251001", max_tokens=200,
+                                messages=[{"role": "user", "content": diary_llm_prompt}],
+                            )
+                            sheep_reply = resp.content[0].text.strip()
+                        except Exception:
+                            sheep_reply = "Bê bê~ 🐑 Cừu đã đọc rồi! Cảm ơn bạn đã tin tưởng chia sẻ với mình nhé 💙"
+
+                    st.success(f"🐑 **Cừu nhắn:** {sheep_reply}")
+                else:
+                    st.success("✅ Đã lưu nhật ký!")
+                st.rerun()
+            else:
+                st.warning("Bạn chưa viết gì! Cừu muốn nghe chuyện của bạn nè 🐑")
+
+        # Download entries as JSON
+        if st.session_state.diary_entries:
+            dl_data = json.dumps(st.session_state.diary_entries, ensure_ascii=False, indent=2)
+            st.download_button("⬇️ Tải nhật ký về máy", dl_data,
+                               file_name="nhat_ky_tam_su.json", mime="application/json")
+
+    with col_history:
+        st.subheader(f"📅 Các trang nhật ký ({len(st.session_state.diary_entries)})")
+        if not st.session_state.diary_entries:
+            show_sheep("miss_you", width=80)
+            st.caption("Chưa có trang nhật ký nào. Bắt đầu viết đi bạn! 🌿")
+        else:
+            search = st.text_input("🔍 Tìm kiếm", placeholder="Tìm theo từ khoá...")
+            for entry in st.session_state.diary_entries:
+                if search and search.lower() not in entry["content"].lower() \
+                           and search.lower() not in entry["title"].lower():
+                    continue
+                with st.expander(
+                    f"{entry['mood']} **{entry['title']}** — {entry['date']}"
+                ):
+                    st.markdown(entry["content"])
+                    if st.button("🗑️ Xoá", key=f"del_{entry['id']}"):
+                        st.session_state.diary_entries = [
+                            e for e in st.session_state.diary_entries if e["id"] != entry["id"]
+                        ]
+                        st.rerun()
+    st.stop()   # Don't render main stage content while diary is open
+
+# ─────────────────────────────────────────────
+# MAIN CONTENT — STAGES
 # ─────────────────────────────────────────────
 stage = st.session_state.current_stage
-mem = st.session_state.user_memory
+mem   = st.session_state.user_memory
 
+# ── STAGE 1 & 2 ──────────────────────────────
 if stage <= 2:
     greeting_title, greeting_msg = get_greeting()
-    col_l, col_c, col_r = st.columns([1, 2, 1])
-    with col_c:
-        try: st.image(MASCOT_URL, width=120)
-        except: st.markdown("## 🐑")
+
+    # FIX 1.1 — left-aligned greeting row (avatar left, text right)
+    col_img, col_text = st.columns([1, 4])
+    with col_img:
+        show_sheep(width=96)
+    with col_text:
         with st.container(border=True):
             st.markdown(f"### {greeting_title}")
             if stage == 2 and mem["dreams"]:
@@ -485,30 +819,38 @@ if stage <= 2:
             else:
                 st.markdown(f"*{greeting_msg}*")
                 st.markdown("**Hôm nay bạn có chuyện gì muốn kể không?**")
+
     st.markdown("---")
-    st.markdown("#### 🐑 Mình lắng nghe – không phán xét, không so sánh\n*Bạn đang cảm thấy thế nào? Chọn điều gần nhất với bạn hôm nay:*")
+    st.markdown("#### 🐑 Mình lắng nghe – không phán xét, không so sánh")
+    st.caption("*Bạn đang cảm thấy thế nào? Chọn điều gần nhất với bạn hôm nay:*")
+
     qr_cols = st.columns(3)
-    for i, (label, _) in enumerate(QUICK_REPLIES):
+    for i, label in enumerate(QUICK_REPLIES):
         if qr_cols[i % 3].button(label, use_container_width=True, key=f"qr_{i}"):
             st.session_state._quick_reply = label; st.rerun()
+
     if st.session_state._quick_reply:
         qr = st.session_state._quick_reply
         st.session_state._quick_reply = None
         send_message(qr); st.rerun()
+
     if st.session_state.messages:
         st.markdown("---")
         for m in st.session_state.messages[-8:]:
-            with st.chat_message(m["role"], avatar="🐑" if m["role"] == "assistant" else "🧑"):
+            # FIX 1.5 — use branded avatar image in chat (same as sidebar)
+            avatar = get_sheep_img() if m["role"] == "assistant" else "🧑"
+            with st.chat_message(m["role"], avatar=avatar):
                 st.markdown(m["content"])
                 if m.get("nudge"): st.info(f"💡 {m['nudge']}")
 
+# ── STAGE 3 ───────────────────────────────────
 elif stage == 3:
-    col_l, col_c, col_r = st.columns([1, 3, 1])
-    with col_c:
-        try: st.image(MASCOT_URL, width=100)
-        except: st.markdown("## 🐑")
+    col_img, col_title = st.columns([1, 5])
+    with col_img: show_sheep("goal", width=90)
+    with col_title:
         st.title("🎯 Cùng biến giấc mơ thành kế hoạch")
         st.caption("Mình sẽ giúp bạn tính toán – không phán xét, chỉ đồng hành 🐑")
+
     if mem["dreams"]:
         for idx, d in enumerate(mem["dreams"]):
             with st.container(border=True):
@@ -517,14 +859,19 @@ elif stage == 3:
                     st.markdown(f"**Ước tính cần:** {fmt(d['amount'])}")
                     fund_key = recommend_fund(d["amount"], d["amount"] // 12)
                     fund = FUNDS[fund_key]
-                    st.markdown(f"**{fund['emoji']} Quỹ gợi ý:** {fund['tên']} – {fund['mô_tả']}\n\nLãi suất kỳ vọng ~**{fund['lãi_suất']*100:.0f}%/năm** | Rủi ro: {fund['rủi_ro']} | Phù hợp: {fund['phù_hợp']}")
+                    st.markdown(
+                        f"**{fund['emoji']} Quỹ gợi ý:** {fund['tên']} – {fund['mô_tả']}\n\n"
+                        f"Lãi suất kỳ vọng ~**{fund['lãi_suất']*100:.0f}%/năm** | "
+                        f"Rủi ro: {fund['rủi_ro']} | Phù hợp: {fund['phù_hợp']}"
+                    )
                     st.markdown("---")
                     st.markdown("**💡 Nếu bạn đầu tư quỹ mỗi ngày:**")
                     c1, c2 = st.columns(2)
                     for col, daily in [(c1, 20_000), (c1, 50_000), (c2, 100_000), (c2, 200_000)]:
                         col.info(f"**{fmt(daily)}/ngày** → khoảng **{savings_timeline(d['amount'], daily)}**")
                     st.markdown("")
-                    if st.button(f"🐑 Bắt đầu nuôi giấc mơ '{d['name'].title()}' ngay!", key=f"pick_{idx}", use_container_width=True, type="primary"):
+                    if st.button(f"🐑 Bắt đầu nuôi giấc mơ '{d['name'].title()}' ngay!",
+                                 key=f"pick_{idx}", use_container_width=True, type="primary"):
                         st.session_state.active_dream_idx = idx
                         mem["selected_fund"] = fund_key
                         st.session_state.user_memory = mem
@@ -533,78 +880,117 @@ elif stage == 3:
                     st.info("Cừu Cần Cù chưa ước tính được chi phí. Bạn hãy kể thêm cho mình nhé!")
     else:
         st.info("Bạn chưa chia sẻ giấc mơ nào. Hãy quay lại và kể với Cừu Cần Cù nhé! 🐑")
+
     st.markdown("---")
     for m in st.session_state.messages[-4:]:
-        with st.chat_message(m["role"], avatar="🐑" if m["role"] == "assistant" else "🧑"):
+        avatar = get_sheep_img() if m["role"] == "assistant" else "🧑"
+        with st.chat_message(m["role"], avatar=avatar):
             st.markdown(m["content"])
             if m.get("savings"): st.success(f"💡 {m['savings']}")
 
+# ── STAGE 4 — NUÔI CỪU (FIX 1.4: 2 mood states) ───────────────────
 elif stage == 4:
-    dream = active_dream()
+    dream    = active_dream()
     fund_key = mem.get("selected_fund", "TCBF")
-    fund = FUNDS[fund_key]
-    col_l, col_c, col_r = st.columns([1, 2, 1])
-    with col_c:
-        try: st.image(MASCOT_URL, width=100)
-        except: st.markdown("## 🐑")
+    fund     = FUNDS[fund_key]
+
+    # FIX 1.4 — dynamic mood display
+    current_mood = st.session_state.get("sheep_mood", "default")
+    col_img, col_main = st.columns([1, 4])
+    with col_img:
+        show_sheep(current_mood, width=100)
+
+    with col_main:
         st.markdown("## ❤️ Nuôi Cừu Cần Cù hôm nay")
         st.caption("Mỗi lần cho Cừu ăn = bạn đang mua một phần quỹ đầu tư!")
+
+        # FIX 1.4 — mood status message
+        if current_mood == "happy":
+            st.success("🐑 Cừu no bụng rồi, hạnh phúc lắm! ❤️")
+        elif current_mood == "sad":
+            st.warning("🐑 Cừu hơi đói... nhưng không sao, Cừu vẫn ở đây với bạn nha 🥺")
+        else:
+            st.info("🐑 Bê bê~ Hôm nay bạn cho Cừu ăn gì nhé?")
+
         if dream and dream["amount"] > 0:
             pct = min(100, dream["saved"] / dream["amount"] * 100)
             st.markdown(f"### 🎯 {dream['name'].title()}")
             st.progress(pct / 100)
             st.caption(f"{pct:.1f}% hoàn thành · Đã đầu tư: {fmt(dream['saved'])} / {fmt(dream['amount'])}")
+
         st.markdown("---")
-        st.markdown(f"**{fund['emoji']} Tiền của bạn đang vào:** {fund['tên']}\n\n📈 Lãi kỳ vọng ~{fund['lãi_suất']*100:.0f}%/năm · {fund['rủi_ro']}")
+        st.markdown(f"**{fund['emoji']} Tiền của bạn đang vào:** {fund['tên']}\n\n"
+                    f"📈 Lãi kỳ vọng ~{fund['lãi_suất']*100:.0f}%/năm · {fund['rủi_ro']}")
         st.markdown("")
         st.markdown("**Hôm nay bạn muốn đầu tư bao nhiêu?**")
+
         btn_cols = st.columns(4)
         for i, amt in enumerate(MICRO_AMOUNTS):
-            if btn_cols[i].button(f"**{fmt(amt)}**", use_container_width=True, key=f"feed_{amt}", type="primary"):
+            if btn_cols[i].button(f"**{fmt(amt)}**", use_container_width=True,
+                                  key=f"feed_{amt}", type="primary"):
                 add_saved(amt); st.balloons()
-                st.success(f"🐑 Cừu Cần Cù được ăn {fmt(amt)}! ❤️\n\nBạn vừa đầu tư {fmt(amt)} vào {fund['tên']}. Tích tiểu thành đại, mỗi ngày một ít là đủ rồi!")
+                st.success(f"🐑 Cừu Cần Cù được ăn {fmt(amt)}! ❤️\n\n"
+                           f"Bạn vừa đầu tư {fmt(amt)} vào {fund['tên']}. "
+                           "Tích tiểu thành đại, mỗi ngày một ít là đủ rồi!")
                 st.rerun()
+
+        # FIX 1.4 — "skip" button makes sheep sad
+        if not st.session_state.feeding_done_today:
+            if st.button("⏩ Hôm nay bỏ qua", use_container_width=True):
+                set_mood("sad")
+                st.session_state.feeding_done_today = True
+                st.rerun()
+
         if mem["total_saved"] > 0:
-            projected_1y = calc_fund_growth(max(mem["total_saved"] / max(1, mem["streak"] / 30), 50_000), 12, fund["lãi_suất"])
+            projected_1y = calc_fund_growth(
+                max(mem["total_saved"] / max(1, mem["streak"] / 30), 50_000), 12, fund["lãi_suất"]
+            )
             st.markdown("---")
             st.markdown(f"💰 **Đã đầu tư:** {fmt(mem['total_saved'])}")
             st.markdown(f"🔥 **Streak:** {mem['streak']} ngày liên tiếp")
-            st.markdown(f"📈 **Nếu tiếp tục 12 tháng**, quỹ của bạn có thể đạt ~**{fmt(int(projected_1y))}**")
+            st.markdown(f"📈 **Nếu tiếp tục 12 tháng**, quỹ có thể đạt ~**{fmt(int(projected_1y))}**")
 
+# ── STAGE 5 ───────────────────────────────────
 elif stage == 5:
     fund_key = mem.get("selected_fund", "TCBF")
     fund = FUNDS[fund_key]
     st.title("🔄 Thói quen hàng ngày")
-    st.caption("Tích tiểu thành đại – mỗi ngày một hành động nhỏ, tài chính lớn dần theo năm tháng 🐑")
+    st.caption("Tích tiểu thành đại – mỗi ngày một hành động nhỏ 🐑")
     h = datetime.now().hour
-    col_l, col_c, col_r = st.columns([1, 2, 1])
-    with col_c:
+    col_img, col_main = st.columns([1, 4])
+    with col_img: show_sheep(width=90)
+    with col_main:
         if 5 <= h < 12:
             with st.container(border=True):
-                try: st.image(MASCOT_URL, width=90)
-                except: st.markdown("## 🐑")
                 st.markdown("### ☀️ Cừu Cần Cù chào buổi sáng!")
-                st.markdown(f"🐑 *Hôm nay mình được ăn chưa?*\n\nMỗi lần bạn nuôi mình = bạn đang **mua một phần {fund['tên']}**.\n\nCừu Cần Cù lớn khoẻ → Tài chính của bạn cũng lớn mạnh theo! 🌱")
-                st.markdown("")
+                st.markdown(
+                    f"🐑 *Hôm nay Cừu được ăn chưa?*\n\n"
+                    f"Mỗi lần bạn nuôi mình = bạn đang **mua một phần {fund['tên']}**.\n\n"
+                    "Cừu Cần Cù lớn khoẻ → Tài chính của bạn cũng lớn mạnh theo! 🌱"
+                )
                 sc = st.columns(4)
                 for i, amt in enumerate(MICRO_AMOUNTS):
                     if sc[i].button(f"❤️ {fmt(amt)}", use_container_width=True, key=f"morning_{amt}"):
                         add_saved(amt)
-                        st.success(f"🌱 Cừu Cần Cù vui lắm!\n\nBạn vừa đầu tư {fmt(amt)} vào {fund['tên']}. Có một ngày tốt lành nhé! ☀️")
+                        st.success(f"🌱 Cừu Cần Cù vui lắm!\nBạn vừa đầu tư {fmt(amt)} vào {fund['tên']}. "
+                                   "Có một ngày tốt lành nhé! ☀️")
                         st.rerun()
         else:
             items = [("trà sữa", 35_000), ("cà phê", 45_000), ("ăn vặt", 25_000)]
             item, price = random.choice(items)
             with st.container(border=True):
-                try: st.image(MASCOT_URL, width=90)
-                except: st.markdown("## 🐑")
                 st.markdown("### 🌙 Cừu Cần Cù chào buổi tối!")
-                st.markdown(f"🐑 *Nếu hôm nay bớt 1 {item}, bạn có thêm **{fmt(price)}**.*\n\nSố tiền nhỏ đó, nếu đầu tư vào **{fund['tên']}** mỗi ngày,\nsau 1 năm có thể thành ~**{fmt(int(calc_fund_growth(price, 12, fund['lãi_suất'])))}** nhờ lãi kép! ✨")
-                st.markdown("")
+                st.markdown(
+                    f"🐑 *Nếu hôm nay bớt 1 {item}, bạn có thêm **{fmt(price)}**.*\n\n"
+                    f"Số tiền đó, nếu đầu tư vào **{fund['tên']}** mỗi ngày,\n"
+                    f"sau 1 năm có thể thành ~**{fmt(int(calc_fund_growth(price, 12, fund['lãi_suất'])))}** nhờ lãi kép! ✨"
+                )
                 if st.button(f"💰 Đầu tư {fmt(price)} ngay vào quỹ!", use_container_width=True, type="primary"):
                     add_saved(price)
-                    st.success(f"🐑 Bạn vừa đầu tư {fmt(price)} vào {fund['tên']}!\n\nMỗi ngày một ít, Cừu Cần Cù ngày càng lớn khoẻ cùng tài chính của bạn ❤️")
+                    st.success(f"🐑 Bạn vừa đầu tư {fmt(price)} vào {fund['tên']}!\n"
+                               "Mỗi ngày một ít, Cừu Cần Cù ngày càng lớn khoẻ ❤️")
                     st.rerun()
+
         st.markdown("---")
         c1, c2 = st.columns(2)
         c1.metric("🔥 Streak", f"{mem['streak']} ngày")
@@ -614,6 +1000,7 @@ elif stage == 5:
             pct = min(100, dream["saved"] / dream["amount"] * 100)
             st.markdown(f"### ✨ {dream['name'].title()}: {pct:.1f}%")
             st.progress(pct / 100)
+
         st.markdown("---")
         st.markdown("#### 📊 3 Quỹ bạn có thể đầu tư từ 10.000đ")
         for fk, fv in FUNDS.items():
@@ -623,6 +1010,7 @@ elif stage == 5:
                 c2.metric("Lãi kỳ vọng", f"~{fv['lãi_suất']*100:.0f}%/năm")
                 c3.metric("Rủi ro", fv["rủi_ro"])
 
+# ── STAGE 6 ───────────────────────────────────
 elif stage == 6:
     st.title("🌟 Hành trình giấc mơ của bạn")
     st.caption("Cừu Cần Cù sẽ cho bạn thấy từng bước trên con đường đến giấc mơ 🐑")
@@ -635,11 +1023,11 @@ elif stage == 6:
                     fund = FUNDS[fund_key]
                     monthly_needed = d["amount"] // 12
                     pct_now = min(100, d["saved"] / d["amount"] * 100)
-                    if pct_now < 25: icon, vibe = "🌱", "Hành trình mới bắt đầu..."
+                    if pct_now < 25:   icon, vibe = "🌱", "Hành trình mới bắt đầu..."
                     elif pct_now < 50: icon, vibe = "🌿", "Đang lớn dần rồi!"
                     elif pct_now < 75: icon, vibe = "🌸", "Đang nở rộ!"
                     elif pct_now < 100: icon, vibe = "🌟", "Sắp đến đích rồi!!!"
-                    else: icon, vibe = "🎉", "Giấc mơ đã thành hiện thực!"
+                    else:              icon, vibe = "🎉", "Giấc mơ đã thành hiện thực!"
                     ca, cb = st.columns([3, 2])
                     with ca:
                         st.markdown(f"### {icon} Bạn đã xây được **{pct_now:.1f}%**")
@@ -663,28 +1051,38 @@ elif stage == 6:
                     if milestones:
                         last = milestones[-1]
                         st.markdown("---")
-                        st.markdown(f"💡 **Tóm lại:** Bạn bỏ ra **{fmt(monthly_needed * last['tháng'])}** tiền gốc, quỹ sinh thêm **{fmt(int(last['giá_trị'] - monthly_needed * last['tháng']))}** tiền lãi.\n\nTháng {last['tháng']} bạn bán quỹ → nhận về ~**{fmt(int(last['giá_trị']))}** → mua {d['name'].title()} dư dả! 🎉")
+                        st.markdown(
+                            f"💡 **Tóm lại:** Bạn bỏ ra **{fmt(monthly_needed * last['tháng'])}** tiền gốc, "
+                            f"quỹ sinh thêm **{fmt(int(last['giá_trị'] - monthly_needed * last['tháng']))}** tiền lãi.\n\n"
+                            f"Tháng {last['tháng']} bán quỹ → nhận ~**{fmt(int(last['giá_trị']))}** → mua {d['name'].title()} dư dả! 🎉"
+                        )
                     st.markdown("")
-                    if st.button("❤️ Tiếp tục nuôi quỹ!", key=f"vis_{d['name']}", use_container_width=True, type="primary"):
+                    if st.button("❤️ Tiếp tục nuôi quỹ!", key=f"vis_{d['name']}",
+                                 use_container_width=True, type="primary"):
                         st.session_state.current_stage = 4; st.rerun()
                 else:
                     st.info("Cừu Cần Cù sẽ giúp bạn tính toán chi phí cụ thể!")
     else:
         st.info("Bạn chưa có giấc mơ nào. Hãy quay lại và kể với Cừu Cần Cù! 🐑")
 
+# ── STAGE 7 ───────────────────────────────────
 elif stage == 7:
-    col_l, col_c, col_r = st.columns([1, 3, 1])
-    with col_c:
-        try: st.image(MASCOT_URL, width=100)
-        except: st.markdown("## 🐑")
-    st.title("🧬 Hồ Sơ Tài Chính Của Bạn")
-    st.caption(f"Sau {len(mem['notes'])} cuộc trò chuyện, Cừu Cần Cù đã hiểu bạn hơn và xây dựng được bức chân dung tài chính riêng của bạn 🐑")
+    col_img, col_title = st.columns([1, 5])
+    with col_img: show_sheep(width=90)
+    with col_title:
+        st.title("🧬 Hồ Sơ Tài Chính Của Bạn")
+        st.caption(f"Sau {len(mem['notes'])} cuộc trò chuyện, Cừu Cần Cù đã hiểu bạn hơn 🐑")
+
     genome = mem["wealth_genome"]
     GENOME_EXPLAIN = {
-        "dream_type": ("💭 Kiểu Giấc Mơ", "Bạn đang hướng đến điều gì trong cuộc sống? Đây là động lực sâu nhất giúp bạn tiết kiệm và đầu tư."),
-        "emotion_type": ("💓 Kiểu Cảm Xúc Tài Chính", "Cách bạn cảm nhận và phản ứng với tiền bạc. Hiểu được điều này giúp bạn đưa ra quyết định tài chính khôn ngoan hơn."),
-        "risk_type": ("🛡️ Khẩu Vị Rủi Ro", "Mức độ rủi ro bạn thoải mái chấp nhận khi đầu tư. Cừu Cần Cù dùng điều này để gợi ý quỹ phù hợp nhất cho bạn."),
-        "reward_type": ("🏆 Động Lực Của Bạn", "Điều gì thúc đẩy bạn hành động và duy trì thói quen tốt. Biết được động lực giúp Cừu Cần Cù khích lệ bạn đúng cách."),
+        "dream_type":  ("💭 Kiểu Giấc Mơ",
+                        "Bạn đang hướng đến điều gì trong cuộc sống? Đây là động lực sâu nhất giúp bạn tiết kiệm."),
+        "emotion_type": ("💓 Kiểu Cảm Xúc Tài Chính",
+                         "Cách bạn cảm nhận và phản ứng với tiền bạc."),
+        "risk_type":   ("🛡️ Khẩu Vị Rủi Ro",
+                        "Mức độ rủi ro bạn thoải mái chấp nhận khi đầu tư."),
+        "reward_type": ("🏆 Động Lực Của Bạn",
+                        "Điều gì thúc đẩy bạn hành động và duy trì thói quen tốt."),
     }
     g1, g2 = st.columns(2)
     for k1, k2 in [("dream_type", "risk_type"), ("emotion_type", "reward_type")]:
@@ -700,6 +1098,7 @@ elif stage == 7:
                 st.markdown(f"### {title}")
                 st.markdown(f"## {genome[k2] or '🔍 Đang phân tích...'}")
                 if genome[k2]: st.caption(desc)
+
     st.divider()
     st.subheader("📊 Quỹ Phù Hợp Với Bạn")
     fund_key = mem.get("selected_fund", "TCBF")
@@ -709,24 +1108,28 @@ elif stage == 7:
         st.markdown(f"**{fund['mô_tả']}**")
         c1, c2, c3 = st.columns(3)
         c1.metric("Lãi kỳ vọng", f"~{fund['lãi_suất']*100:.0f}%/năm")
-        c2.metric("Mức rủi ro", fund["rủi_ro"])
+        c2.metric("Mức rủi ro",  fund["rủi_ro"])
         c3.metric("Phù hợp nhất", fund["phù_hợp"])
         st.markdown("💡 *Bạn có thể đầu tư từ **10.000đ** mỗi lần – không cần số tiền lớn*")
+
     st.divider()
     st.subheader("💌 Cừu Cần Cù nhắn riêng cho bạn")
     if mem["dreams"]:
         dream_name = mem["dreams"][0]["name"]
         with st.container(border=True):
-            try: st.image(MASCOT_URL, width=80)
-            except: st.markdown("🐑")
-            st.markdown(f"### 🌏 **{random.randint(30_000,80_000):,} người** đang đầu tư quỹ để thực hiện **{dream_name.title()}** giống bạn!")
-            st.markdown(f"Nhóm này đã đầu tư trung bình **{fmt(random.randint(8_000_000,15_000_000))}** rồi 💪")
-            st.markdown(f"Còn bạn đã có **{fmt(mem['total_saved'])}** – mỗi ngày một ít, Cừu Cần Cù tin bạn sẽ đến đích! 🐑")
-            st.markdown("")
-            if st.button("🐑 Tiếp tục nuôi quỹ!", use_container_width=True, type="primary"):
-                st.session_state.current_stage = 4; st.rerun()
+            col_a, col_b = st.columns([1, 5])
+            with col_a: show_sheep("celebrate", width=70)
+            with col_b:
+                st.markdown(f"### 🌏 **{random.randint(30_000, 80_000):,} người** đang đầu tư quỹ để "
+                            f"thực hiện **{dream_name.title()}** giống bạn!")
+                st.markdown(f"Nhóm này đã đầu tư trung bình **{fmt(random.randint(8_000_000, 15_000_000))}** rồi 💪")
+                st.markdown(f"Còn bạn đã có **{fmt(mem['total_saved'])}** – mỗi ngày một ít, "
+                            "Cừu Cần Cù tin bạn sẽ đến đích! 🐑")
+                if st.button("🐑 Tiếp tục nuôi quỹ!", use_container_width=True, type="primary"):
+                    st.session_state.current_stage = 4; st.rerun()
     else:
         st.info("Hãy chia sẻ giấc mơ với Cừu Cần Cù để nhận thông điệp cá nhân hoá nhé! 🐑")
+
     if mem["life_events"]:
         st.divider()
         st.subheader("🏷️ Hành trình cuộc sống của bạn")
@@ -735,7 +1138,74 @@ elif stage == 7:
             cols[i].metric(LIFE_EVENT_ICONS.get(tag, "🏷️"), LIFE_EVENT_VI.get(tag, tag))
 
 # ─────────────────────────────────────────────
-# Ô NHẬP TIN NHẮN
+# FEATURE 3.2 — SPENDING ANALYZER (triggered by Cashflow Problem)
+# ─────────────────────────────────────────────
+if st.session_state.get("show_spending_tool"):
+    st.divider()
+    with st.expander("💸 Cừu giúp bạn phân tích chi tiêu (Quy tắc 50/30/20)", expanded=True):
+        col_sa, col_sb = st.columns(2)
+        income_val   = col_sa.number_input("💰 Thu nhập hàng tháng (VNĐ)",
+                                            min_value=0, step=500_000, value=10_000_000,
+                                            format="%d")
+        expenses_val = col_sb.number_input("💸 Tổng chi tiêu hàng tháng (VNĐ)",
+                                            min_value=0, step=500_000, value=0,
+                                            format="%d")
+        if st.button("🐑 Phân tích ngay!", type="primary"):
+            if income_val > 0:
+                analysis = analyze_spending_5030(income_val, expenses_val)
+                st.markdown(analysis)
+                col_img2, col_text2 = st.columns([1, 5])
+                with col_img2: show_sheep("saving", width=70)
+                with col_text2:
+                    st.markdown(
+                        "**Rich Dad Poor Dad gợi ý:** Hãy tự trả lương cho bản thân trước!\n\n"
+                        f"Bỏ ngay **{fmt(int(income_val * 0.10))}** (10% lương) vào quỹ TCBF "
+                        "trước khi chi tiêu – đó là bước đầu tiên xây dựng tự do tài chính 🌱"
+                    )
+
+        # Image upload for receipt analysis (Feature 3.2)
+        st.markdown("---")
+        st.markdown("**📸 Hoặc tải ảnh hóa đơn/sao kê để Cừu phân tích:**")
+        uploaded = st.file_uploader("Chọn ảnh", type=["jpg", "jpeg", "png"], key="receipt_img")
+        if uploaded and st.session_state.api_key:
+            if st.button("🐑 Cừu đọc hóa đơn này!"):
+                img_bytes = uploaded.read()
+                img_b64 = base64.b64encode(img_bytes).decode()
+                media_type = "image/jpeg" if uploaded.name.lower().endswith((".jpg", ".jpeg")) else "image/png"
+                vision_prompt = (
+                    "Đây là ảnh hóa đơn hoặc sao kê chi tiêu của người dùng Việt Nam. "
+                    "Hãy: 1) Liệt kê các khoản chi (tên + số tiền), 2) Tính tổng, "
+                    "3) Phân loại: Nhu cầu thiết yếu / Mong muốn / Đầu tư, "
+                    "4) Đưa 1-2 gợi ý tiết kiệm nhỏ. "
+                    "Trả lời ngắn gọn bằng tiếng Việt, giọng ấm áp như Cừu Cần Cù."
+                )
+                with st.spinner("Cừu đang đọc hóa đơn... 🐑"):
+                    try:
+                        client = anthropic.Anthropic(api_key=st.session_state.api_key)
+                        resp = client.messages.create(
+                            model="claude-haiku-4-5-20251001", max_tokens=800,
+                            messages=[{"role": "user", "content": [
+                                {"type": "image", "source": {
+                                    "type": "base64", "media_type": media_type, "data": img_b64
+                                }},
+                                {"type": "text", "text": vision_prompt},
+                            ]}],
+                        )
+                        receipt_analysis = resp.content[0].text.strip()
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": f"🐑 **Cừu đã xem hóa đơn của bạn!**\n\n{receipt_analysis}",
+                            "nudge": "", "savings": "",
+                        })
+                        st.success("Đã phân tích xong! Xem kết quả trong khung chat bên dưới 👇")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Lỗi phân tích ảnh: {e}")
+        elif uploaded and not st.session_state.api_key:
+            st.warning("🔑 Nhập API key ở thanh bên để Cừu đọc hóa đơn nhé!")
+
+# ─────────────────────────────────────────────
+# CHAT INPUT (all stages)
 # ─────────────────────────────────────────────
 st.divider()
 if prompt := st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑"):
@@ -747,7 +1217,8 @@ if prompt := st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑"):
 if stage > 2 and st.session_state.messages:
     last = st.session_state.messages[-1]
     if last["role"] == "assistant":
-        with st.chat_message("assistant", avatar="🐑"):
+        # FIX 1.5 — use branded avatar (same as sidebar + same as chat history)
+        with st.chat_message("assistant", avatar=get_sheep_img()):
             st.markdown(last["content"])
             if last.get("savings"): st.success(f"💡 **Gợi ý đầu tư:** {last['savings']}")
             elif last.get("nudge"): st.info(f"💡 {last['nudge']}")
