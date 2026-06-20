@@ -16,7 +16,7 @@ st.set_page_config(page_title="Cừu Cần Cù 🐑", page_icon="🐑", layout="
 # GitHub assets structure: assets/sheep_{state}.png
 # ─────────────────────────────────────────────
 MASCOT_URL    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/mascot.png"
-BASE_ASSET    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets/"
+BASE_ASSET    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/"  # ảnh nằm ở root repo
 
 SHEEP_IMAGES  = {
     "default":   MASCOT_URL,
@@ -46,34 +46,10 @@ def get_sheep_img(mood: str = None) -> str:
     return SHEEP_IMAGES.get(m, MASCOT_URL)
 
 def show_sheep(mood: str = None, width: int = 90):
-    """Render sheep avatar consistently.
-    Uses mood-specific GitHub asset if uploaded, falls back to MASCOT_URL.
-    Always shows a mood emoji badge below the image.
-    """
+    """Render sheep avatar — dùng ảnh mood từ GitHub, fallback về mascot nếu lỗi."""
     actual_mood = mood or st.session_state.get("sheep_mood", "default")
     url = SHEEP_IMAGES.get(actual_mood, MASCOT_URL)
-
-    # If the URL points to an asset that may not exist yet, use MASCOT_URL as safe fallback
-    # The mood-specific images (sheep_happy.png etc.) only work after uploading to GitHub
-    # For now: show MASCOT_URL + emoji badge to indicate mood
-    if url != MASCOT_URL:
-        # Try mood-specific image; Streamlit won't throw on 404 so we check via header
-        # Safer: always use MASCOT_URL until GitHub assets confirmed
-        try:
-            import urllib.request
-            req = urllib.request.Request(url, method="HEAD")
-            urllib.request.urlopen(req, timeout=1)
-            display_url = url        # image exists on GitHub ✓
-        except Exception:
-            display_url = MASCOT_URL  # image missing → use mascot fallback
-    else:
-        display_url = MASCOT_URL
-
-    try:
-        st.image(display_url, width=width)
-    except Exception:
-        pass
-
+    st.image(url, width=width)
     _, badge_text = MOOD_EMOJI_BADGE.get(actual_mood, ("🐑", ""))
     if badge_text:
         st.caption(badge_text)
