@@ -242,8 +242,11 @@ def show_growth_sheep(total_saved: int, width: int = 200):
         unsafe_allow_html=True,
     )
     if next_threshold:
+        _remaining = next_threshold - total_saved
+        _next_stage = next((s for s in GROWTH_STAGES if s[0] == next_threshold), None)
+        _next_name  = _next_stage[2] if _next_stage else "giai đoạn tiếp theo"
         prog = min(1.0, total_saved / next_threshold) if next_threshold > 0 else 1.0
-        st.progress(prog, text=f"Đến giai đoạn tiếp theo: còn {fmt(next_threshold - total_saved)}")
+        st.progress(prog, text=f"🎯 Chỉ cần thêm {fmt(_remaining)} để trở thành {_next_name}!")
 
 
 def fmt(n: int) -> str:
@@ -366,11 +369,19 @@ MEMORY_DEFAULT: dict = {
     },
     "diary_entries": [],
     "last_fed_amount": 0,
+    "last_fed_food":   "",
     "just_leveled_up": False,
     "prev_stage_key": "baby",
 }
 
 MICRO_AMOUNTS = [10_000, 20_000, 50_000, 100_000]
+
+FEED_OPTIONS = [
+    (10_000,  "🥕", "Bữa ăn nhỏ"),
+    (20_000,  "🍎", "Bữa ăn đủ no"),
+    (50_000,  "🎂", "Tiệc nhỏ"),
+    (100_000, "🎉", "Đại tiệc"),
+]
 
 
 def _init():
@@ -1522,134 +1533,203 @@ with tab2:
 
 # ═══════════════════════════════════════════════════════
 # TAB 3 — HÀNH TRÌNH NUÔI CỪU
-# UX: Cảm giác đang nuôi sinh vật thật, lớn lên qua 5 giai đoạn
+# UX: Food metaphors, unlock rewards, Moment of Joy/Kindness, dream linkage
 # ═══════════════════════════════════════════════════════
 with tab3:
     total_saved = mem.get("total_saved", 0)
     stage_key, stage_name, lv_num, stage_desc, stage_msg = get_growth_stage(total_saved)
 
-    # ── Sheep lớn — trung tâm màn hình ──
-    col_sheep, col_main = st.columns([2, 3])
+    _STAGE_REWARDS = {
+        "baby":   "🌱 Được gặp bạn lần đầu",
+        "child":  "💌 Cừu nhớ tên bạn rồi",
+        "teen":   "🌙 Cừu kể chuyện buổi tối",
+        "adult":  "✨ Cừu đặt tên theo giấc mơ",
+        "master": "🏆 Cừu Lão Luyện — đồng hành mãi mãi",
+    }
 
-    with col_sheep:
-        st.markdown("### 🐑 Cừu của bạn")
-        show_growth_sheep(total_saved, width=220)
+    col_left, col_right = st.columns([2, 3])
 
-        # All 5 stages mini-map
-        st.markdown("---")
-        st.caption("**Hành trình trưởng thành:**")
+    # ── LEFT: Sheep + unlock roadmap ──
+    with col_left:
+        show_growth_sheep(total_saved, width=200)
+
+        st.markdown(
+            '<p style="font-size:0.85rem;font-weight:700;color:#C4607F;margin:14px 0 6px;">'
+            '🗺️ Hành trình của Cừu</p>',
+            unsafe_allow_html=True,
+        )
         for i, (thresh, skey, sname, slv, sdesc, _) in enumerate(GROWTH_STAGES):
             is_current  = skey == stage_key
             is_unlocked = total_saved >= thresh
-            icon = "✅" if (is_unlocked and not is_current) else ("🐑" if is_current else "🔒")
-            col_a, col_b = st.columns([1, 4])
-            col_a.markdown(f"**{icon}**")
+            _reward     = _STAGE_REWARDS.get(skey, "")
             if is_current:
-                col_b.markdown(f"**{sname}** ← bạn đang ở đây")
+                st.markdown(
+                    f'<div style="background:linear-gradient(135deg,#FFF0F5,#FFE4F0);'
+                    f'border:2px solid #FFB5C8;border-radius:12px;padding:10px 12px;margin:4px 0;">'
+                    f'<div style="font-size:0.8rem;font-weight:800;color:#C4607F;">▶ {sname}</div>'
+                    f'<div style="font-size:0.72rem;color:#999;margin-top:2px;">{_reward}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
             elif is_unlocked:
-                col_b.caption(f"~~{sname}~~")
+                st.markdown(
+                    f'<div style="background:#F8F8F8;border:1.5px solid #E0E0E0;'
+                    f'border-radius:12px;padding:8px 12px;margin:4px 0;opacity:0.72;">'
+                    f'<div style="font-size:0.78rem;font-weight:700;color:#AAA;text-decoration:line-through;">{sname}</div>'
+                    f'<div style="font-size:0.7rem;color:#CCC;">✅ Đã mở khóa · {_reward}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
             else:
-                col_b.caption(f"{sname} — cần {fmt(thresh)}")
+                st.markdown(
+                    f'<div style="background:#FAFAFA;border:1.5px dashed #E0CCF0;'
+                    f'border-radius:12px;padding:8px 12px;margin:4px 0;">'
+                    f'<div style="font-size:0.78rem;font-weight:700;color:#C0A8D8;">🔒 {sname}</div>'
+                    f'<div style="font-size:0.7rem;color:#CCC;margin-top:2px;">'
+                    f'Cần {fmt(thresh)} · {_reward}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
-    with col_main:
-        st.title("❤️ Hành Trình Nuôi Cừu")
+    # ── RIGHT: Main interaction ──
+    with col_right:
+
+        # PHẦN 1: Hero in Cừu's first-person voice
+        _hero_lines = {
+            "baby":   ("🥕", f"\"Mình vừa ra đời... còn bé lắm 🐑<br/>Cho mình ăn bữa đầu tiên nhé?\""),
+            "child":  ("🍎", f"\"Mình lớn hơn rồi nhờ {mem.get('name','bạn')} đấy!<br/>Hôm nay cho mình ăn tiếp không?\""),
+            "teen":   ("🎂", f"\"Mình đang lớn nhanh lắm~<br/>Cùng nhau đến đích thôi {mem.get('name','bạn')} ơi!\""),
+            "adult":  ("🎉", f"\"Chúng mình đã đi được nửa đường rồi.<br/>Mình tự hào về {mem.get('name','bạn')} lắm ❤️\""),
+            "master": ("🌟", f"\"Nhìn chúng mình đến đây...<br/>Cảm ơn {mem.get('name','bạn')} đã không bỏ cuộc 🏆\""),
+        }
+        _hfood, _htxt = _hero_lines.get(stage_key, _hero_lines["baby"])
         st.markdown(
-            f"*{stage_msg}*\n\n"
-            "Mỗi đồng bạn đầu tư hôm nay = **Cừu được ăn + Tương lai bạn được xây** 🌱"
+            f'<div style="background:linear-gradient(135deg,#FFF5FA,#F5F0FF);'
+            f'border-radius:16px;padding:16px 20px;text-align:center;margin-bottom:14px;">'
+            f'<div style="font-size:2.2rem;">{_hfood}</div>'
+            f'<div style="font-size:0.97rem;color:#C4607F;font-style:italic;margin-top:8px;line-height:1.6;">'
+            f'{_htxt}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
         )
 
-        # ── Celebration block (sau khi cho ăn) ──
+        # PHẦN 5: Moment of Joy (celebration after feeding)
         if st.session_state.get("feeding_celebration"):
-            fed_amt  = mem.get("last_fed_amount", 0)
-            leveled  = mem.get("just_leveled_up", False)
+            fed_amt   = mem.get("last_fed_amount", 0)
+            fed_food  = mem.get("last_fed_food", "")
+            leveled   = mem.get("just_leveled_up", False)
             cur_key, cur_name, *_ = get_growth_stage(total_saved)
-            cel_src  = _b64(_pick_mascot("celebrate"))
+            cel_src   = _b64(_pick_mascot("celebrate"))
 
+            _dream_link_html = ""
+            if mem["dreams"]:
+                _top_d      = mem["dreams"][0]
+                _top_d_name = _top_d.get("name", "").title()
+                _dream_link_html = (
+                    f'<div style="background:rgba(255,215,0,0.15);border-radius:10px;'
+                    f'padding:8px 14px;margin-top:10px;font-size:0.87rem;color:#B8860B;">'
+                    f'✨ Giấc mơ <strong>{_top_d_name}</strong> vừa tiến thêm '
+                    f'<strong>{fmt(fed_amt)}</strong>~</div>'
+                )
+
+            _leveled_html = ""
+            if leveled:
+                _leveled_html = (
+                    f'<div style="font-size:1.1rem;font-weight:800;color:#C4607F;margin-top:12px;">'
+                    f'🎊 Cừu vừa lớn thêm một giai đoạn! Chào mừng đến với {cur_name}!</div>'
+                )
+
+            _food_label = fed_food if fed_food else fmt(fed_amt)
             st.markdown(
-                f'<div class="celebration-box">'
-                f'<img src="{cel_src}" width="120" style="border-radius:50%;border:4px solid #FFB5C8;" /><br/>'
-                f'<span style="font-size:1.5rem;">🎉</span><br/>'
-                f'<strong style="font-size:1.1rem;color:#C4607F;">'
-                f'Cảm ơn bạn đã cho mình ăn {fmt(fed_amt)} hôm nay ❤️</strong><br/>'
-                f'<span style="color:#666;">Chúng mình vừa tiến gần hơn tới giấc mơ rồi.</span>'
-                + (f'<br/><br/><span style="font-size:1.2rem;font-weight:700;color:#C4607F;">'
-                   f'🎊 Cừu vừa lớn thêm! Chào mừng đến với {cur_name}!</span>' if leveled else '')
-                + f'</div>',
+                f'<div class="celebration-box" style="text-align:center;">'
+                f'<img src="{cel_src}" width="100" style="border-radius:50%;border:4px solid #FFB5C8;" />'
+                f'<div style="font-size:1.4rem;margin:6px 0;">🎉</div>'
+                f'<strong style="font-size:1.05rem;color:#C4607F;">'
+                f'Cừu được ăn {_food_label} rồi — bê bê cảm ơn bạn ❤️</strong>'
+                f'{_dream_link_html}'
+                f'{_leveled_html}'
+                f'</div>',
                 unsafe_allow_html=True,
             )
-            mem["just_leveled_up"]       = False
-            mem["last_fed_amount"]       = 0
+            mem["just_leveled_up"] = False
+            mem["last_fed_amount"] = 0
+            mem["last_fed_food"]   = ""
             st.session_state.feeding_celebration = False
             _save()
             st.balloons()
 
-        # ── Refusal block (khi bỏ qua) ──
+        # PHẦN 6: Moment of Kindness (skip — zero guilt)
         if st.session_state.get("feeding_refused"):
-            sad_src = _b64(_pick_mascot("sad"))
+            kind_src = _b64(_pick_mascot("listening"))
             st.markdown(
-                f'<div class="refusal-box">'
-                f'<img src="{sad_src}" width="90" style="border-radius:50%;border:3px solid #CCDDFF;" /><br/>'
-                f'<strong>Không sao đâu.</strong><br/>'
-                f'<span style="color:#777;">Mình vẫn ở đây. Khi nào sẵn sàng thì quay lại nhé ❤️</span>'
+                f'<div style="background:linear-gradient(135deg,#F0F8FF,#EAF4FF);'
+                f'border-radius:16px;padding:16px 20px;text-align:center;margin-bottom:12px;">'
+                f'<img src="{kind_src}" width="76" style="border-radius:50%;border:3px solid #B5D8FF;" />'
+                f'<div style="font-size:1rem;font-weight:700;color:#5B8DB8;margin-top:8px;">'
+                f'Không sao cả 🌙</div>'
+                f'<div style="font-size:0.88rem;color:#6A9BBF;margin-top:5px;">'
+                f'Mình vẫn ở đây. Hôm nào sẵn sàng thì mình vẫn đợi~ 🐑</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
             st.session_state.feeding_refused = False
 
-        st.markdown("---")
-
-        # ── Stats ──
-        s1, s2, s3 = st.columns(3)
-        s1.metric("💰 Đã tích lũy", fmt(total_saved))
-        s2.metric("🔥 Streak",       f"{mem['streak']} ngày")
-        s3.metric("📊 Level",         f"{lv_num} / 5")
-
-        st.markdown("---")
-
-        # ── Feed buttons ──
-        st.markdown("**Hôm nay cho Cừu ăn gì?**")
-        btn_cols = st.columns(4)
-        for i, amt in enumerate(MICRO_AMOUNTS):
-            if btn_cols[i].button(f"❤️ {fmt(amt)}", use_container_width=True,
-                                   key=f"feed_{amt}", type="primary"):
-                prev_key = stage_key
-                mem["total_saved"]   += amt
-                mem["streak"]        += 1
-                mem["last_fed_amount"] = amt
-                mem["last_fed_date"]   = datetime.now().strftime("%Y-%m-%d")
-
-                new_key, *_ = get_growth_stage(mem["total_saved"])
-                if new_key != prev_key:
+        # PHẦN 2: Feed buttons — food metaphors
+        st.markdown(
+            '<p style="font-size:0.97rem;font-weight:700;color:#C4607F;margin:10px 0 6px;">'
+            '🍽️ Hôm nay cho Cừu ăn gì?</p>',
+            unsafe_allow_html=True,
+        )
+        _feed_cols = st.columns(4)
+        for i, (amt, food_emoji, food_name) in enumerate(FEED_OPTIONS):
+            if _feed_cols[i].button(
+                f"{food_emoji} {food_name}\n{fmt(amt)}",
+                use_container_width=True,
+                key=f"feed_{amt}",
+                type="primary",
+            ):
+                _prev_key = stage_key
+                mem["total_saved"]     += amt
+                mem["streak"]          += 1
+                mem["last_fed_amount"]  = amt
+                mem["last_fed_food"]    = f"{food_emoji} {food_name}"
+                mem["last_fed_date"]    = datetime.now().strftime("%Y-%m-%d")
+                _new_key, *_ = get_growth_stage(mem["total_saved"])
+                if _new_key != _prev_key:
                     mem["just_leveled_up"] = True
-
                 set_mood("happy")
                 st.session_state.feeding_celebration = True
                 st.session_state.feeding_refused     = False
                 _save()
                 st.rerun()
 
-        # Custom amount
-        with st.expander("Nhập số khác"):
-            custom = st.number_input("Số tiền:", min_value=1_000, max_value=100_000_000,
-                                      step=10_000, value=30_000, key="custom_amt")
-            if st.button(f"❤️ Đầu tư {fmt(int(custom))}", type="primary",
-                          use_container_width=True):
-                prev_key = stage_key
-                mem["total_saved"]     += int(custom)
-                mem["streak"]          += 1
-                mem["last_fed_amount"]  = int(custom)
-                new_key, *_ = get_growth_stage(mem["total_saved"])
-                if new_key != prev_key:
+        with st.expander("🔢 Nhập số tiền khác"):
+            custom = st.number_input(
+                "Số tiền:", min_value=1_000, max_value=100_000_000,
+                step=10_000, value=30_000, key="custom_amt",
+            )
+            if st.button(f"🐑 Đầu tư {fmt(int(custom))}", type="primary", use_container_width=True):
+                _prev_key = stage_key
+                mem["total_saved"]    += int(custom)
+                mem["streak"]         += 1
+                mem["last_fed_amount"] = int(custom)
+                mem["last_fed_food"]   = fmt(int(custom))
+                _new_key, *_ = get_growth_stage(mem["total_saved"])
+                if _new_key != _prev_key:
                     mem["just_leveled_up"] = True
                 set_mood("happy")
                 st.session_state.feeding_celebration = True
                 _save()
                 st.rerun()
 
-        # ── Dream progress ──
+        # PHẦN 9: Dream linkage cards
         if mem["dreams"]:
             st.markdown("---")
-            st.subheader("🎯 Giấc mơ đang nuôi")
+            st.markdown(
+                '<p style="font-size:0.97rem;font-weight:700;color:#C4607F;margin-bottom:8px;">'
+                '🎯 Giấc mơ đang được nuôi</p>',
+                unsafe_allow_html=True,
+            )
             for d in mem["dreams"][:3]:
                 with st.container(border=True):
                     da, db = st.columns([3, 2])
@@ -1657,79 +1737,139 @@ with tab3:
                         st.markdown(f"**✨ {d['name'].title()}**")
                         if d["amount"] > 0:
                             pct = min(100, d["saved"] / d["amount"] * 100)
-                            st.progress(pct / 100, text=f"{pct:.1f}% — còn {fmt(d['amount']-d['saved'])}")
+                            st.progress(pct / 100, text=f"{pct:.1f}% — còn {fmt(d['amount'] - d['saved'])}")
                     with db:
-                        if d["amount"] > 0:
-                            if st.button(f"❤️ +50k", key=f"dream_{d['name']}", type="primary"):
-                                d["saved"] = min(d["amount"], d["saved"] + 50_000)
-                                mem["total_saved"] += 50_000
+                        if d["amount"] > 0 and d["saved"] < d["amount"]:
+                            if st.button("❤️ +50k", key=f"dream_{d['name']}", type="primary"):
+                                d["saved"]             = min(d["amount"], d["saved"] + 50_000)
+                                mem["total_saved"]    += 50_000
+                                mem["last_fed_amount"] = 50_000
+                                mem["last_fed_food"]   = f"❤️ cho {d['name'].title()}"
                                 set_mood("celebrate" if d["saved"] >= d["amount"] else "happy")
                                 st.session_state.feeding_celebration = True
-                                mem["last_fed_amount"] = 50_000
                                 _save()
                                 st.rerun()
+                        elif d["amount"] > 0:
+                            st.success("🎉 Hoàn thành!")
         else:
             st.markdown("---")
-            st.info("💭 Kể với Cừu về giấc mơ của bạn ở tab **💬 Chia sẻ cảm xúc** — Cừu sẽ ghi nhớ và giúp bạn theo đuổi!")
+            st.info("💭 Kể với Cừu về giấc mơ của bạn ở tab **💬 Chia sẻ cảm xúc** nhé!")
 
-        # ── Skip for today ──
+        # Skip for today
         st.markdown("---")
-        if st.button("Hôm nay chưa sẵn sàng", use_container_width=True):
+        if st.button("🌙 Hôm nay chưa sẵn sàng", use_container_width=True):
             set_mood("sad")
             st.session_state.feeding_refused     = True
             st.session_state.feeding_celebration = False
             _save()
             st.rerun()
 
-    # ── Investment Knowledge ──
+    # ── PHẦN 7+8: Plain-language fund cards + Cừu's voice recommender ──
     st.markdown("---")
-    st.subheader("🎓 Cừu Giải Thích — Quỹ Đầu Tư")
-    st.caption("Kiến thức tài chính đơn giản · Không hứa lợi nhuận · Không khuyến nghị mua bán")
+    st.markdown(
+        '<p style="font-size:1.05rem;font-weight:800;color:#C4607F;margin-bottom:2px;">'
+        '🐑 Cừu Giải Thích Quỹ Đầu Tư</p>'
+        '<p style="font-size:0.8rem;color:#AAA;margin-bottom:14px;">'
+        'Kiến thức đơn giản · Không hứa lợi nhuận · Không khuyến nghị mua bán</p>',
+        unsafe_allow_html=True,
+    )
 
-    fi1, fi2, fi3, fi4 = st.tabs(["🚀 TCEF", "🛡️ TCBF", "⚖️ TCFF", "📚 Kiến thức đầu tư"])
-    with fi1:
-        f = FUNDS["TCEF"]
-        st.markdown(f"## {f['emoji']} {f['tên']}")
-        st.markdown(f["chi_tiết"])
-        st.error(f"Rủi ro: {f['rủi_ro']} · Phù hợp: {f['phù_hợp']}")
-    with fi2:
-        f = FUNDS["TCBF"]
-        st.markdown(f"## {f['emoji']} {f['tên']}")
-        st.markdown(f["chi_tiết"])
-        st.success(f"Rủi ro: {f['rủi_ro']} · Phù hợp: {f['phù_hợp']}")
-    with fi3:
-        f = FUNDS["TCFF"]
-        st.markdown(f"## {f['emoji']} {f['tên']}")
-        st.markdown(f["chi_tiết"])
-        st.info(f"Rủi ro: {f['rủi_ro']} · Phù hợp: {f['phù_hợp']}")
-    with fi4:
-        for key, p in INVESTMENT_PRINCIPLES.items():
-            with st.expander(f"📖 {p['tên']}"):
-                st.markdown(p["nội_dung"])
+    _FUND_ANALOGIES = {
+        "TCEF": (
+            "🌳 Trồng cây ăn quả",
+            "Cần kiên nhẫn 3–5 năm, nhưng khi cây ra trái thì ngọt lắm. "
+            "Giá trị lên xuống theo thị trường — nhưng dài hạn thường đi lên.",
+        ),
+        "TCBF": (
+            "🪣 Bình nước dự phòng",
+            "Không sinh lời nhanh, nhưng ổn định và ít biến động. "
+            "Phù hợp khi bạn cần dùng tiền trong 1–3 năm tới.",
+        ),
+        "TCFF": (
+            "🎒 Balo cân bằng",
+            "Vừa cổ phiếu vừa trái phiếu — không quá cay, không quá nhạt. "
+            "Lý tưởng cho ai chưa chắc về khẩu vị rủi ro của mình.",
+        ),
+    }
 
-    # Fund recommender
+    _fc1, _fc2, _fc3 = st.columns(3)
+    for _fcol, _fkey in zip([_fc1, _fc2, _fc3], ["TCEF", "TCBF", "TCFF"]):
+        _f = FUNDS[_fkey]
+        _a_title, _a_desc = _FUND_ANALOGIES[_fkey]
+        with _fcol:
+            st.markdown(
+                f'<div style="background:white;border:2px solid #FFD6E8;border-radius:16px;'
+                f'padding:16px;min-height:190px;">'
+                f'<div style="font-size:1.5rem;text-align:center;">{_f["emoji"]}</div>'
+                f'<div style="font-size:0.83rem;font-weight:800;color:#C4607F;'
+                f'text-align:center;margin-top:6px;">{_a_title}</div>'
+                f'<div style="font-size:0.77rem;color:#555;margin-top:8px;line-height:1.55;">'
+                f'{_a_desc}</div>'
+                f'<div style="font-size:0.68rem;color:#CCC;margin-top:10px;">'
+                f'{_f["tên"]} · {_f["rủi_ro"]} · {_f["phù_hợp"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    # Cừu's voice recommender (uses user memory)
     st.markdown("---")
-    st.subheader("🤔 Quỹ nào phù hợp với bạn?")
-    rc1, rc2 = st.columns(2)
-    with rc1:
-        y_opt = st.selectbox("Mục tiêu bao lâu?", [1, 2, 3, 5],
-                              format_func=lambda x: f"{x} năm", key="rec_y")
-    with rc2:
+    st.markdown(
+        '<p style="font-size:0.95rem;font-weight:700;color:#C4607F;margin-bottom:8px;">'
+        '🤔 Hỏi Cừu — Quỹ nào phù hợp với mình?</p>',
+        unsafe_allow_html=True,
+    )
+    _ry1, _ry2 = st.columns(2)
+    with _ry1:
+        y_opt = st.selectbox(
+            "Mục tiêu bao lâu?", [1, 2, 3, 5],
+            format_func=lambda x: f"{x} năm", key="rec_y",
+        )
+    with _ry2:
         r_opt = st.selectbox(
             "Khẩu vị rủi ro?",
             ["low", "medium", "high"],
-            format_func=lambda x: {"low":"🌿 Thấp — hay lo lắng",
-                                    "medium":"🌊 Trung bình — cân bằng",
-                                    "high":"⚡ Cao — chấp nhận biến động"}[x],
+            format_func=lambda x: {
+                "low":    "🌿 Thấp — hay lo lắng",
+                "medium": "🌊 Trung bình — cân bằng",
+                "high":   "⚡ Cao — chấp nhận biến động",
+            }[x],
             key="rec_r",
         )
+
     rf_key = recommend_fund(y_opt, r_opt)
     rf     = FUNDS[rf_key]
-    st.info(
-        f"🐑 **Cừu gợi ý:** {rf['emoji']} **{rf['tên']}**\n\n"
-        f"{rf['mô_tả']}\n\n"
-        f"⚠️ *Đây chỉ là gợi ý tham khảo, không phải tư vấn đầu tư chuyên nghiệp.*"
+    _rf_a_title, _rf_a_desc = _FUND_ANALOGIES[rf_key]
+
+    _user_name_rec = mem.get("name", "bạn")
+    _risk_label    = {"low": "thấp", "medium": "trung bình", "high": "cao"}[r_opt]
+    _dream_ctx_rec = ""
+    if mem["dreams"]:
+        _dream_ctx_rec = (
+            f'Mình biết {_user_name_rec} đang mơ đến '
+            f'<strong>{mem["dreams"][0]["name"].title()}</strong> — '
+        )
+
+    st.markdown(
+        f'<div style="background:linear-gradient(135deg,#FFF5FA,#F5F0FF);'
+        f'border-radius:16px;padding:18px 20px;margin-top:8px;">'
+        f'<div style="font-size:0.88rem;color:#C4607F;font-style:italic;margin-bottom:8px;">'
+        f'🐑 Cừu nói với {_user_name_rec}:</div>'
+        f'<div style="font-size:0.93rem;color:#444;line-height:1.7;">'
+        f'{_dream_ctx_rec}với mục tiêu <strong>{y_opt} năm</strong> và khẩu vị '
+        f'<strong>{_risk_label}</strong>, mình nghĩ <strong>{rf["emoji"]} {_rf_a_title}</strong> '
+        f'hợp với {_user_name_rec} nhất.<br/><br/>'
+        f'<span style="font-size:0.84rem;color:#777;">{_rf_a_desc}</span><br/><br/>'
+        f'<span style="font-size:0.73rem;color:#BBB;">'
+        f'⚠️ Đây chỉ là gợi ý tham khảo, không phải tư vấn đầu tư chuyên nghiệp.</span>'
+        f'</div></div>',
+        unsafe_allow_html=True,
     )
+
+    with st.expander("📚 Kiến thức đầu tư cơ bản"):
+        for _pk, _pp in INVESTMENT_PRINCIPLES.items():
+            st.markdown(f"**{_pp['tên']}**")
+            st.markdown(_pp["nội_dung"])
+            st.markdown("---")
 
 
 # ═══════════════════════════════════════════════════════
