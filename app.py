@@ -387,4 +387,105 @@ elif stage == 4:
         btn_cols = st.columns(4)
         for i, amt in enumerate(MICRO_AMOUNTS):
             if btn_cols[i].button(f"**{fmt(amt)}**", use_container_width=True,
-                                   key=f"feed
+                                   key=f"feed_{amt}", type="primary"):
+                add_saved(amt); st.balloons()
+                st.success(f"🐑 Cừu được ăn {fmt(amt)}! Cảm ơn bạn! ❤️"); st.rerun()
+        if mem["total_saved"] > 0:
+            st.markdown(f"\n💰 Tổng đã nuôi: **{fmt(mem['total_saved'])}**")
+            st.markdown(f"🔥 Streak: **{mem['streak']} ngày**")
+
+elif stage == 5:
+    st.title("🔄 Thói quen mỗi ngày")
+    h = datetime.now().hour
+    col_l, col_c, col_r = st.columns([1, 2, 1])
+    with col_c:
+        if 5 <= h < 12:
+            with st.container(border=True):
+                st.markdown("### ☀️ Cừu chào buổi sáng!")
+                st.markdown("🐑 *Hôm nay mình được ăn chưa?*")
+                sc = st.columns(4)
+                for i, amt in enumerate(MICRO_AMOUNTS):
+                    if sc[i].button(f"❤️ {fmt(amt)}", use_container_width=True, key=f"morning_{amt}"):
+                        add_saved(amt); st.success(f"🌱 Cừu vui lắm! ☀️"); st.rerun()
+        else:
+            items = [("trà sữa", 35_000), ("cà phê", 45_000), ("ăn vặt", 25_000)]
+            item, price = random.choice(items)
+            with st.container(border=True):
+                st.markdown("### 🌙 Cừu chào buổi tối!")
+                st.markdown(f"🐑 *Nếu bớt 1 {item} thì mình được thêm **{fmt(price)}** đó!*")
+                if st.button(f"💰 Tiết kiệm {fmt(price)} ngay!", use_container_width=True, type="primary"):
+                    add_saved(price); st.success(f"🐑 Mình được ăn thêm rồi! ❤️"); st.rerun()
+        st.markdown("---")
+        st.metric("🔥 Streak hiện tại", f"{mem['streak']} ngày liên tiếp")
+        dream = active_dream()
+        if dream and dream["amount"] > 0:
+            pct = min(100, dream["saved"] / dream["amount"] * 100)
+            st.markdown(f"### ✨ {dream['name'].title()}: {pct:.1f}%")
+            st.progress(pct / 100)
+
+elif stage == 6:
+    st.title("🌟 Hành trình giấc mơ của bạn")
+    if mem["dreams"]:
+        for d in mem["dreams"]:
+            with st.container(border=True):
+                if d["amount"] > 0:
+                    pct = min(100, d["saved"] / d["amount"] * 100)
+                    icon, vibe = (("🌱","Mình mới bắt đầu..."), ("🌿","Mình đang lớn dần!"),
+                                  ("🌸","Mình đang nở rộ!"), ("🌟","Sắp đến đích!!!"),
+                                  ("🎉","Giấc mơ thành hiện thực!"))[min(4, int(pct/25))]
+                    c1, c2 = st.columns([2, 1])
+                    with c1:
+                        st.markdown(f"## {icon} Bạn đã xây được **{pct:.1f}%**")
+                        st.markdown(f"### {d['name'].title()} 🌸")
+                        st.progress(pct / 100); st.caption(vibe)
+                    with c2:
+                        remaining = d["amount"] - d["saved"]
+                        if remaining > 0:
+                            st.info(f"Còn lại: **{fmt(remaining)}**")
+                            st.success(f"50k/ngày → còn **{savings_timeline(remaining, 50_000)}** nữa! ✈️")
+                    if st.button("❤️ Nuôi thêm ngay!", key=f"vis_{d['name']}", use_container_width=True):
+                        st.session_state.current_stage = 4; st.rerun()
+    else:
+        st.info("Hãy quay lại giai đoạn 1 và kể giấc mơ với Cừu! 🐑")
+
+elif stage == 7:
+    st.title("🧬 Wealth DNA của bạn")
+    st.caption(f"Sau {len(mem['notes'])} cuộc trò chuyện, Cừu đã hiểu bạn hơn rồi 🐑")
+    genome = mem["wealth_genome"]
+    g1, g2 = st.columns(2)
+    for col, title, key in [(g1, "💭 Dream Type", "dream_type"), (g1, "🛡️ Risk Type", "risk_type"),
+                             (g2, "💓 Emotion Type", "emotion_type"), (g2, "🏆 Reward Type", "reward_type")]:
+        with col:
+            with st.container(border=True):
+                st.markdown(f"### {title}")
+                st.markdown(f"## {genome[key] or '🔍 Đang phân tích...'}")
+    st.divider()
+    st.subheader("💌 Cừu nhắn riêng cho bạn")
+    if mem["dreams"]:
+        dream_name = mem["dreams"][0]["name"]
+        with st.container(border=True):
+            st.markdown(f"### 🌏 **{random.randint(30_000,80_000):,} người** đang tiết kiệm để **{dream_name.title()}** giống bạn!")
+            st.markdown(f"Nhóm này đã tích luỹ trung bình **{fmt(random.randint(8_000_000,15_000_000))}** rồi 💪")
+            st.markdown(f"Còn bạn đã tích luỹ được **{fmt(mem['total_saved'])}** – đừng để tụt lại nhé!")
+            if st.button("🐑 Tăng tốc cùng nhóm!", use_container_width=True, type="primary"):
+                st.session_state.current_stage = 4; st.rerun()
+    if mem["life_events"]:
+        st.divider(); st.subheader("🏷️ Hành trình cuộc sống của bạn")
+        cols = st.columns(min(5, len(mem["life_events"])))
+        for i, tag in enumerate(mem["life_events"][:5]):
+            cols[i].metric(LIFE_EVENT_ICONS.get(tag, "🏷️"), tag)
+
+st.divider()
+if prompt := st.chat_input("Nhắn tin với Cừu Mai... 🐑"):
+    if not st.session_state.api_key:
+        st.error("🔑 Bạn chưa nhập API key! Vui lòng nhập ở sidebar.")
+    else:
+        send_message(prompt); st.rerun()
+
+if stage > 2 and st.session_state.messages:
+    last = st.session_state.messages[-1]
+    if last["role"] == "assistant":
+        with st.chat_message("assistant", avatar="🐑"):
+            st.markdown(last["content"])
+            if last.get("savings"): st.success(f"💡 **Gợi ý tiết kiệm:** {last['savings']}")
+            elif last.get("nudge"): st.info(f"💡 {last['nudge']}")
