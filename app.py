@@ -45,11 +45,21 @@ def get_sheep_img(mood: str = None) -> str:
     m = mood or st.session_state.get("sheep_mood", "default")
     return SHEEP_IMAGES.get(m, MASCOT_URL)
 
-def show_sheep(mood: str = None, width: int = 90):
-    """Render sheep avatar — dùng ảnh mood từ GitHub, fallback về mascot nếu lỗi."""
+def show_sheep(mood: str = None, width: int = 120):
+    """Render sheep avatar dùng HTML img — to hơn, có viền pastel, không lỗi st.image()."""
     actual_mood = mood or st.session_state.get("sheep_mood", "default")
     url = SHEEP_IMAGES.get(actual_mood, MASCOT_URL)
-    st.image(url, width=width)
+    st.markdown(
+        f'<div style="text-align:center;margin-bottom:6px;">'
+        f'<img src="{url}" width="{width}" '
+        f'style="border-radius:50%;'
+        f'border:3px solid #FFB5C8;'
+        f'box-shadow:0 6px 20px rgba(255,150,200,0.4), 0 0 0 6px rgba(255,182,193,0.15);'
+        f'display:inline-block;" '
+        f'onerror="this.src=\'{MASCOT_URL}\';"/>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
     _, badge_text = MOOD_EMOJI_BADGE.get(actual_mood, ("🐑", ""))
     if badge_text:
         st.caption(badge_text)
@@ -63,11 +73,21 @@ def set_mood(mood: str):
 st.markdown("""
 <style>
 [data-testid="stApp"] {
-    background: linear-gradient(135deg, #FFF0F5 0%, #F0F8FF 60%, #F5FFF8 100%);
+    background: linear-gradient(145deg,
+        #FFE4F0 0%,
+        #FADADD 15%,
+        #F5E6FF 35%,
+        #DCF0FF 60%,
+        #D6EEFF 80%,
+        #E8F7FF 100%) !important;
 }
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #FFF5F8 0%, #F0F8FF 100%) !important;
-    border-right: 2px solid #FFD6E8 !important;
+    background: linear-gradient(180deg,
+        #FFD6E8 0%,
+        #F8C8E0 25%,
+        #EDD6F5 55%,
+        #C8E6FF 100%) !important;
+    border-right: 2px solid #FFB5C8 !important;
 }
 h1 { font-size: 1.6rem !important; font-weight: 700 !important; color: #C75B8A !important; }
 h2 { font-size: 1.25rem !important; font-weight: 600 !important; color: #5B8AC7 !important; }
