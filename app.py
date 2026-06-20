@@ -356,8 +356,9 @@ MEMORY_DEFAULT: dict = {
     "dreams":        [],
     "total_saved":   0,
     "streak":        0,
-    "last_fed_date": "",
-    "sentiment":     "neutral",
+    "last_fed_date":   "",
+    "last_visit_date": "",
+    "sentiment":       "neutral",
     "wealth_genome": {
         "risk_type":   "",
         "personality": "",
@@ -528,6 +529,59 @@ def _build_diary_insights(mood: str, tags: list, dream: str, content: str) -> li
     if not insights:
         insights.append("Bạn đã dành thời gian ghi lại hôm nay — đó là điều tuyệt vời 🌿")
     return insights[:4]
+
+
+def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
+    """
+    Build (emoji, text) pairs for the "Điều mình nhớ về bạn" card.
+    Pulls from dreams, life_events, notes. Returns up to 5 items.
+    """
+    items: list[tuple[str, str]] = []
+
+    # ── Tên người dùng ──
+    if mem.get("name") and len(items) < 5:
+        items.append(("👤", f"Tên bạn là {mem['name']}"))
+
+    # ── Giấc mơ (ưu tiên nhất) ──
+    for d in mem.get("dreams", [])[:2]:
+        if len(items) >= 5:
+            break
+        name = d.get("name", "").strip()
+        if name:
+            items.append(("🎯", f"Muốn {name.lower()}"))
+
+    # ── Tags cuộc sống ──
+    _tag_display = {
+        "dream_travel":   ("✈️",  "Muốn đi du lịch"),
+        "dream_house":    ("🏠",  "Mơ có ngôi nhà riêng"),
+        "dream_car":      ("🚗",  "Mơ có xe riêng"),
+        "dream_business": ("🏪",  "Đang ấp ủ khởi nghiệp"),
+        "cashflow":       ("💸",  "Đang cố gắng tiết kiệm"),
+        "education":      ("📚",  "Quan tâm học tập"),
+        "career":         ("💼",  "Đang suy nghĩ về công việc"),
+        "family":         ("❤️",  "Muốn chăm sóc gia đình"),
+        "health":         ("🌱",  "Quan tâm sức khỏe"),
+        "stress":         ("😓",  "Đang có áp lực"),
+        "emotional":      ("💙",  "Đang có chuyện cảm xúc"),
+        "milestone":      ("🎊",  "Vừa qua một cột mốc"),
+    }
+    seen_tags: set[str] = set()
+    for tag in reversed(mem.get("life_events", [])):    # most recent first
+        if len(items) >= 5:
+            break
+        if tag in _tag_display and tag not in seen_tags:
+            seen_tags.add(tag)
+            items.append(_tag_display[tag])
+
+    # ── Memory notes (tóm tắt ngắn) ──
+    for note in reversed(mem.get("notes", [])[-3:]):
+        if len(items) >= 5:
+            break
+        short = note.strip()[:38]
+        if short:
+            items.append(("📝", short + ("..." if len(note) > 38 else "")))
+
+    return items[:5]
 
 
 # ═══════════════════════════════════════════════════════
@@ -891,93 +945,228 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 
 # ═══════════════════════════════════════════════════════
-# TAB 1 — CHIA SẺ CẢM XÚC
-# UX: "Người bạn đang online — nói chuyện realtime"
+# TAB 1 — CHIA SẺ CẢM XÚC  v3.2
+# UX: "Người bạn đồng hành — mở app vì muốn gặp Cừu"
+# Hierarchy: Mascot → Mình đang nghe → Nhớ về bạn → Tiến bộ → Chips → Chat
 # ═══════════════════════════════════════════════════════
 with tab1:
-    # ── Header: rõ ràng đây là CHAT ──
-    col_avatar, col_header = st.columns([1, 4])
-    with col_avatar:
-        # Dùng listening sheep — ảnh chống cằm lắng nghe
-        show_sheep("listening", width=160, show_badge=False)
-    with col_header:
-        st.title("💬 Chia Sẻ Cảm Xúc")
+
+    # ── Detect returning user ──
+    _today_str   = datetime.now().strftime("%Y-%m-%d")
+    _last_visit  = mem.get("last_visit_date", "")
+    _is_returning = bool(_last_visit) and _last_visit != _today_str
+    if mem.get("last_visit_date") != _today_str:
+        mem["last_visit_date"] = _today_str
+        _save()
+
+    # ──────────────────────────────────────────────────
+    # LEVEL 1: MASCOT — trung tâm màn hình, 300px
+    # ──────────────────────────────────────────────────
+    # Emotion Engine: chọn mood dựa trên context
+    _hero_mood = st.session_state.get("sheep_mood", "default")
+    if _is_returning and not st.session_state.messages:
+        _hero_mood = "miss_you"       # Cừu nhớ bạn
+    elif not st.session_state.messages:
+        _hero_mood = "listening"      # Cừu đang sẵn sàng
+
+    _hero_src = _b64(_pick_mascot(_hero_mood))
+    st.markdown(
+        f'<div style="text-align:center;padding:28px 0 10px;">'
+        f'<img src="{_hero_src}" width="300" '
+        f'style="border-radius:50%;'
+        f'border:6px solid #FFB5C8;'
+        f'box-shadow:0 20px 60px rgba(255,140,190,0.45),'
+        f'0 0 0 16px rgba(255,182,193,0.13);" />'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ──────────────────────────────────────────────────
+    # LEVEL 2: TAGLINE — "Mình đang nghe đây"
+    # ──────────────────────────────────────────────────
+    _name_str  = mem.get("name", "").strip()
+    _return_line = ""
+    if _is_returning and _name_str:
+        _return_line = (
+            f'<div style="color:#FF8FAF;font-size:0.92rem;font-weight:600;'
+            f'margin-bottom:6px;">💙 {_name_str} ơi, mình nhớ bạn lắm!</div>'
+        )
+    elif _is_returning:
+        _return_line = (
+            '<div style="color:#FF8FAF;font-size:0.92rem;font-weight:600;'
+            'margin-bottom:6px;">💙 Bạn quay lại rồi! Mình nhớ bạn lắm!</div>'
+        )
+
+    st.markdown(
+        f'<div style="text-align:center;padding:4px 0 18px;">'
+        f'{_return_line}'
+        f'<div style="font-size:1.65rem;font-weight:800;color:#C4607F;margin-bottom:7px;">'
+        f'🐑 Mình đang nghe đây</div>'
+        f'<div style="font-size:0.97rem;color:#666;margin-bottom:4px;">'
+        f'Có chuyện gì đang diễn ra với bạn hôm nay?</div>'
+        f'<div style="font-size:0.88rem;color:#bbb;">'
+        f'Bạn có thể kể cho mình bất cứ điều gì.</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ──────────────────────────────────────────────────
+    # PHẦN 6: HÀNH TRÌNH QUAY LẠI — streak card
+    # ──────────────────────────────────────────────────
+    if mem.get("streak", 0) > 1:
+        _, _t1_sname, _, _, _ = get_growth_stage(mem["total_saved"])
         st.markdown(
-            '<div class="chat-framing">'
-            '🟢 <strong>Cừu đang online</strong> — Tâm sự ngay bây giờ<br/>'
-            '<span style="color:#888;font-size:0.88rem;">'
-            'Nói bất kỳ điều gì đang xảy ra hôm nay — Cừu sẽ phản hồi ngay.</span>'
+            f'<div style="background:linear-gradient(135deg,'
+            f'rgba(255,245,250,0.95),rgba(238,245,255,0.95));'
+            f'border:1.5px solid #FFD6E8;border-radius:16px;'
+            f'padding:11px 22px;text-align:center;margin:0 0 14px;">'
+            f'🐑 Hôm nay là ngày thứ '
+            f'<strong style="color:#C4607F;">{mem["streak"]}</strong>'
+            f' bạn gặp mình &nbsp;·&nbsp; '
+            f'🔥 Streak <strong>{mem["streak"]} ngày</strong>'
+            f' &nbsp;·&nbsp; {_t1_sname}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ──────────────────────────────────────────────────
+    # PHẦN 2: MEMORY CARD — "Điều mình đang nhớ về bạn"
+    # ──────────────────────────────────────────────────
+    _mem_items = _build_memory_card(mem)
+    if _mem_items:
+        _mem_chips = "".join(
+            f'<span style="display:inline-flex;align-items:center;gap:4px;'
+            f'background:white;border:1.5px solid #FFD6E8;border-radius:20px;'
+            f'padding:5px 13px;font-size:0.87rem;color:#444;'
+            f'margin:3px 2px;white-space:nowrap;">{_e} {_t}</span>'
+            for _e, _t in _mem_items
+        )
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,'
+            f'rgba(255,220,235,0.25),rgba(210,230,255,0.25));'
+            f'border:1.5px solid #FFD6E8;border-radius:18px;'
+            f'padding:16px 20px;margin:0 0 14px;">'
+            f'<div style="font-size:0.88rem;font-weight:700;color:#C4607F;'
+            f'margin-bottom:11px;">🐑 Điều mình đang nhớ về bạn</div>'
+            f'<div style="display:flex;flex-wrap:wrap;gap:0;">{_mem_chips}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div style="background:rgba(255,220,235,0.1);'
+            'border:1.5px solid #FFD6E8;border-radius:18px;'
+            'padding:13px 20px;margin:0 0 12px;text-align:center;">'
+            '<span style="color:#bbb;font-size:0.88rem;">'
+            '🐑 Mình vẫn đang tìm hiểu thêm về bạn...</span>'
             '</div>',
             unsafe_allow_html=True,
         )
 
-    # ── Quick reply chips (chỉ khi chưa có lịch sử) ──
+    # ──────────────────────────────────────────────────
+    # PHẦN 4: PROGRESS STRIP — chỉ khi có dữ liệu
+    # ──────────────────────────────────────────────────
+    _has_prog = (
+        mem.get("streak", 0) > 0
+        or mem.get("total_saved", 0) > 0
+        or mem.get("dreams")
+        or len(st.session_state.messages) >= 2
+    )
+    if _has_prog:
+        _, _ps_name, _, _, _ = get_growth_stage(mem["total_saved"])
+        _pd_dream = mem["dreams"][0]["name"].title() if mem.get("dreams") else "—"
+        _pt_tag   = (
+            LIFE_EVENT_LABELS.get(mem["life_events"][-1], "—")
+            if mem.get("life_events") else "—"
+        )
+        _p_chats  = len(st.session_state.messages) // 2
+        _pc1, _pc2, _pc3, _pc4 = st.columns(4)
+        for _pcol, _pval, _plbl in [
+            (_pc1, str(mem.get("streak", 0)), "🔥 Streak"),
+            (_pc2, _ps_name,                  "🐑 Cừu lớn"),
+            (_pc3, _pd_dream[:14],            "🎯 Giấc mơ"),
+            (_pc4, str(_p_chats),             "💬 Lần chat"),
+        ]:
+            _pcol.markdown(
+                f'<div class="diary-stat-mini">'
+                f'<div style="font-size:0.88rem;font-weight:800;'
+                f'color:#C4607F;line-height:1.3;">{_pval}</div>'
+                f'<div style="font-size:0.73rem;color:#888;margin-top:2px;">{_plbl}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown(
+            '<div style="margin-bottom:14px;"></div>', unsafe_allow_html=True
+        )
+
+    # ──────────────────────────────────────────────────
+    # PHẦN 3: CHIPS — ngắn, hội thoại, chỉ khi chưa chat
+    # ──────────────────────────────────────────────────
     if not st.session_state.messages:
-        st.markdown("#### Hôm nay bạn đang cảm thấy thế nào?")
-        chips = [
-            "Mình đang lo về chuyện học hành 📚",
-            "Mình có một giấc mơ muốn thực hiện ✨",
-            "Mình vừa trải qua chuyện không vui 💔",
-            "Mình đang gặp khó khăn về tiền bạc 💸",
-            "Mình muốn có điều gì đó cho riêng mình 🎯",
-            "Mình đang nghĩ lại về sự nghiệp của mình 🌱",
+        _chips_v2 = [
+            "📚 Em đang áp lực chuyện học",
+            "💸 Em đang lo về tiền bạc",
+            "💔 Hôm nay em không vui",
+            "✨ Em có một giấc mơ",
+            "🌱 Em muốn thay đổi cuộc sống",
+            "💼 Em đang suy nghĩ về công việc",
         ]
-        chip_prompts = {
-            "Mình đang lo về chuyện học hành 📚":
-                "Cừu ơi, mình đang rất lo về việc học và kỳ thi. Lắng nghe mình với nhé?",
-            "Mình có một giấc mơ muốn thực hiện ✨":
-                "Cừu ơi, mình có ước mơ muốn kể! Cần được động viên.",
-            "Mình vừa trải qua chuyện không vui 💔":
-                "Cừu ơi, mình vừa buồn, muốn chia sẻ.",
-            "Mình đang gặp khó khăn về tiền bạc 💸":
-                "Cừu ơi, mình đang khó khăn tài chính, áp lực lắm.",
-            "Mình muốn có điều gì đó cho riêng mình 🎯":
-                "Cừu ơi, mình muốn thực hiện điều gì đó cho bản thân nhưng chưa biết bắt đầu.",
-            "Mình đang nghĩ lại về sự nghiệp của mình 🌱":
-                "Cừu ơi, mình đang cân nhắc thay đổi hướng đi, cần được lắng nghe.",
+        _chip_prompts_v2 = {
+            "📚 Em đang áp lực chuyện học":
+                "Cừu ơi, em đang rất áp lực về việc học và kỳ thi. Lắng nghe em với nhé?",
+            "💸 Em đang lo về tiền bạc":
+                "Cừu ơi, em đang lo lắng về tài chính và tiền bạc, áp lực lắm.",
+            "💔 Hôm nay em không vui":
+                "Cừu ơi, hôm nay em không vui, muốn chia sẻ với Cừu.",
+            "✨ Em có một giấc mơ":
+                "Cừu ơi, em có một ước mơ muốn kể! Em cần được động viên.",
+            "🌱 Em muốn thay đổi cuộc sống":
+                "Cừu ơi, em muốn thay đổi cuộc sống nhưng chưa biết bắt đầu từ đâu.",
+            "💼 Em đang suy nghĩ về công việc":
+                "Cừu ơi, em đang cân nhắc thay đổi hướng đi sự nghiệp, cần được lắng nghe.",
         }
-        qcols = st.columns(3)
-        for i, chip in enumerate(chips):
-            if qcols[i % 3].button(chip, use_container_width=True, key=f"chip_{i}"):
-                st.session_state._quick_reply = chip_prompts[chip]
-                st.session_state.messages.append({"role": "user", "content": chip})
+        _qcols = st.columns(3)
+        for _ci, _chip in enumerate(_chips_v2):
+            if _qcols[_ci % 3].button(_chip, use_container_width=True, key=f"chip_{_ci}"):
+                st.session_state._quick_reply = _chip_prompts_v2[_chip]
+                st.session_state.messages.append({"role": "user", "content": _chip})
                 st.rerun()
 
     # ── Handle quick reply ──
     if st.session_state._quick_reply:
-        qr = st.session_state._quick_reply
+        _qr = st.session_state._quick_reply
         st.session_state._quick_reply = None
         with st.spinner("Cừu đang nghĩ... 🐑"):
-            result = _call_llm(qr, _SYS_EMOTION)
-        reply = result.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe!")
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+            _result_qr = _call_llm(_qr, _SYS_EMOTION)
+        _reply_qr = _result_qr.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe!")
+        st.session_state.messages.append({"role": "assistant", "content": _reply_qr})
         st.rerun()
 
     # ── Smart suggestion (contextual only) ──
-    suggestion = get_smart_suggestion(st.session_state.messages, mem)
-    if suggestion:
+    _suggestion = get_smart_suggestion(st.session_state.messages, mem)
+    if _suggestion:
         st.markdown(
-            f'<div class="suggestion-box">{suggestion}</div>',
+            f'<div class="suggestion-box">{_suggestion}</div>',
             unsafe_allow_html=True,
         )
 
-    # ── Chat history ──
+    # ── LEVEL 5: Chat history ──
     if st.session_state.messages:
         st.markdown("---")
-        for m in st.session_state.messages[-12:]:
-            avatar = get_avatar_src("listening") if m["role"] == "assistant" else "🧑"
-            with st.chat_message(m["role"], avatar=avatar):
-                st.markdown(m["content"])
+        for _m in st.session_state.messages[-12:]:
+            _av = get_avatar_src("listening") if _m["role"] == "assistant" else "🧑"
+            with st.chat_message(_m["role"], avatar=_av):
+                st.markdown(_m["content"])
 
     # ── Chat input ──
-    user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
-    if user_msg:
-        expanded = _EMOTION_EXPAND.get(user_msg.strip().lower(), user_msg)
-        st.session_state.messages.append({"role": "user", "content": user_msg})
+    _user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
+    if _user_msg:
+        _expanded = _EMOTION_EXPAND.get(_user_msg.strip().lower(), _user_msg)
+        st.session_state.messages.append({"role": "user", "content": _user_msg})
         with st.spinner("Cừu đang lắng nghe... 🐑"):
-            result = _call_llm(expanded, _SYS_EMOTION)
-        reply = result.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe nè!")
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+            _result_msg = _call_llm(_expanded, _SYS_EMOTION)
+        _reply_msg = _result_msg.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe nè!")
+        st.session_state.messages.append({"role": "assistant", "content": _reply_msg})
         st.rerun()
 
 
