@@ -1982,12 +1982,13 @@ with tab2:
 
 
 
-# ══ TAB 3: 👥 CỘNG ĐỒNG — AI Community Growth Engine ═════════════════════════
+
+# ══ TAB 3: 👥 CỘNG ĐỒNG — Animal Crossing × Duolingo × Finch ══════════════════
 with tab3:
     import os as _os3
     import streamlit.components.v1 as _comp3
 
-    _GH3   = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
+    _GH3    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
     _uname3 = mem.get("name", "") or "Bạn"
     _streak3 = mem.get("streak", 0)
     _saved3  = mem.get("total_saved", 0)
@@ -1998,39 +1999,29 @@ with tab3:
     import hashlib as _hl3
     _ref3 = "CUU-" + _hl3.md5(_uname3.encode()).hexdigest()[:4].upper()
 
-    # ── AI SUMMARY — sidebar ──────────────────────────────────────────────────
+    # ── AI SUMMARY sidebar ────────────────────────────────────────────────────
     with st.sidebar:
-        st.markdown(
-            """<div style="background:linear-gradient(135deg,#1A1A2E,#2D1B69);
-                border-radius:16px;padding:16px 14px;margin-bottom:4px;">
-              <div style="color:#c4a8ff;font-size:0.65rem;font-weight:700;
-                  text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
-                  🐑 AI thấy hôm nay
-              </div>
-              <div style="color:rgba(255,255,255,0.88);font-size:0.78rem;line-height:1.85;">
-                  &bull; <strong style="color:#fff;">42</strong> cừu đang tiết kiệm MBA<br>
-                  &bull; <strong style="color:#fff;">Du lịch Nhật</strong> trend hot nhất<br>
-                  &bull; <strong style="color:#fff;">15</strong> giấc mơ vừa hoàn thành<br>
-                  &bull; <strong style="color:#fff;">321</strong> lời động viên đã gửi
-              </div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-        if st.button("📊 Xem xu hướng cộng đồng", use_container_width=True, key="sb_trend"):
-            st.toast("🐑 Đang tải xu hướng...")
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,#1A1A2E,#2D1B69);
+             border-radius:16px;padding:16px 14px;margin-bottom:4px;">
+          <div style="color:#c4a8ff;font-size:.64rem;font-weight:700;
+               text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
+               🐑 AI thấy hôm nay
+          </div>
+          <div style="color:rgba(255,255,255,.88);font-size:.77rem;line-height:1.9;">
+              &bull; <strong style="color:#fff;">42</strong> cừu đang tiết kiệm MBA<br>
+              &bull; <strong style="color:#fff;">Du lịch Nhật</strong> trend hot nhất<br>
+              &bull; <strong style="color:#fff;">15</strong> giấc mơ vừa hoàn thành<br>
+              &bull; <strong style="color:#fff;">321</strong> lời động viên đã gửi
+          </div>
+        </div>""", unsafe_allow_html=True)
 
-    # ── COMMUNITY BANNER ──────────────────────────────────────────────────────
-    st.markdown(
-        """<style>
-        section[data-testid="stMain"] div[data-testid="stImage"] img {
-            border-radius: 20px !important;
-            max-height: 290px;
-            object-fit: cover;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
-        }
-        </style>""",
-        unsafe_allow_html=True,
-    )
+    # ── Community banner ──────────────────────────────────────────────────────
+    st.markdown("""<style>
+    section[data-testid="stMain"] div[data-testid="stImage"] img {
+        border-radius:20px !important; max-height:280px;
+        object-fit:cover; box-shadow:0 6px 24px rgba(0,0,0,.1);
+    }</style>""", unsafe_allow_html=True)
     _ban3 = _os3.path.join(_os3.path.dirname(__file__), "assets", "community_banner.png")
     if _os3.path.exists(_ban3):
         st.image(_ban3, use_container_width=True)
@@ -2040,739 +2031,999 @@ with tab3:
         except Exception:
             pass
 
-    # Hero caption
-    st.markdown(
-        """<div style="background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
-            padding:16px 20px;margin:10px 0 6px;">
-          <div style="font-size:1.05rem;font-weight:800;color:#1a1a2e;margin-bottom:4px;">
-              👥 Cộng đồng Cừu Cần Cù
-          </div>
-          <div style="font-size:0.8rem;color:#7B5EA7;font-weight:600;margin-bottom:3px;">
-              12.847 cừu đang cùng nhau theo đuổi giấc mơ
-          </div>
-          <div style="font-size:0.78rem;color:#888;font-style:italic;">
-              "Không ai tiết kiệm một mình."
-          </div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
+    # Hero pill
+    st.markdown("""
+    <div style="text-align:center;margin:10px 0 16px;">
+      <span style="background:linear-gradient(135deg,#f0e8ff,#ffe8f8);
+           border-radius:30px;padding:8px 20px;display:inline-block;
+           font-size:.8rem;font-weight:800;color:#7B5EA7;
+           border:1.5px solid rgba(123,94,167,.18);">
+        🐑 12.847 chú cừu đang cùng nhau theo đuổi giấc mơ ✨
+      </span>
+    </div>""", unsafe_allow_html=True)
 
-    _cs1, _cs2, _cs3 = st.columns(3)
-    _cs1.metric("🐑 Thành viên", "12.847")
-    _cs2.metric("⚡ Hôm nay", "4.230")
-    _cs3.metric("🏆 Giấc mơ xong", "892")
+    # ══ 4 SUB-TABS ══
+    _ct1, _ct2, _ct3, _ct4 = st.tabs(["📰 Bảng Tin", "👯 Bạn Bè Cừu", "👨‍👩‍👧 Gia Đình", "👗 Thời Trang"])
 
-    _cj1, _cj2, _cj3 = st.columns([1, 2, 1])
-    with _cj2:
-        if st.button("👥 Tham gia hội quán", use_container_width=True,
-                     type="primary", key="hero_join"):
-            st.success("🐑 Chào mừng bạn đến với đàn cừu!")
-
-    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # MAIN HTML — sections 1–4
-    # ══════════════════════════════════════════════════════════════════════════
-    _HTML3 = """
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    # ─────────────────────────────────────────────────────────────────────────
+    # SUB-TAB 1: BẢNG TIN
+    # ─────────────────────────────────────────────────────────────────────────
+    with _ct1:
+        _HTML_T1 = """<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
 <style>
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-       background:transparent; color:#1a1a2e; padding:0 0 20px; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:transparent;color:#1a1a2e;padding:0 0 20px;}
 
-/* ── SECTION HEADER ── */
-.sh { font-size:.92rem; font-weight:800; color:#1a1a2e; margin:0 0 12px;
-      display:flex; align-items:center; justify-content:space-between; }
-.sh a { font-size:.7rem; font-weight:600; color:#7B5EA7; cursor:pointer;
-        background:#f4eeff; border-radius:20px; padding:3px 10px; text-decoration:none; }
-.sh a:hover { background:#e8d8ff; }
-.sec { margin-bottom:26px; }
+/* ── HIGHLIGHTS glass ── */
+.hl{background:linear-gradient(135deg,#f0e8ff 0%,#e8f0ff 50%,#fff8f0 100%);
+    border:1.5px solid rgba(123,94,167,.15);border-radius:22px;
+    padding:18px 16px;margin-bottom:22px;position:relative;overflow:hidden;}
+.hl::before{content:'';position:absolute;inset:0;
+    background:rgba(255,255,255,.45);backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);border-radius:22px;pointer-events:none;}
+.hl-in{position:relative;z-index:1;}
+.hl-hd{font-size:.88rem;font-weight:800;color:#1a1a2e;
+       margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;background:#7B5EA7;
+     animation:pulse 1.8s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(123,94,167,.4);}
+ 70%{box-shadow:0 0 0 8px rgba(123,94,167,0);}
+ 100%{box-shadow:0 0 0 0 rgba(123,94,167,0);}}
+.hl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hl-item{background:rgba(255,255,255,.72);border-radius:16px;
+         padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.hl-ico{font-size:1.4rem;flex-shrink:0;}
+.hl-num{font-size:1.15rem;font-weight:800;color:#1a1a2e;line-height:1;}
+.hl-lbl{font-size:.63rem;color:#8b94a8;margin-top:2px;line-height:1.3;}
 
-/* ══ 1. AI DAILY HIGHLIGHTS — glass card ══ */
-.highlights {
-    background: linear-gradient(135deg,#f0e8ff 0%,#e8f0ff 50%,#f0fff8 100%);
-    border:1.5px solid rgba(123,94,167,0.15);
-    border-radius:20px;
-    padding:18px 16px;
-    margin-bottom:26px;
-    position:relative;
-    overflow:hidden;
-}
-.highlights::before {
-    content:'';
-    position:absolute; inset:0;
-    background:rgba(255,255,255,0.45);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-    border-radius:20px;
-    pointer-events:none;
-}
-.hl-inner { position:relative; z-index:1; }
-.hl-title {
-    font-size:.88rem; font-weight:800; color:#1a1a2e;
-    margin-bottom:14px; display:flex; align-items:center; gap:8px;
-}
-.hl-pulse {
-    width:8px; height:8px; border-radius:50%;
-    background:#7B5EA7;
-    box-shadow:0 0 0 0 rgba(123,94,167,.4);
-    animation:pulse 1.8s infinite;
-}
-@keyframes pulse {
-    0%   { box-shadow:0 0 0 0 rgba(123,94,167,.4); }
-    70%  { box-shadow:0 0 0 8px rgba(123,94,167,0); }
-    100% { box-shadow:0 0 0 0 rgba(123,94,167,0); }
-}
-.hl-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.hl-item {
-    background:rgba(255,255,255,0.7);
-    border-radius:14px;
-    padding:12px 14px;
-    display:flex; align-items:center; gap:10px;
-}
-.hl-ico { font-size:1.3rem; flex-shrink:0; }
-.hl-num { font-size:1.15rem; font-weight:800; color:#1a1a2e; line-height:1; }
-.hl-lbl { font-size:.65rem; color:#8b94a8; margin-top:2px; line-height:1.3; }
+/* ── STORY CARD ── */
+.story{background:#fff;border:1.5px solid #f0f0f5;border-radius:22px;
+       overflow:hidden;margin-bottom:22px;cursor:pointer;transition:all .2s;}
+.story:hover{box-shadow:0 8px 28px rgba(0,0,0,.08);transform:translateY(-2px);}
+.story-top{background:linear-gradient(135deg,#1A1A2E,#2D1B69,#0d2040);
+           padding:18px 18px;display:flex;align-items:center;gap:14px;}
+.story-av{width:58px;height:58px;border-radius:50%;
+          background:rgba(255,255,255,.15);display:flex;align-items:center;
+          justify-content:center;font-size:2rem;flex-shrink:0;
+          border:2px solid rgba(255,255,255,.2);}
+.story-name{font-size:1rem;font-weight:800;color:#fff;}
+.story-tag{display:inline-flex;align-items:center;gap:4px;
+           background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+           border-radius:20px;padding:3px 10px;font-size:.63rem;
+           color:rgba(255,255,255,.8);font-weight:600;margin-top:5px;}
+.story-body{padding:16px 18px 18px;}
+.story-q{font-size:.83rem;color:#7B5EA7;font-weight:700;
+         font-style:italic;margin-bottom:8px;}
+.story-txt{font-size:.82rem;color:#444;line-height:1.65;margin-bottom:14px;}
+.story-btn{display:inline-flex;align-items:center;gap:6px;
+           background:linear-gradient(135deg,#7B5EA7,#5a3d9a);
+           color:#fff;border:none;border-radius:10px;
+           padding:9px 18px;font-size:.77rem;font-weight:700;cursor:pointer;}
 
-/* ══ 2. STORY OF THE DAY ══ */
-.story-card {
-    background:#fff;
-    border:1.5px solid #f0f0f5;
-    border-radius:20px;
-    overflow:hidden;
-    margin-bottom:26px;
-    cursor:pointer;
-    transition:all .2s;
-}
-.story-card:hover { box-shadow:0 8px 28px rgba(0,0,0,.08); transform:translateY(-2px); }
-.story-top {
-    background:linear-gradient(135deg,#1A1A2E 0%,#2D1B69 60%,#0d2040 100%);
-    padding:20px;
-    display:flex; align-items:center; gap:14px;
-}
-.story-av {
-    width:56px; height:56px; border-radius:50%;
-    background:rgba(255,255,255,0.15);
-    display:flex; align-items:center; justify-content:center;
-    font-size:1.8rem; flex-shrink:0;
-    border:2px solid rgba(255,255,255,0.2);
-}
-.story-meta { flex:1; }
-.story-name { font-size:1rem; font-weight:800; color:#fff; margin-bottom:3px; }
-.story-tag {
-    display:inline-flex; align-items:center; gap:5px;
-    background:rgba(255,255,255,0.12);
-    border:1px solid rgba(255,255,255,0.18);
-    border-radius:20px; padding:3px 10px;
-    font-size:.65rem; color:rgba(255,255,255,.8); font-weight:600;
-}
-.story-badge {
-    background:linear-gradient(135deg,#FFD700,#FFA500);
-    color:#1a1a2e;
-    border-radius:20px; padding:3px 10px;
-    font-size:.65rem; font-weight:800;
-    white-space:nowrap;
-}
-.story-body { padding:16px 18px 18px; }
-.story-lead { font-size:.82rem; color:#7B5EA7; font-weight:700; margin-bottom:8px; font-style:italic; }
-.story-text { font-size:.83rem; color:#444; line-height:1.65; margin-bottom:14px; }
-.story-text strong { color:#1a1a2e; }
-.story-read {
-    display:inline-flex; align-items:center; gap:6px;
-    background:linear-gradient(135deg,#7B5EA7,#5a3d9a);
-    color:#fff; border:none; border-radius:10px;
-    padding:9px 18px; font-size:.78rem; font-weight:700;
-    cursor:pointer; transition:all .15s;
-}
-.story-read:hover { opacity:.9; }
+/* ── GUILDS ── */
+.sec-hd{font-size:.9rem;font-weight:800;color:#1a1a2e;
+        margin-bottom:12px;display:flex;align-items:center;
+        justify-content:space-between;}
+.sec-hd a{font-size:.68rem;font-weight:600;color:#7B5EA7;
+          background:#f4eeff;border-radius:20px;padding:3px 10px;cursor:pointer;}
+.g-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;
+        margin-bottom:22px;}
+.g-card{background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
+        padding:14px 12px;cursor:pointer;transition:all .2s;text-align:left;}
+.g-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px);
+              border-color:#d4b8ff;}
+.g-ico{font-size:1.9rem;margin-bottom:6px;}
+.g-name{font-size:.79rem;font-weight:800;color:#1a1a2e;line-height:1.3;margin-bottom:3px;}
+.g-cnt{font-size:.63rem;color:#8b94a8;margin-bottom:5px;}
+.g-hot{font-size:.6rem;color:#e8773d;background:#fff3ee;
+       border-radius:6px;padding:3px 7px;display:inline-block;margin-bottom:8px;}
+.g-btn{width:100%;padding:7px 0;border:1.5px solid #d4b8ff;border-radius:9px;
+       background:#fff;font-size:.71rem;font-weight:700;color:#7B5EA7;cursor:pointer;}
+.g-btn:hover{background:#f0e6ff;}
+.g-btn.on{background:linear-gradient(135deg,#7B5EA7,#5a3d9a);color:#fff;border:none;}
 
-/* ══ 3. AI FRIEND MATCHING ══ */
-.friends-scroll {
-    display:flex; gap:12px;
-    overflow-x:auto; padding-bottom:8px;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-}
-.friends-scroll::-webkit-scrollbar { display:none; }
-.friend-card {
-    background:#fff;
-    border:1.5px solid #f0f0f5;
-    border-radius:18px;
-    padding:16px 14px;
-    min-width:160px; flex-shrink:0;
-    transition:all .2s; cursor:pointer;
-    text-align:center;
-}
-.friend-card:hover { box-shadow:0 5px 18px rgba(0,0,0,.08); transform:translateY(-2px); border-color:#d4b8ff; }
-.friend-av {
-    width:52px; height:52px; border-radius:50%;
-    background:linear-gradient(135deg,#f0e8ff,#e8f0ff);
-    display:flex; align-items:center; justify-content:center;
-    font-size:1.6rem; margin:0 auto 8px;
-    border:2px solid #f0e8ff;
-}
-.friend-name { font-size:.82rem; font-weight:700; color:#1a1a2e; margin-bottom:5px; }
-.friend-goal {
-    font-size:.7rem; color:#7B5EA7; font-weight:600;
-    background:#f4eeff; border-radius:8px; padding:3px 8px;
-    display:inline-block; margin-bottom:6px;
-}
-.friend-stats { font-size:.65rem; color:#8b94a8; line-height:1.7; margin-bottom:10px; }
-.friend-follow {
-    width:100%; padding:7px 0;
-    border:1.5px solid #d4b8ff; border-radius:9px;
-    background:#fff; font-size:.72rem; font-weight:700;
-    color:#7B5EA7; cursor:pointer; transition:all .15s;
-}
-.friend-follow:hover { background:#f0e6ff; }
-.friend-follow.on { background:linear-gradient(135deg,#7B5EA7,#5a3d9a); color:#fff; border:none; }
-.ai-match-badge {
-    display:inline-flex; align-items:center; gap:4px;
-    background:#f0fff4; border:1px solid #b8f0c8;
-    border-radius:20px; padding:3px 9px;
-    font-size:.62rem; font-weight:700; color:#2a9d5c;
-    margin-bottom:14px;
-}
+/* ── FEED POSTS ── */
+.fc{background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
+    padding:14px 16px 12px;margin-bottom:10px;transition:all .18s;}
+.fc:hover{box-shadow:0 4px 14px rgba(0,0,0,.06);transform:translateY(-1px);}
+.fc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.fc-av{width:44px;height:44px;border-radius:50%;
+       display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+       flex-shrink:0;}
+.fc-name{font-size:.87rem;font-weight:700;color:#1a1a2e;}
+.fc-time{font-size:.63rem;color:#bbb;margin-top:1px;}
+.badge{border-radius:20px;padding:4px 10px;font-size:.63rem;
+       font-weight:700;white-space:nowrap;display:inline-flex;
+       align-items:center;gap:3px;flex-shrink:0;}
+.b-streak{background:#fff3e0;color:#e65100;}
+.b-goal  {background:#e8f5e9;color:#2e7d32;}
+.b-motiv {background:#f3e5f5;color:#7b1fa2;}
+.b-achiev{background:#e3f2fd;color:#1565c0;}
+.b-lvlup {background:#fffde7;color:#f57f17;}
+.fc-msg{font-size:.82rem;color:#444;line-height:1.55;
+        padding:10px 12px;background:#f8f7fc;border-radius:12px;
+        margin-bottom:10px;border-left:3px solid #d4b8ff;}
+.fc-row{display:flex;gap:7px;align-items:center;}
+.fc-lk{font-size:.7rem;color:#aaa;margin-right:auto;}
+.fc-btn{padding:7px 10px;border:1.5px solid #ede8f8;border-radius:10px;
+        background:#fff;font-size:.72rem;font-weight:600;color:#5a4a9a;
+        cursor:pointer;transition:all .15s;white-space:nowrap;}
+.fc-btn:hover{background:#f0e6ff;}
+.fc-btn.hi{background:linear-gradient(135deg,#7B5EA7,#5a3d9a);color:#fff;border:none;}
 
-/* ══ 4. COMMUNITY FEED — with AI badges ══ */
-.feed { margin-bottom:26px; }
-.fc {
-    background:#fff; border:1.5px solid #f0f0f5;
-    border-radius:18px; padding:14px 16px 12px; margin-bottom:10px;
-    transition:all .18s;
-}
-.fc:hover { box-shadow:0 5px 18px rgba(0,0,0,.06); transform:translateY(-1px); }
-.fc-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-.fc-av {
-    width:44px; height:44px; border-radius:50%;
-    background:linear-gradient(135deg,#f0e8ff,#e8f4ff);
-    display:flex; align-items:center; justify-content:center;
-    font-size:1.4rem; flex-shrink:0;
-}
-.fc-info { flex:1; }
-.fc-name { font-size:.87rem; font-weight:700; color:#1a1a2e; }
-.fc-time { font-size:.65rem; color:#bbb; margin-top:1px; }
-/* AI badge pill */
-.ai-badge {
-    border-radius:20px; padding:4px 10px;
-    font-size:.65rem; font-weight:700; white-space:nowrap;
-    display:inline-flex; align-items:center; gap:3px;
-    flex-shrink:0;
-}
-.badge-streak   { background:#fff3e0; color:#e65100; }
-.badge-goal     { background:#e8f5e9; color:#2e7d32; }
-.badge-motiv    { background:#f3e5f5; color:#7b1fa2; }
-.badge-achieve  { background:#e3f2fd; color:#1565c0; }
-.badge-levelup  { background:#fffde7; color:#f57f17; }
-.fc-msg {
-    font-size:.83rem; color:#444; line-height:1.55;
-    padding:10px 12px; background:#f8f7fc;
-    border-radius:12px; margin-bottom:10px;
-    border-left:3px solid #d4b8ff;
-}
-.fc-msg strong { color:#1a1a2e; }
-.fc-row { display:flex; gap:7px; align-items:center; }
-.fc-likes { font-size:.7rem; color:#aaa; margin-right:auto; }
-.fc-btn {
-    padding:7px 11px; border:1.5px solid #ede8f8;
-    border-radius:10px; background:#fff;
-    font-size:.74rem; font-weight:600; color:#5a4a9a;
-    cursor:pointer; transition:all .15s; white-space:nowrap;
-}
-.fc-btn:hover { background:#f0e6ff; border-color:#c4a8f8; }
-.fc-btn.hi { background:linear-gradient(135deg,#7B5EA7,#5a3d9a); color:#fff; border:none; }
-
-/* ══ GUILDS ══ */
-.guild-sec { margin-bottom:26px; }
-.g-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:10px; }
-.g-card { background:#fff; border:1.5px solid #f0f0f5; border-radius:16px;
-          padding:14px 12px; cursor:pointer; transition:all .2s; }
-.g-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); transform:translateY(-2px); border-color:#d4b8ff; }
-.g-icon { font-size:1.85rem; margin-bottom:6px; }
-.g-name { font-size:.79rem; font-weight:800; color:#1a1a2e; margin-bottom:3px; line-height:1.3; }
-.g-count { font-size:.64rem; color:#8b94a8; margin-bottom:5px; }
-.g-news { font-size:.61rem; color:#a88dd8; background:#f8f4ff; border-radius:6px;
-          padding:4px 7px; line-height:1.4; margin-bottom:8px; }
-.g-btn { width:100%; padding:7px 0; border:1.5px solid #d4b8ff; border-radius:9px;
-         background:#fff; font-size:.71rem; font-weight:700; color:#7B5EA7; cursor:pointer; }
-.g-btn:hover { background:#f0e6ff; }
-.g-btn.on { background:linear-gradient(135deg,#7B5EA7,#5a3d9a); color:#fff; border:none; }
-
-/* ══ GOOD WORKS ══ */
-.good-sec { margin-bottom:26px; }
-.good-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; }
-.good-card { background:#fff; border:1.5px solid #f0f0f5; border-radius:18px;
-             padding:16px; transition:all .2s; }
-.good-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.06); transform:translateY(-2px); }
-.good-top { display:flex; align-items:center; gap:11px; margin-bottom:12px; }
-.good-ico { width:44px; height:44px; border-radius:13px; display:flex;
-            align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
-.good-name { font-size:.84rem; font-weight:800; color:#1a1a2e; line-height:1.3; }
-.good-members { font-size:.65rem; color:#8b94a8; margin-top:2px; }
-.prog-wrap { background:#f0f0f7; border-radius:8px; height:8px; overflow:hidden; margin-bottom:7px; }
-.prog-bar { height:100%; border-radius:8px; }
-.prog-row { display:flex; justify-content:space-between; font-size:.65rem; color:#aaa; margin-bottom:10px; }
-.prog-pct { font-weight:700; }
-.good-join { width:100%; padding:8px 0; border:none; border-radius:10px;
-             font-size:.77rem; font-weight:700; color:#fff; cursor:pointer; transition:all .15s; }
-.good-join:hover { opacity:.9; transform:translateY(-1px); }
-
-/* ── TOAST ── */
-#toast { position:fixed; bottom:16px; left:50%;
-         transform:translateX(-50%) translateY(60px);
-         background:#1a1a2e; color:#fff; padding:8px 18px;
-         border-radius:22px; font-size:.78rem; font-weight:600;
-         opacity:0; transition:all .28s cubic-bezier(.4,0,.2,1);
-         z-index:9999; white-space:nowrap;
-         box-shadow:0 6px 18px rgba(0,0,0,.25); pointer-events:none; }
-#toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
-</style>
-</head><body>
+/* TOAST */
+#toast{position:fixed;bottom:16px;left:50%;
+       transform:translateX(-50%) translateY(60px);
+       background:#1a1a2e;color:#fff;padding:8px 18px;
+       border-radius:22px;font-size:.77rem;font-weight:600;
+       opacity:0;transition:all .28s cubic-bezier(.4,0,.2,1);
+       z-index:9999;white-space:nowrap;
+       box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style></head><body>
 <div id="toast"></div>
 
-<!-- ══ 1. AI DAILY HIGHLIGHTS ══ -->
-<div class="highlights">
-  <div class="hl-inner">
-    <div class="hl-title">
-      <div class="hl-pulse"></div>
-      🐑 Hôm nay trong đàn cừu
-    </div>
+<!-- HIGHLIGHTS -->
+<div class="hl">
+  <div class="hl-in">
+    <div class="hl-hd"><div class="dot"></div>🐑 Hôm nay trong đàn cừu</div>
     <div class="hl-grid">
-      <div class="hl-item">
-        <div class="hl-ico">🔥</div>
-        <div>
-          <div class="hl-num" id="n1">247</div>
-          <div class="hl-lbl">cừu vừa được cho ăn</div>
-        </div>
-      </div>
-      <div class="hl-item">
-        <div class="hl-ico">🎓</div>
-        <div>
-          <div class="hl-num" id="n2">12</div>
-          <div class="hl-lbl">giấc mơ vừa hoàn thành</div>
-        </div>
-      </div>
-      <div class="hl-item">
-        <div class="hl-ico">💜</div>
-        <div>
-          <div class="hl-num" id="n3">321</div>
-          <div class="hl-lbl">lời động viên đã gửi</div>
-        </div>
-      </div>
-      <div class="hl-item">
-        <div class="hl-ico">⭐</div>
-        <div>
-          <div class="hl-num" id="n4">89</div>
-          <div class="hl-lbl">streak trên 30 ngày</div>
-        </div>
-      </div>
+      <div class="hl-item"><div class="hl-ico">🔥</div>
+        <div><div class="hl-num" id="n1">0</div><div class="hl-lbl">cừu được cho ăn</div></div></div>
+      <div class="hl-item"><div class="hl-ico">🎓</div>
+        <div><div class="hl-num" id="n2">0</div><div class="hl-lbl">giấc mơ hoàn thành</div></div></div>
+      <div class="hl-item"><div class="hl-ico">💜</div>
+        <div><div class="hl-num" id="n3">0</div><div class="hl-lbl">lời động viên gửi đi</div></div></div>
+      <div class="hl-item"><div class="hl-ico">⭐</div>
+        <div><div class="hl-num" id="n4">0</div><div class="hl-lbl">streak trên 30 ngày</div></div></div>
     </div>
   </div>
 </div>
 
-<!-- ══ 2. AI STORY OF THE DAY ══ -->
-<div class="sec">
-  <div class="sh">✨ Câu chuyện truyền cảm hứng hôm nay</div>
-  <div class="story-card" onclick="toast('Đang mở câu chuyện đầy đủ...')">
-    <div class="story-top">
-      <div class="story-av">🐑</div>
-      <div class="story-meta">
-        <div class="story-name">Bông Mập</div>
-        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">
-          <span class="story-tag">🎓 MBA hoàn thành</span>
-          <span class="story-badge">🏆 Giấc mơ thành thật</span>
-        </div>
-      </div>
+<!-- STORY OF THE DAY -->
+<div class="story" onclick="toast('Đang mở câu chuyện đầy đủ...')">
+  <div class="story-top">
+    <div class="story-av">🐑</div>
+    <div>
+      <div class="story-name">Bông Mập · Câu chuyện hôm nay</div>
+      <span class="story-tag">✨ AI Story Engine chọn lọc</span>
     </div>
-    <div class="story-body">
-      <div class="story-lead">Từ 10.000đ/ngày đến giấc mơ MBA đầu tiên.</div>
-      <div class="story-text">
-        Hai năm trước, Bông Mập chỉ bắt đầu với <strong>10.000đ mỗi sáng</strong> —
-        bằng một ly trà sữa nhỏ. Không ai tin điều đó có thể thay đổi cuộc đời.
-        Nhưng hôm nay, sau <strong>730 ngày không bỏ lỡ một bước tiến nào</strong>,
-        Bông Mập chính thức hoàn thành học phí MBA. Hành trình không phải về tiền —
-        mà về việc <strong>không bao giờ bỏ cuộc</strong>.
-      </div>
-      <button class="story-read" onclick="event.stopPropagation();toast('Đang mở câu chuyện...')">
-        📖 Đọc câu chuyện đầy đủ
-      </button>
-    </div>
+  </div>
+  <div class="story-body">
+    <div class="story-q">"Từ 10.000đ/ngày đến học phí MBA — mất 730 ngày không bỏ lỡ."</div>
+    <div class="story-txt">Hai năm trước Bông Mập chỉ bắt đầu bằng <strong>một ly trà sữa nhỏ mỗi sáng.</strong>
+    Không ai tin điều đó thay đổi cuộc đời. Nhưng hôm nay cô ấy hoàn thành học phí MBA —
+    không phải vì có nhiều tiền, mà vì <strong>không bao giờ bỏ cuộc.</strong></div>
+    <button class="story-btn" onclick="event.stopPropagation();toast('Đang mở câu chuyện...')">📖 Đọc tiếp</button>
   </div>
 </div>
 
-<!-- ══ 3. AI FRIEND MATCHING ══ -->
-<div class="sec">
-  <div class="sh">🐑 Những cừu giống bạn
-    <a onclick="toast('AI đang tìm thêm bạn cừu...')">Tìm thêm →</a>
+<!-- GUILDS -->
+<div class="sec-hd">🏡 Hội quán nổi bật <a onclick="toast('Tải thêm hội quán...')">Tất cả →</a></div>
+<div class="g-grid">
+  <div class="g-card">
+    <div class="g-ico">✈️</div>
+    <div class="g-name">Du lịch Nhật 2027</div>
+    <div class="g-cnt">👥 4.112 cừu</div>
+    <div class="g-hot">🔥 Đang hot</div>
+    <button class="g-btn" onclick="toggleG(this,'Du lịch Nhật')">Tham gia</button>
   </div>
-  <div style="margin-bottom:10px;">
-    <span class="ai-match-badge">✨ AI khớp dựa trên mục tiêu &amp; hành vi tiết kiệm</span>
+  <div class="g-card">
+    <div class="g-ico">🎓</div>
+    <div class="g-name">MBA Gang</div>
+    <div class="g-cnt">👥 3.241 cừu</div>
+    <div class="g-hot">✨ Mới: Mây Tích vừa tốt nghiệp!</div>
+    <button class="g-btn" onclick="toggleG(this,'MBA')">Tham gia</button>
   </div>
-  <div class="friends-scroll">
-
-    <div class="friend-card">
-      <div class="friend-av">🐑</div>
-      <div class="friend-name">Hoa Nhỏ</div>
-      <div class="friend-goal">✈️ Du lịch Nhật</div>
-      <div class="friend-stats">🔥 Streak 42 ngày<br>📍 Hà Nội · Lv.3</div>
-      <button class="friend-follow" onclick="followFriend(this,'Hoa Nhỏ')">Theo dõi</button>
-    </div>
-
-    <div class="friend-card">
-      <div class="friend-av">🐑</div>
-      <div class="friend-name">Tuấn Béo</div>
-      <div class="friend-goal">🏠 Mua nhà</div>
-      <div class="friend-stats">🔥 Streak 28 ngày<br>📍 TP.HCM · Lv.2</div>
-      <button class="friend-follow" onclick="followFriend(this,'Tuấn Béo')">Theo dõi</button>
-    </div>
-
-    <div class="friend-card">
-      <div class="friend-av">🐑</div>
-      <div class="friend-name">Lan Thảo</div>
-      <div class="friend-goal">🎓 MBA</div>
-      <div class="friend-stats">🔥 Streak 65 ngày<br>📍 Đà Nẵng · Lv.4</div>
-      <button class="friend-follow" onclick="followFriend(this,'Lan Thảo')">Theo dõi</button>
-    </div>
-
-    <div class="friend-card">
-      <div class="friend-av">🐑</div>
-      <div class="friend-name">Minh Lùn</div>
-      <div class="friend-goal">🚗 Mua xe</div>
-      <div class="friend-stats">🔥 Streak 17 ngày<br>📍 Hà Nội · Lv.2</div>
-      <button class="friend-follow" onclick="followFriend(this,'Minh Lùn')">Theo dõi</button>
-    </div>
-
-    <div class="friend-card">
-      <div class="friend-av">🐑</div>
-      <div class="friend-name">Ngọc Mập</div>
-      <div class="friend-goal">💰 Tự do TC</div>
-      <div class="friend-stats">🔥 Streak 112 ngày<br>📍 Hải Phòng · Lv.5</div>
-      <button class="friend-follow" onclick="followFriend(this,'Ngọc Mập')">Theo dõi</button>
-    </div>
-
+  <div class="g-card">
+    <div class="g-ico">🚗</div>
+    <div class="g-name">Chiếc xe đầu tiên</div>
+    <div class="g-cnt">👥 2.876 cừu</div>
+    <div class="g-hot">🎉 Hùng vừa nhận chìa khoá</div>
+    <button class="g-btn" onclick="toggleG(this,'Xe')">Tham gia</button>
+  </div>
+  <div class="g-card">
+    <div class="g-ico">💰</div>
+    <div class="g-name">Quỹ khẩn cấp</div>
+    <div class="g-cnt">👥 1.540 cừu</div>
+    <div class="g-hot">🛡️ An toàn tài chính</div>
+    <button class="g-btn" onclick="toggleG(this,'Quỹ khẩn cấp')">Tham gia</button>
   </div>
 </div>
 
-<!-- ══ 4. COMMUNITY FEED — AI badges ══ -->
-<div class="feed">
-  <div class="sh">🐑 Bạn cừu hôm nay
-    <a onclick="toast('Đang tải thêm...')">Xem tất cả →</a>
-  </div>
+<!-- COMMUNITY FEED -->
+<div class="sec-hd">🐑 Bạn cừu hôm nay <a onclick="toast('Đang tải thêm...')">Xem tất cả →</a></div>
 
-  <div class="fc">
-    <div class="fc-top">
-      <div class="fc-av">🐑</div>
-      <div class="fc-info">
-        <div class="fc-name">Bông Mập</div>
-        <div class="fc-time">2 phút trước · Hà Nội</div>
-      </div>
-      <span class="ai-badge badge-streak">🔥 Streak 30</span>
-    </div>
-    <div class="fc-msg">Hoàn thành chuỗi <strong>tiết kiệm 30 ngày liên tiếp</strong> — không bỏ lỡ một ngày nào! 🎉</div>
-    <div class="fc-row">
-      <span class="fc-likes">❤️ 24 · 💬 5</span>
-      <button class="fc-btn" onclick="likePost(this,'Bông Mập')">❤️ Chúc mừng</button>
-      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-      <button class="fc-btn" onclick="toast('💬 Mở nhắn tin...')">💬 Nhắn</button>
-    </div>
+<div class="fc">
+  <div class="fc-top">
+    <div class="fc-av" style="background:linear-gradient(135deg,#f0e8ff,#e8f0ff);">🐑</div>
+    <div style="flex:1;"><div class="fc-name">Bông Mập</div><div class="fc-time">2 phút · Hà Nội</div></div>
+    <span class="badge b-streak">🔥 Streak 30</span>
   </div>
-
-  <div class="fc">
-    <div class="fc-top">
-      <div class="fc-av">🐑</div>
-      <div class="fc-info">
-        <div class="fc-name">Mây Tích</div>
-        <div class="fc-time">15 phút trước · TP.HCM</div>
-      </div>
-      <span class="ai-badge badge-achieve">🎓 Thành tích</span>
-    </div>
-    <div class="fc-msg">Hoàn thành giấc mơ <strong>MBA</strong> hôm nay 🎓. Mất 2 năm. Cảm ơn đàn cừu đã đồng hành!</div>
-    <div class="fc-row">
-      <span class="fc-likes">❤️ 87 · 💬 31</span>
-      <button class="fc-btn" onclick="likePost(this,'Mây Tích')">🎉 Ăn mừng</button>
-      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-      <button class="fc-btn" onclick="toast('💬 Mở nhắn tin...')">💬 Nhắn</button>
-    </div>
-  </div>
-
-  <div class="fc">
-    <div class="fc-top">
-      <div class="fc-av">🐑</div>
-      <div class="fc-info">
-        <div class="fc-name">Cậu Nhanh</div>
-        <div class="fc-time">1 giờ trước · Đà Nẵng</div>
-      </div>
-      <span class="ai-badge badge-levelup">⭐ Level Up</span>
-    </div>
-    <div class="fc-msg">Cừu vừa lên <strong>cấp độ mới</strong>! Tích tiểu thành đại thật sự có nghĩa 💪</div>
-    <div class="fc-row">
-      <span class="fc-likes">❤️ 12 · 💬 3</span>
-      <button class="fc-btn" onclick="likePost(this,'Cậu Nhanh')">👏 Khen ngợi</button>
-      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-      <button class="fc-btn" onclick="toast('💬 Mở nhắn tin...')">💬 Nhắn</button>
-    </div>
-  </div>
-
-  <div class="fc">
-    <div class="fc-top">
-      <div class="fc-av">🐑</div>
-      <div class="fc-info">
-        <div class="fc-name">Thu Hiền</div>
-        <div class="fc-time">2 giờ trước · Hà Nội</div>
-      </div>
-      <span class="ai-badge badge-motiv">💜 Động viên</span>
-    </div>
-    <div class="fc-msg">Hôm nay khó khăn nhưng vẫn <strong>cho Cừu ăn</strong>. Nhỏ thôi, nhưng không bỏ. 🐑</div>
-    <div class="fc-row">
-      <span class="fc-likes">❤️ 156 · 💬 42</span>
-      <button class="fc-btn" onclick="likePost(this,'Thu Hiền')">💜 Ủng hộ</button>
-      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-      <button class="fc-btn" onclick="toast('💬 Mở nhắn tin...')">💬 Nhắn</button>
-    </div>
+  <div class="fc-msg">Hoàn thành chuỗi <strong>30 ngày liên tiếp</strong> — không bỏ một ngày nào! 🎉</div>
+  <div class="fc-row">
+    <span class="fc-lk">❤️ 24 · 💬 5</span>
+    <button class="fc-btn" onclick="likePost(this,'Bông Mập')">❤️ Chúc mừng</button>
+    <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
+    <button class="fc-btn" onclick="toast('💬 Nhắn tin...')">💬 Nhắn</button>
   </div>
 </div>
 
-<!-- ══ 5. HỘI QUÁN GIẤC MƠ ══ -->
-<div class="guild-sec">
-  <div class="sh">🏡 Hội quán giấc mơ
-    <a onclick="toast('Tải thêm hội quán...')">Tất cả →</a>
+<div class="fc">
+  <div class="fc-top">
+    <div class="fc-av" style="background:linear-gradient(135deg,#e8f5ff,#f0fff8);">🐑</div>
+    <div style="flex:1;"><div class="fc-name">Mây Tích</div><div class="fc-time">15 phút · TP.HCM</div></div>
+    <span class="badge b-achiev">🎓 Thành tích</span>
   </div>
-  <div class="g-grid">
-    <div class="g-card">
-      <div class="g-icon">🏠</div>
-      <div class="g-name">Ngôi nhà đầu tiên</div>
-      <div class="g-count">👥 5.018 thành viên</div>
-      <div class="g-news">Mới: An Khang vừa đặt cọc căn hộ 🎉</div>
-      <button class="g-btn" onclick="toggleGuild(this,'Nhà')">Tham gia</button>
-    </div>
-    <div class="g-card">
-      <div class="g-icon">🚗</div>
-      <div class="g-name">Chiếc xe đầu tiên</div>
-      <div class="g-count">👥 2.876 thành viên</div>
-      <div class="g-news">Mới: Hùng Mập nhận chìa khóa 🚗</div>
-      <button class="g-btn" onclick="toggleGuild(this,'Xe')">Tham gia</button>
-    </div>
-    <div class="g-card">
-      <div class="g-icon">✈️</div>
-      <div class="g-name">Nhật Bản 2027</div>
-      <div class="g-count">👥 4.112 thành viên</div>
-      <div class="g-news">Mới: Lan Anh đặt vé bay Osaka ✈️</div>
-      <button class="g-btn" onclick="toggleGuild(this,'Nhật Bản')">Tham gia</button>
-    </div>
-    <div class="g-card">
-      <div class="g-icon">🎓</div>
-      <div class="g-name">MBA</div>
-      <div class="g-count">👥 3.241 thành viên</div>
-      <div class="g-news">Mới: Mây Tích hoàn thành chương trình 🎓</div>
-      <button class="g-btn" onclick="toggleGuild(this,'MBA')">Tham gia</button>
-    </div>
-    <div class="g-card">
-      <div class="g-icon">💰</div>
-      <div class="g-name">Tự do tài chính</div>
-      <div class="g-count">👥 7.654 thành viên</div>
-      <div class="g-news">Mới: Quang Minh đạt FIRE 💎</div>
-      <button class="g-btn" onclick="toggleGuild(this,'FIRE')">Tham gia</button>
-    </div>
+  <div class="fc-msg">Hoàn thành giấc mơ <strong>MBA</strong> hôm nay 🎓 Mất 2 năm. Cảm ơn đàn cừu! 🐑</div>
+  <div class="fc-row">
+    <span class="fc-lk">❤️ 87 · 💬 31</span>
+    <button class="fc-btn" onclick="likePost(this,'Mây Tích')">🎉 Ăn mừng</button>
+    <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
+    <button class="fc-btn" onclick="toast('💬 Nhắn tin...')">💬 Nhắn</button>
   </div>
 </div>
 
-<!-- ══ 6. VIỆC TỐT CỦA ĐÀN CỪU ══ -->
-<div class="good-sec">
-  <div class="sh">🌱 Việc tốt của Đàn Cừu</div>
-  <div class="good-grid">
-    <div class="good-card">
-      <div class="good-top">
-        <div class="good-ico" style="background:#e8f8ef;">🌳</div>
-        <div><div class="good-name">Trồng cây</div>
-        <div class="good-members">👥 1.200 cừu</div></div>
-      </div>
-      <div class="prog-wrap"><div class="prog-bar" style="width:65%;background:linear-gradient(90deg,#34C759,#2eaa4b);"></div></div>
-      <div class="prog-row"><span>Tiến độ</span><span class="prog-pct" style="color:#34C759;">65%</span></div>
-      <button class="good-join" style="background:linear-gradient(135deg,#34C759,#2eaa4b);" onclick="toast('🌳 Đã tham gia Trồng cây!')">Tham gia</button>
-    </div>
-    <div class="good-card">
-      <div class="good-top">
-        <div class="good-ico" style="background:#e8f0ff;">📚</div>
-        <div><div class="good-name">Học bổng học sinh</div>
-        <div class="good-members">👥 600 cừu</div></div>
-      </div>
-      <div class="prog-wrap"><div class="prog-bar" style="width:40%;background:linear-gradient(90deg,#007AFF,#0056cc);"></div></div>
-      <div class="prog-row"><span>Tiến độ</span><span class="prog-pct" style="color:#007AFF;">40%</span></div>
-      <button class="good-join" style="background:linear-gradient(135deg,#007AFF,#0056cc);" onclick="toast('📚 Đã tham gia Học bổng!')">Tham gia</button>
-    </div>
-    <div class="good-card">
-      <div class="good-top">
-        <div class="good-ico" style="background:#f4e8ff;">🏠</div>
-        <div><div class="good-name">Mái ấm cộng đồng</div>
-        <div class="good-members">👥 340 cừu</div></div>
-      </div>
-      <div class="prog-wrap"><div class="prog-bar" style="width:28%;background:linear-gradient(90deg,#AF52DE,#8a3ebc);"></div></div>
-      <div class="prog-row"><span>Tiến độ</span><span class="prog-pct" style="color:#AF52DE;">28%</span></div>
-      <button class="good-join" style="background:linear-gradient(135deg,#AF52DE,#8a3ebc);" onclick="toast('🏠 Đã tham gia Mái ấm!')">Tham gia</button>
-    </div>
+<div class="fc">
+  <div class="fc-top">
+    <div class="fc-av" style="background:linear-gradient(135deg,#fff8e8,#fff0f8);">🐑</div>
+    <div style="flex:1;"><div class="fc-name">Thu Hiền</div><div class="fc-time">2 giờ · Hà Nội</div></div>
+    <span class="badge b-motiv">💜 Động viên</span>
+  </div>
+  <div class="fc-msg">Hôm nay khó khăn nhưng vẫn <strong>cho cừu ăn</strong>. Nhỏ thôi, nhưng không bỏ. 🐑</div>
+  <div class="fc-row">
+    <span class="fc-lk">❤️ 156 · 💬 42</span>
+    <button class="fc-btn" onclick="likePost(this,'Thu Hiền')">💜 Ủng hộ</button>
+    <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
+    <button class="fc-btn" onclick="toast('💬 Nhắn tin...')">💬 Nhắn</button>
   </div>
 </div>
 
 <script>
-function toast(msg) {
+function toast(msg){
   var t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('on');
-  clearTimeout(t._t);
-  t._t=setTimeout(function(){t.classList.remove('on');},2600);
+  t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2600);
 }
-function likePost(btn,name) {
-  if(btn.dataset.liked) return;
-  btn.dataset.liked='1'; btn.textContent='✅ Đã gửi'; btn.disabled=true; btn.style.opacity='.6';
+function likePost(btn,name){
+  if(btn.dataset.liked)return;
+  btn.dataset.liked='1';btn.textContent='✅ Đã gửi';btn.disabled=true;btn.style.opacity='.6';
   toast('❤️ Đã gửi lời chúc đến '+name+'!');
 }
-function followFriend(btn,name) {
-  if(btn.classList.contains('on')) {
-    btn.classList.remove('on'); btn.textContent='Theo dõi'; toast('Đã bỏ theo dõi '+name);
-  } else {
-    btn.classList.add('on'); btn.textContent='✓ Đang theo dõi'; toast('✅ Đang theo dõi '+name+'!');
-  }
+function toggleG(btn,name){
+  if(btn.classList.contains('on')){btn.classList.remove('on');btn.textContent='Tham gia';}
+  else{btn.classList.add('on');btn.textContent='✓ Đã vào';toast('✅ Đã vào hội quán '+name+'!');}
 }
-function toggleGuild(btn,name) {
-  if(btn.classList.contains('on')) {
-    btn.classList.remove('on'); btn.textContent='Tham gia';
-  } else {
-    btn.classList.add('on'); btn.textContent='✓ Đã tham gia'; toast('✅ Đã vào hội quán '+name+'!');
-  }
+function animCount(id,target){
+  var el=document.getElementById(id),cur=0,step=Math.ceil(target/28);
+  var iv=setInterval(function(){cur=Math.min(cur+step,target);el.textContent=cur;
+    if(cur>=target)clearInterval(iv);},38);
 }
-// Gentle counter animation on load
-function animCount(id, target) {
-  var el=document.getElementById(id), cur=0, step=Math.ceil(target/30);
-  var iv=setInterval(function(){
-    cur=Math.min(cur+step, target);
-    el.textContent=cur;
-    if(cur>=target) clearInterval(iv);
-  }, 35);
-}
-window.addEventListener('load', function(){
-  animCount('n1',247); animCount('n2',12); animCount('n3',321); animCount('n4',89);
+window.addEventListener('load',function(){
+  animCount('n1',247);animCount('n2',12);animCount('n3',321);animCount('n4',89);
 });
-</script>
-</body></html>
-"""
-    _comp3.html(_HTML3, height=2600, scrolling=True)
+</script></body></html>"""
+        _comp3.html(_HTML_T1, height=2200, scrolling=True)
 
-    # ══ SECTION 7: CÓ BẠN ĐỒNG HÀNH (native Streamlit — no iframe image issue) ══
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    st.markdown(
-        """<div style="font-size:.92rem;font-weight:800;color:#1a1a2e;margin-bottom:12px;">
-            🐑 Có bạn đồng hành vui hơn
-        </div>""",
-        unsafe_allow_html=True,
-    )
-    st.markdown("""<style>
-    div[data-testid="stImage"] img {
-        border-radius:16px !important; max-height:220px;
-        object-fit:cover; box-shadow:0 4px 14px rgba(0,0,0,.08);
-    }
-    </style>""", unsafe_allow_html=True)
+    # ─────────────────────────────────────────────────────────────────────────
+    # SUB-TAB 2: BẠN BÈ CỪU
+    # ─────────────────────────────────────────────────────────────────────────
+    with _ct2:
+        _HTML_T2 = """<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:transparent;color:#1a1a2e;padding:0 0 20px;}
 
-    _inv_local3 = _os3.path.join(_os3.path.dirname(__file__), "assets", "invite_friend.png")
-    _inv_gh3    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets/invite_friend.png"
-    try:
-        from PIL import Image as _PIL_Img
-        if _os3.path.exists(_inv_local3):
-            _PIL_Img.open(_inv_local3).verify()
-            st.image(_inv_local3, use_container_width=True)
-        else:
-            raise FileNotFoundError
-    except Exception:
-        try:
-            import urllib.request as _ur_inv
-            _req_inv = _ur_inv.Request(_inv_gh3, headers={"User-Agent": "Mozilla/5.0"})
-            with _ur_inv.urlopen(_req_inv, timeout=8) as _r_inv:
-                _img_bytes = _r_inv.read()
-            st.image(_img_bytes, use_container_width=True)
-        except Exception:
-            st.markdown(
-                '<div style="background:linear-gradient(135deg,#f8f4ff,#f0f8ff);'
-                'border-radius:16px;padding:40px;text-align:center;font-size:3rem;">🐑🐑</div>',
-                unsafe_allow_html=True,
-            )
+/* ── BUDDY HERO ── */
+.buddy-hero{background:linear-gradient(135deg,#f0e8ff 0%,#ffe8f8 50%,#e8f8ff 100%);
+    border-radius:24px;padding:22px 18px;margin-bottom:18px;text-align:center;
+    border:1.5px solid rgba(123,94,167,.15);}
+.buddy-avatars{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
+.av-wrap{text-align:center;}
+.av-circle{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;
+           justify-content:center;font-size:2.2rem;margin:0 auto 6px;
+           border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+.av-name{font-size:.7rem;font-weight:700;color:#666;}
+.av-lv{font-size:.6rem;color:#7B5EA7;background:#f4eeff;
+       border-radius:8px;padding:2px 7px;display:inline-block;margin-top:3px;}
+.heart-mid{font-size:1.8rem;}
+.buddy-title{font-size:1.05rem;font-weight:800;color:#1a1a2e;margin-bottom:5px;}
+.buddy-sub{font-size:.78rem;color:#666;line-height:1.5;margin-bottom:16px;}
 
-    st.markdown(
-        """<div style="background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
-                padding:20px;margin:10px 0 12px;">
-            <div style="font-size:1.05rem;font-weight:800;color:#1a1a2e;
-                    margin-bottom:6px;line-height:1.3;">
-                Bạn không cần theo đuổi giấc mơ một mình.
-            </div>
-            <div style="font-size:.82rem;color:#666;line-height:1.6;margin-bottom:14px;">
-                Rủ một người bạn cùng nuôi cừu — cả hai cùng lớn lên.<br>
-                <span style="color:#7B5EA7;font-weight:700;">
-                    12.847 cừu đang đồng hành cùng nhau mỗi ngày.
-                </span>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;">
-                <span style="background:#f4eeff;border-radius:20px;padding:5px 12px;
-                    font-size:.72rem;font-weight:700;color:#7B5EA7;">🔥 247 cừu mới tuần này</span>
-                <span style="background:#f4eeff;border-radius:20px;padding:5px 12px;
-                    font-size:.72rem;font-weight:700;color:#7B5EA7;">🐑 12.847 thành viên</span>
-                <span style="background:#f4eeff;border-radius:20px;padding:5px 12px;
-                    font-size:.72rem;font-weight:700;color:#7B5EA7;">🎉 892 giấc mơ hoàn thành</span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-                <div style="background:#f8f7fc;border-radius:14px;padding:12px;display:flex;gap:9px;">
-                    <span style="font-size:1.2rem;">❤️</span>
-                    <div><div style="font-size:.77rem;font-weight:700;color:#1a1a2e;">Kết bạn với cừu khác</div>
-                    <div style="font-size:.63rem;color:#888;margin-top:2px;">Theo dõi hành trình của nhau</div></div>
-                </div>
-                <div style="background:#f8f7fc;border-radius:14px;padding:12px;display:flex;gap:9px;">
-                    <span style="font-size:1.2rem;">🎁</span>
-                    <div><div style="font-size:.77rem;font-weight:700;color:#1a1a2e;">Gửi quà cho nhau</div>
-                    <div style="font-size:.63rem;color:#888;margin-top:2px;">Quà tặng tăng động lực</div></div>
-                </div>
-                <div style="background:#f8f7fc;border-radius:14px;padding:12px;display:flex;gap:9px;">
-                    <span style="font-size:1.2rem;">💬</span>
-                    <div><div style="font-size:.77rem;font-weight:700;color:#1a1a2e;">Động viên mỗi ngày</div>
-                    <div style="font-size:.63rem;color:#888;margin-top:2px;">Không ai bỏ cuộc một mình</div></div>
-                </div>
-                <div style="background:#f8f7fc;border-radius:14px;padding:12px;display:flex;gap:9px;">
-                    <span style="font-size:1.2rem;">🏆</span>
-                    <div><div style="font-size:.77rem;font-weight:700;color:#1a1a2e;">Thi đua chuỗi tiết kiệm</div>
-                    <div style="font-size:.63rem;color:#888;margin-top:2px;">Ai dài hơn? Vui hơn!</div></div>
-                </div>
-            </div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
+/* ── BUDDY STREAK BAR ── */
+.streak-bar{background:#fff;border-radius:14px;padding:12px 16px;
+            display:flex;align-items:center;gap:12px;margin-bottom:16px;
+            border:1.5px solid #f0e8ff;}
+.streak-bar .ico{font-size:1.5rem;}
+.streak-lbl{font-size:.72rem;color:#888;}
+.streak-val{font-size:1.05rem;font-weight:800;color:#7B5EA7;}
+.streak-prog{flex:1;background:#f0f0f7;border-radius:8px;height:7px;overflow:hidden;}
+.streak-fill{height:100%;border-radius:8px;
+             background:linear-gradient(90deg,#7B5EA7,#e879b0);}
 
-    _ref_dark = (
-        '<div style="background:#1A1A2E;border-radius:20px;padding:20px 18px;">'
-        '<div style="font-size:.62rem;color:rgba(255,255,255,.38);text-transform:uppercase;'
-        'letter-spacing:.05em;margin-bottom:9px;font-weight:600;">Thêm phần thưởng khi bạn mời</div>'
-        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px;">'
-        '<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 6px;text-align:center;">'
-        '<div style="font-size:.55rem;color:rgba(255,255,255,.38);text-transform:uppercase;margin-bottom:4px;">Mời 1 bạn</div>'
-        '<div style="font-size:1.05rem;font-weight:800;color:#fff;">+100</div>'
-        '<div style="font-size:.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;">XP cho cả hai</div></div>'
-        '<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 6px;text-align:center;">'
-        '<div style="font-size:.55rem;color:rgba(255,255,255,.38);text-transform:uppercase;margin-bottom:4px;">Mời 5 bạn</div>'
-        '<div style="font-size:1.05rem;font-weight:800;color:#fff;">🎨</div>'
-        '<div style="font-size:.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;">Skin độc quyền</div></div>'
-        '<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 6px;text-align:center;">'
-        '<div style="font-size:.55rem;color:rgba(255,255,255,.38);text-transform:uppercase;margin-bottom:4px;">Mời 10 bạn</div>'
-        '<div style="font-size:1.05rem;font-weight:800;color:#fff;">👑</div>'
-        '<div style="font-size:.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;">Huy hiệu Trưởng Đàn</div></div>'
-        '</div>'
-        '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);'
-        'border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 13px;margin-bottom:12px;">'
-        '<span style="font-size:.63rem;color:rgba(255,255,255,.4);">Mã của bạn</span>'
-        '<span style="font-size:.95rem;font-weight:800;color:#fff;letter-spacing:.12em;flex:1;">__RC__</span>'
-        '</div></div>'
-    ).replace("__RC__", _ref3)
-    st.markdown(_ref_dark, unsafe_allow_html=True)
+/* ── REWARD CHIPS ── */
+.rewards{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;justify-content:center;}
+.reward{background:#fff;border:1.5px solid #f0e8ff;border-radius:14px;
+        padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:130px;}
+.reward-ico{font-size:1.4rem;}
+.reward-name{font-size:.74rem;font-weight:700;color:#1a1a2e;}
+.reward-sub{font-size:.62rem;color:#8b94a8;margin-top:1px;}
+.reward.locked{opacity:.5;}
+.reward.locked .reward-ico::after{content:'🔒';font-size:.7rem;}
 
-    _ri1, _ri2 = st.columns(2)
-    with _ri1:
-        if st.button("🐑 Rủ bạn cùng nuôi cừu", use_container_width=True,
-                     type="primary", key="ref_cta1"):
-            st.toast("🐑 Đã sao chép link mời!")
-    with _ri2:
-        if st.button("🎁 Tặng bạn một chú cừu", use_container_width=True, key="ref_cta2"):
-            st.toast("🎁 Đã tạo quà tặng!")
+/* ── FRIEND SUGGESTIONS ── */
+.sec-hd{font-size:.9rem;font-weight:800;color:#1a1a2e;
+        margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.sec-hd a{font-size:.68rem;font-weight:600;color:#7B5EA7;background:#f4eeff;
+          border-radius:20px;padding:3px 10px;cursor:pointer;}
+.ai-chip{display:inline-flex;align-items:center;gap:4px;
+         background:#f0fff4;border:1px solid #b8f0c8;border-radius:20px;
+         padding:3px 9px;font-size:.62rem;font-weight:700;color:#2a9d5c;
+         margin-bottom:12px;}
+.f-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;
+          -webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.f-scroll::-webkit-scrollbar{display:none;}
+.f-card{background:#fff;border:1.5px solid #f0f0f5;border-radius:20px;
+        padding:16px 14px;min-width:150px;flex-shrink:0;
+        transition:all .2s;cursor:pointer;text-align:center;}
+.f-card:hover{box-shadow:0 5px 18px rgba(0,0,0,.08);transform:translateY(-2px);border-color:#d4b8ff;}
+.f-av{width:52px;height:52px;border-radius:50%;
+      background:linear-gradient(135deg,#f0e8ff,#ffe8f8);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.6rem;margin:0 auto 8px;border:2px solid #f0e8ff;}
+.f-name{font-size:.82rem;font-weight:700;color:#1a1a2e;margin-bottom:5px;}
+.f-goal{font-size:.7rem;color:#7B5EA7;font-weight:600;
+        background:#f4eeff;border-radius:8px;padding:3px 8px;
+        display:inline-block;margin-bottom:5px;}
+.f-stats{font-size:.63rem;color:#8b94a8;line-height:1.7;margin-bottom:9px;}
+.f-btn{width:100%;padding:7px 0;border:1.5px solid #d4b8ff;border-radius:9px;
+       background:#fff;font-size:.72rem;font-weight:700;color:#7B5EA7;cursor:pointer;}
+.f-btn:hover{background:#f0e6ff;}
+.f-btn.on{background:linear-gradient(135deg,#7B5EA7,#5a3d9a);color:#fff;border:none;}
+
+/* ── INVITE REWARD BOX ── */
+.inv-box{background:linear-gradient(135deg,#1A1A2E,#2D1B69);
+         border-radius:22px;padding:20px 18px;margin-bottom:16px;}
+.inv-title{color:#fff;font-size:.88rem;font-weight:800;margin-bottom:14px;
+           display:flex;align-items:center;gap:8px;}
+.inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.inv-tier{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+          border-radius:14px;padding:12px 8px;text-align:center;}
+.inv-lbl{font-size:.54rem;color:rgba(255,255,255,.4);
+         text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.inv-val{font-size:1rem;font-weight:800;color:#fff;}
+.inv-desc{font-size:.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;}
+.inv-code{display:flex;align-items:center;gap:10px;
+          background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);
+          border-radius:12px;padding:10px 14px;}
+.inv-code-lbl{font-size:.62rem;color:rgba(255,255,255,.4);}
+.inv-code-val{font-size:.95rem;font-weight:800;color:#fff;letter-spacing:.12em;flex:1;}
+
+/* ── BUTTONS ── */
+.big-btn{width:100%;padding:14px;border-radius:14px;font-size:.85rem;
+         font-weight:800;cursor:pointer;border:none;transition:all .18s;}
+.big-btn:hover{opacity:.92;transform:translateY(-1px);}
+.btn-primary{background:linear-gradient(135deg,#7B5EA7,#5a3d9a);color:#fff;margin-bottom:10px;}
+.btn-outline{background:#fff;border:1.5px solid #d4b8ff!important;border:none;
+             color:#7B5EA7;}
+
+/* TOAST */
+#toast{position:fixed;bottom:16px;left:50%;
+       transform:translateX(-50%) translateY(60px);
+       background:#1a1a2e;color:#fff;padding:8px 18px;border-radius:22px;
+       font-size:.77rem;font-weight:600;opacity:0;
+       transition:all .28s cubic-bezier(.4,0,.2,1);z-index:9999;
+       white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style></head><body>
+<div id="toast"></div>
+
+<!-- BUDDY HERO -->
+<div class="buddy-hero">
+  <div class="buddy-avatars">
+    <div class="av-wrap">
+      <div class="av-circle" style="background:linear-gradient(135deg,#f0e8ff,#d4b8ff);">🐑</div>
+      <div class="av-name">Bạn</div>
+      <div class="av-lv">Lv.3 · 42🔥</div>
+    </div>
+    <div class="heart-mid">💛</div>
+    <div class="av-wrap">
+      <div class="av-circle" style="background:linear-gradient(135deg,#ffe8f8,#ffb8d8);">🐑</div>
+      <div class="av-name">Hoa Nhỏ</div>
+      <div class="av-lv">Lv.3 · 38🔥</div>
+    </div>
+  </div>
+  <div class="buddy-title">👯 Bạn Thân Cừu</div>
+  <div class="buddy-sub">Bạn và Hoa Nhỏ đang cùng nuôi cừu được <strong>12 ngày</strong> rồi!<br>
+    Duy trì streak đôi để mở khóa skin và quà đặc biệt.</div>
+  <div class="streak-bar">
+    <div class="ico">🔥</div>
+    <div><div class="streak-val">Streak đôi: 12 ngày</div>
+    <div class="streak-lbl">Còn 3 ngày nữa để mở skin đôi!</div></div>
+    <div class="streak-prog"><div class="streak-fill" style="width:80%;"></div></div>
+  </div>
+</div>
+
+<!-- REWARDS -->
+<div class="sec-hd" style="margin-bottom:10px;">🎁 Phần thưởng khi có bạn thân</div>
+<div class="rewards">
+  <div class="reward">
+    <div class="reward-ico">🐑</div>
+    <div><div class="reward-name">Skin đôi</div>
+    <div class="reward-sub">Mở lúc streak 15 ngày</div></div>
+  </div>
+  <div class="reward">
+    <div class="reward-ico">💛</div>
+    <div><div class="reward-name">+100 iXu</div>
+    <div class="reward-sub">Mỗi bạn mời thành công</div></div>
+  </div>
+  <div class="reward locked">
+    <div class="reward-ico">👑</div>
+    <div><div class="reward-name">Khung avatar đôi</div>
+    <div class="reward-sub">Khi cả hai lên Lv.5</div></div>
+  </div>
+</div>
+
+<!-- AI FRIEND MATCHING -->
+<div class="sec-hd">🐑 Cừu giống bạn nhất
+  <a onclick="toast('AI đang tìm thêm bạn cừu...')">Tìm thêm →</a>
+</div>
+<span class="ai-chip">✨ AI khớp theo mục tiêu &amp; hành vi</span>
+<div class="f-scroll">
+  <div class="f-card">
+    <div class="f-av">🐑</div>
+    <div class="f-name">Hoa Nhỏ</div>
+    <div class="f-goal">✈️ Du lịch Nhật</div>
+    <div class="f-stats">🔥 Streak 42 ngày<br>📍 Hà Nội · Lv.3</div>
+    <button class="f-btn on">✓ Bạn thân</button>
+  </div>
+  <div class="f-card">
+    <div class="f-av">🐑</div>
+    <div class="f-name">Lan Thảo</div>
+    <div class="f-goal">🎓 MBA</div>
+    <div class="f-stats">🔥 Streak 65 ngày<br>📍 Đà Nẵng · Lv.4</div>
+    <button class="f-btn" onclick="followFriend(this,'Lan Thảo')">Kết bạn</button>
+  </div>
+  <div class="f-card">
+    <div class="f-av">🐑</div>
+    <div class="f-name">Tuấn Béo</div>
+    <div class="f-goal">🏠 Mua nhà</div>
+    <div class="f-stats">🔥 Streak 28 ngày<br>📍 TP.HCM · Lv.2</div>
+    <button class="f-btn" onclick="followFriend(this,'Tuấn Béo')">Kết bạn</button>
+  </div>
+  <div class="f-card">
+    <div class="f-av">🐑</div>
+    <div class="f-name">Ngọc Mập</div>
+    <div class="f-goal">💰 Tự do TC</div>
+    <div class="f-stats">🔥 Streak 112 ngày<br>📍 Hải Phòng · Lv.5</div>
+    <button class="f-btn" onclick="followFriend(this,'Ngọc Mập')">Kết bạn</button>
+  </div>
+  <div class="f-card">
+    <div class="f-av">🐑</div>
+    <div class="f-name">Minh Lùn</div>
+    <div class="f-goal">🚗 Mua xe</div>
+    <div class="f-stats">🔥 Streak 17 ngày<br>📍 Hà Nội · Lv.2</div>
+    <button class="f-btn" onclick="followFriend(this,'Minh Lùn')">Kết bạn</button>
+  </div>
+</div>
+
+<!-- INVITE BOX -->
+<div style="height:18px;"></div>
+<div class="inv-box">
+  <div class="inv-title">🎁 Mời bạn — cả hai cùng thắng</div>
+  <div class="inv-grid">
+    <div class="inv-tier">
+      <div class="inv-lbl">Mời 1 bạn</div>
+      <div class="inv-val">+100</div>
+      <div class="inv-desc">iXu cho cả hai</div>
+    </div>
+    <div class="inv-tier">
+      <div class="inv-lbl">Mời 5 bạn</div>
+      <div class="inv-val">🎨</div>
+      <div class="inv-desc">Skin độc quyền</div>
+    </div>
+    <div class="inv-tier">
+      <div class="inv-lbl">Mời 10 bạn</div>
+      <div class="inv-val">👑</div>
+      <div class="inv-desc">Trưởng Đàn</div>
+    </div>
+  </div>
+  <div class="inv-code">
+    <span class="inv-code-lbl">Mã của bạn</span>
+    <span class="inv-code-val">__REF__</span>
+  </div>
+</div>
+<div style="height:12px;"></div>
+<button class="big-btn btn-primary" onclick="toast('🐑 Đã sao chép link mời!')">
+  🐑 Rủ bạn cùng nuôi cừu
+</button>
+<button class="big-btn btn-outline" onclick="toast('🎁 Đã tạo quà tặng cừu!')">
+  🎁 Tặng bạn một chú cừu
+</button>
+
+<script>
+function toast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2600);
+}
+function followFriend(btn,name){
+  if(btn.classList.contains('on')){btn.classList.remove('on');btn.textContent='Kết bạn';}
+  else{btn.classList.add('on');btn.textContent='✓ Đã kết bạn';toast('✅ Đã kết bạn với '+name+'!');}
+}
+</script></body></html>""".replace("__REF__", _ref3)
+        _comp3.html(_HTML_T2, height=2000, scrolling=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # SUB-TAB 3: GIA ĐÌNH CỪU
+    # ─────────────────────────────────────────────────────────────────────────
+    with _ct3:
+        _HTML_T3 = """<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:transparent;color:#1a1a2e;padding:0 0 20px;}
+
+/* ── FAMILY HERO ── */
+.fam-hero{background:linear-gradient(135deg,#fff8e8 0%,#f0e8ff 50%,#e8f8ff 100%);
+    border-radius:24px;padding:22px 16px 18px;margin-bottom:18px;text-align:center;
+    border:1.5px solid rgba(255,200,100,.25);}
+.fam-title{font-size:1.05rem;font-weight:800;color:#1a1a2e;margin-bottom:5px;}
+.fam-sub{font-size:.78rem;color:#888;line-height:1.5;margin-bottom:18px;}
+.fam-tree{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:14px;}
+.fam-member{text-align:center;flex-shrink:0;}
+.fam-av{border-radius:50%;display:flex;align-items:center;justify-content:center;
+        font-size:1.8rem;margin:0 auto 5px;border:3px solid #fff;
+        box-shadow:0 3px 10px rgba(0,0,0,.1);}
+.fam-role{font-size:.68rem;font-weight:700;color:#666;}
+.fam-streak{font-size:.6rem;color:#7B5EA7;background:#f4eeff;
+            border-radius:8px;padding:2px 6px;display:inline-block;margin-top:2px;}
+.conn-line{width:20px;height:2px;background:linear-gradient(90deg,#f0e8ff,#d4b8ff);
+           border-radius:2px;margin-bottom:32px;}
+
+/* ── INVITE PARENT/CHILD CARD ── */
+.inv-card{background:#fff;border:1.5px solid #f0f0f5;border-radius:20px;
+          padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;}
+.inv-card-ico{width:52px;height:52px;border-radius:16px;display:flex;
+              align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
+.inv-card-name{font-size:.88rem;font-weight:800;color:#1a1a2e;}
+.inv-card-sub{font-size:.73rem;color:#888;margin-top:2px;line-height:1.4;}
+.inv-card-btn{margin-left:auto;flex-shrink:0;padding:8px 14px;
+              border-radius:10px;font-size:.72rem;font-weight:700;
+              background:linear-gradient(135deg,#7B5EA7,#5a3d9a);
+              color:#fff;border:none;cursor:pointer;white-space:nowrap;}
+
+/* ── FAMILY FEED ── */
+.sec-hd{font-size:.9rem;font-weight:800;color:#1a1a2e;margin-bottom:12px;
+        display:flex;align-items:center;justify-content:space-between;}
+.ff{background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
+    padding:14px 16px;margin-bottom:10px;}
+.ff-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ff-av{width:40px;height:40px;border-radius:50%;display:flex;
+       align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.ff-name{font-size:.85rem;font-weight:700;color:#1a1a2e;}
+.ff-time{font-size:.62rem;color:#bbb;margin-top:1px;}
+.ff-badge{border-radius:20px;padding:3px 9px;font-size:.62rem;font-weight:700;
+          white-space:nowrap;flex-shrink:0;}
+.ff-msg{font-size:.82rem;color:#444;line-height:1.55;padding:10px 12px;
+        background:#fffbf0;border-radius:12px;border-left:3px solid #FFD700;}
+.ff-row{display:flex;gap:7px;margin-top:9px;}
+.ff-btn{padding:7px 10px;border:1.5px solid #f0e8d0;border-radius:10px;
+        background:#fff;font-size:.72rem;font-weight:600;color:#b07a20;
+        cursor:pointer;}
+.ff-btn:hover{background:#fffbf0;}
+.ff-btn.hi{background:linear-gradient(135deg,#FFD700,#FFA500);color:#1a1a2e;border:none;}
+
+/* ── FAMILY ACTIONS ── */
+.fam-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.fam-act{background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
+         padding:16px 14px;text-align:center;cursor:pointer;transition:all .2s;}
+.fam-act:hover{box-shadow:0 4px 14px rgba(0,0,0,.07);transform:translateY(-2px);border-color:#d4b8ff;}
+.fam-act-ico{font-size:1.8rem;margin-bottom:7px;}
+.fam-act-name{font-size:.79rem;font-weight:700;color:#1a1a2e;margin-bottom:3px;}
+.fam-act-sub{font-size:.63rem;color:#8b94a8;line-height:1.35;}
+
+/* TOAST */
+#toast{position:fixed;bottom:16px;left:50%;
+       transform:translateX(-50%) translateY(60px);
+       background:#1a1a2e;color:#fff;padding:8px 18px;border-radius:22px;
+       font-size:.77rem;font-weight:600;opacity:0;
+       transition:all .28s cubic-bezier(.4,0,.2,1);z-index:9999;
+       white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style></head><body>
+<div id="toast"></div>
+
+<!-- FAMILY HERO -->
+<div class="fam-hero">
+  <div class="fam-title">👨‍👩‍👧 Gia đình cừu của bạn</div>
+  <div class="fam-sub">Tiết kiệm cùng gia đình — vui hơn, bền hơn.</div>
+  <div class="fam-tree">
+    <div class="fam-member">
+      <div class="fam-av" style="width:64px;height:64px;background:linear-gradient(135deg,#e8f0ff,#d4e8ff);">🐏</div>
+      <div class="fam-role">Cừu Bố</div>
+      <div class="fam-streak">🔥 21 ngày</div>
+    </div>
+    <div class="conn-line"></div>
+    <div class="fam-member">
+      <div class="fam-av" style="width:72px;height:72px;background:linear-gradient(135deg,#f0e8ff,#ffe8f8);">🐑</div>
+      <div class="fam-role">Bạn</div>
+      <div class="fam-streak">🔥 42 ngày</div>
+    </div>
+    <div class="conn-line"></div>
+    <div class="fam-member">
+      <div class="fam-av" style="width:56px;height:56px;background:linear-gradient(135deg,#f0fff8,#d4f5e8);">🐑</div>
+      <div class="fam-role">Cừu Em</div>
+      <div class="fam-streak">🔥 7 ngày</div>
+    </div>
+  </div>
+  <div style="background:rgba(255,255,255,.7);border-radius:14px;padding:10px 14px;
+              text-align:left;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.3rem;">🏆</span>
+    <div>
+      <div style="font-size:.8rem;font-weight:800;color:#1a1a2e;">Gia đình cừu · Lv.2</div>
+      <div style="font-size:.65rem;color:#888;">Tổng streak đàn cừu: 70 ngày · Xếp hạng #128</div>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE -->
+<div class="inv-card">
+  <div class="inv-card-ico" style="background:#e8f0ff;">👨</div>
+  <div>
+    <div class="inv-card-name">Thêm Cừu Bố</div>
+    <div class="inv-card-sub">Mời bố tham gia — nhận 200 iXu cho gia đình</div>
+  </div>
+  <button class="inv-card-btn" onclick="toast('📲 Đã gửi lời mời cho Bố!')">Mời Bố</button>
+</div>
+<div class="inv-card">
+  <div class="inv-card-ico" style="background:#fff0f8;">👩</div>
+  <div>
+    <div class="inv-card-name">Thêm Cừu Mẹ</div>
+    <div class="inv-card-sub">Mời mẹ tham gia — cùng theo dõi tiến độ</div>
+  </div>
+  <button class="inv-card-btn" onclick="toast('📲 Đã gửi lời mời cho Mẹ!')">Mời Mẹ</button>
+</div>
+<div class="inv-card">
+  <div class="inv-card-ico" style="background:#f0fff8;">🧒</div>
+  <div>
+    <div class="inv-card-name">Thêm Cừu Con / Em</div>
+    <div class="inv-card-sub">Dạy con tiết kiệm từ nhỏ · Tài khoản thiếu nhi</div>
+  </div>
+  <button class="inv-card-btn" onclick="toast('📲 Đã tạo tài khoản Cừu Con!')">Tạo cho Con</button>
+</div>
+
+<div style="height:16px;"></div>
+
+<!-- FAMILY ACTIONS -->
+<div class="sec-hd">🎁 Hành động gia đình</div>
+<div class="fam-actions">
+  <div class="fam-act" onclick="toast('🎁 Đã gửi iXu cho Cừu Em!')">
+    <div class="fam-act-ico">💛</div>
+    <div class="fam-act-name">Tặng iXu</div>
+    <div class="fam-act-sub">Gửi iXu cho thành viên</div>
+  </div>
+  <div class="fam-act" onclick="toast('🎁 Đang chọn quà...')">
+    <div class="fam-act-ico">🎁</div>
+    <div class="fam-act-name">Tặng quà</div>
+    <div class="fam-act-sub">Skin, mũ, phụ kiện</div>
+  </div>
+  <div class="fam-act" onclick="toast('🎓 Đã khen thưởng Cừu Em!')">
+    <div class="fam-act-ico">🏅</div>
+    <div class="fam-act-name">Khen thưởng</div>
+    <div class="fam-act-sub">Trao huy hiệu cho con</div>
+  </div>
+  <div class="fam-act" onclick="toast('📊 Đang xem tiến độ...')">
+    <div class="fam-act-ico">📊</div>
+    <div class="fam-act-name">Theo dõi tiến độ</div>
+    <div class="fam-act-sub">AI gợi ý động viên con</div>
+  </div>
+</div>
+
+<!-- FAMILY FEED -->
+<div class="sec-hd">📰 Bản tin gia đình cừu</div>
+
+<div class="ff">
+  <div class="ff-top">
+    <div class="ff-av" style="background:linear-gradient(135deg,#e8f0ff,#d4e8ff);">🐏</div>
+    <div style="flex:1;"><div class="ff-name">Cừu Bố</div><div class="ff-time">3 phút trước</div></div>
+    <span class="ff-badge" style="background:#e8f5ff;color:#1565c0;">💛 Gửi quà</span>
+  </div>
+  <div class="ff-msg">Bố vừa gửi <strong>50 iXu</strong> cho Cừu Em — "Giỏi lắm con! Giữ streak nhé." 🐑</div>
+  <div class="ff-row">
+    <button class="ff-btn hi" onclick="toast('❤️ Đã cảm ơn Bố!')">❤️ Cảm ơn Bố</button>
+    <button class="ff-btn" onclick="toast('💬 Nhắn tin Bố...')">💬 Nhắn</button>
+  </div>
+</div>
+
+<div class="ff">
+  <div class="ff-top">
+    <div class="ff-av" style="background:linear-gradient(135deg,#f0fff8,#d4f5e8);">🐑</div>
+    <div style="flex:1;"><div class="ff-name">Cừu Em</div><div class="ff-time">1 giờ trước</div></div>
+    <span class="ff-badge" style="background:#e8f5e9;color:#2e7d32;">⭐ Streak 7 ngày</span>
+  </div>
+  <div class="ff-msg">Cừu Em vừa đạt <strong>streak 7 ngày liên tiếp</strong>! Lần đầu tiên không bỏ lỡ 🌟</div>
+  <div class="ff-row">
+    <button class="ff-btn hi" onclick="toast('🏅 Đã khen thưởng Cừu Em!')">🏅 Khen thưởng</button>
+    <button class="ff-btn" onclick="toast('🎁 Tặng quà cho Em!')">🎁 Tặng quà</button>
+  </div>
+</div>
+
+<div class="ff">
+  <div class="ff-top">
+    <div class="ff-av" style="background:linear-gradient(135deg,#fff0f8,#ffd4e8);">👩</div>
+    <div style="flex:1;"><div class="ff-name">Cừu Mẹ</div><div class="ff-time">Hôm qua</div></div>
+    <span class="ff-badge" style="background:#f3e5f5;color:#7b1fa2;">💜 Động viên</span>
+  </div>
+  <div class="ff-msg">Mẹ nhắn: <strong>"Con đang làm rất tốt! Cả nhà tự hào về con."</strong> 💜🐑</div>
+  <div class="ff-row">
+    <button class="ff-btn hi" onclick="toast('❤️ Đã cảm ơn Mẹ!')">❤️ Cảm ơn Mẹ</button>
+  </div>
+</div>
+
+<script>
+function toast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2600);
+}
+</script></body></html>"""
+        _comp3.html(_HTML_T3, height=2200, scrolling=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # SUB-TAB 4: THỜI TRANG CỪU
+    # ─────────────────────────────────────────────────────────────────────────
+    with _ct4:
+        _HTML_T4 = """<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:transparent;color:#1a1a2e;padding:0 0 20px;}
+
+/* ── WARDROBE HERO ── */
+.ward-hero{background:linear-gradient(135deg,#f0e8ff 0%,#ffe8f8 60%,#fff8e8 100%);
+    border-radius:24px;padding:18px 16px;margin-bottom:18px;text-align:center;
+    border:1.5px solid rgba(123,94,167,.12);}
+.sheep-display{font-size:5rem;margin-bottom:8px;filter:drop-shadow(0 4px 10px rgba(123,94,167,.25));}
+.ward-name{font-size:1rem;font-weight:800;color:#1a1a2e;margin-bottom:4px;}
+.ward-set{font-size:.75rem;color:#7B5EA7;font-weight:600;margin-bottom:10px;}
+.ward-stats{display:flex;justify-content:center;gap:16px;}
+.ws{text-align:center;}
+.ws-val{font-size:.95rem;font-weight:800;color:#1a1a2e;}
+.ws-lbl{font-size:.6rem;color:#8b94a8;margin-top:1px;}
+
+/* ── CATEGORY TABS ── */
+.cat-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;
+         margin-bottom:16px;scrollbar-width:none;}
+.cat-row::-webkit-scrollbar{display:none;}
+.cat{padding:8px 14px;border-radius:20px;font-size:.75rem;font-weight:700;
+     border:1.5px solid #f0f0f5;background:#fff;cursor:pointer;
+     white-space:nowrap;transition:all .15s;}
+.cat.on{background:linear-gradient(135deg,#7B5EA7,#5a3d9a);color:#fff;border:none;}
+.cat:hover:not(.on){background:#f4eeff;border-color:#d4b8ff;}
+
+/* ── SETS ── */
+.sec-hd{font-size:.9rem;font-weight:800;color:#1a1a2e;
+        margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.sets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));
+           gap:12px;margin-bottom:20px;}
+.set-card{background:#fff;border:1.5px solid #f0f0f5;border-radius:20px;
+          padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.set-card:hover{box-shadow:0 5px 18px rgba(0,0,0,.08);transform:translateY(-2px);border-color:#d4b8ff;}
+.set-card.active{border-color:#7B5EA7;box-shadow:0 0 0 3px rgba(123,94,167,.15);}
+.set-ico{font-size:2.4rem;margin-bottom:8px;}
+.set-name{font-size:.8rem;font-weight:800;color:#1a1a2e;margin-bottom:3px;}
+.set-desc{font-size:.63rem;color:#8b94a8;line-height:1.4;margin-bottom:10px;}
+.set-cost{font-size:.7rem;font-weight:700;margin-bottom:9px;}
+.cost-free{color:#2a9d5c;background:#e8f5e9;border-radius:6px;padding:2px 7px;}
+.cost-ix{color:#7B5EA7;background:#f4eeff;border-radius:6px;padding:2px 7px;}
+.cost-lock{color:#888;background:#f5f5f5;border-radius:6px;padding:2px 7px;}
+.set-btn{width:100%;padding:8px 0;border-radius:10px;font-size:.74rem;
+         font-weight:700;cursor:pointer;border:none;transition:all .15s;}
+.set-btn:hover{opacity:.9;}
+.set-wearing{background:linear-gradient(135deg,#7B5EA7,#5a3d9a);color:#fff;}
+.set-equip  {background:linear-gradient(135deg,#f0e8ff,#e8d8ff);color:#7B5EA7;border:1.5px solid #d4b8ff!important;}
+.set-buy    {background:linear-gradient(135deg,#FFD700,#FFA500);color:#1a1a2e;}
+.set-locked {background:#f5f5f5;color:#888;}
+.badge-new{position:absolute;top:10px;right:10px;
+           background:linear-gradient(135deg,#FF3B30,#FF6B35);
+           color:#fff;border-radius:8px;padding:2px 7px;
+           font-size:.58rem;font-weight:800;}
+.badge-pop{position:absolute;top:10px;right:10px;
+           background:linear-gradient(135deg,#7B5EA7,#5a3d9a);
+           color:#fff;border-radius:8px;padding:2px 7px;
+           font-size:.58rem;font-weight:800;}
+
+/* ── ITEMS ── */
+.items-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.item{background:#fff;border:1.5px solid #f0f0f5;border-radius:14px;
+      padding:10px 8px;text-align:center;cursor:pointer;transition:all .18s;position:relative;}
+.item:hover{box-shadow:0 3px 10px rgba(0,0,0,.07);border-color:#d4b8ff;}
+.item.on{border-color:#7B5EA7;box-shadow:0 0 0 2px rgba(123,94,167,.15);}
+.item-ico{font-size:1.6rem;margin-bottom:4px;}
+.item-name{font-size:.62rem;font-weight:600;color:#444;line-height:1.3;}
+.item-lock{position:absolute;top:4px;right:4px;font-size:.6rem;}
+
+/* ── IXU BAR ── */
+.ixu-bar{background:linear-gradient(135deg,#1A1A2E,#2D1B69);
+         border-radius:18px;padding:14px 16px;
+         display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.ixu-ico{font-size:1.8rem;}
+.ixu-val{font-size:1.2rem;font-weight:800;color:#fff;}
+.ixu-lbl{font-size:.65rem;color:rgba(255,255,255,.55);}
+.ixu-earn{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+          border-radius:10px;padding:7px 12px;font-size:.7rem;font-weight:700;
+          color:#d4b8ff;cursor:pointer;}
+
+/* TOAST */
+#toast{position:fixed;bottom:16px;left:50%;
+       transform:translateX(-50%) translateY(60px);
+       background:#1a1a2e;color:#fff;padding:8px 18px;border-radius:22px;
+       font-size:.77rem;font-weight:600;opacity:0;
+       transition:all .28s cubic-bezier(.4,0,.2,1);z-index:9999;
+       white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style></head><body>
+<div id="toast"></div>
+
+<!-- WARDROBE HERO -->
+<div class="ward-hero">
+  <div class="sheep-display" id="sheepDisplay">🐑</div>
+  <div class="ward-name">Cừu của bạn</div>
+  <div class="ward-set" id="activeSet">🌱 Đang mặc: Bộ Nông dân</div>
+  <div class="ward-stats">
+    <div class="ws"><div class="ws-val">💛 480</div><div class="ws-lbl">iXu hiện có</div></div>
+    <div class="ws"><div class="ws-val">👗 6</div><div class="ws-lbl">trang phục đã mở</div></div>
+    <div class="ws"><div class="ws-val">✨ 12</div><div class="ws-lbl">vật phẩm sở hữu</div></div>
+  </div>
+</div>
+
+<!-- IXU BAR -->
+<div class="ixu-bar">
+  <div class="ixu-ico">💛</div>
+  <div><div class="ixu-val">480 iXu</div><div class="ixu-lbl">Số dư hiện tại</div></div>
+  <button class="ixu-earn" onclick="toast('🔥 Tiết kiệm mỗi ngày để kiếm thêm iXu!')">+ Kiếm thêm</button>
+</div>
+
+<!-- CATEGORY TABS -->
+<div class="cat-row">
+  <button class="cat on" onclick="setCat(this,'all')">Tất cả</button>
+  <button class="cat" onclick="setCat(this,'hat')">🎩 Mũ</button>
+  <button class="cat" onclick="setCat(this,'outfit')">👗 Trang phục</button>
+  <button class="cat" onclick="setCat(this,'bag')">🎒 Balo</button>
+  <button class="cat" onclick="setCat(this,'glasses')">👓 Kính</button>
+  <button class="cat" onclick="setCat(this,'special')">✨ Đặc biệt</button>
+</div>
+
+<!-- SETS -->
+<div class="sec-hd">🌟 Bộ trang phục</div>
+<div class="sets-grid">
+
+  <div class="set-card active" onclick="wearSet(this,'🌱 Bộ Nông dân','🐑')">
+    <div class="set-ico">🌱</div>
+    <div class="set-name">Nông dân</div>
+    <div class="set-desc">Bộ gốc — thoải mái, thân thiện</div>
+    <div class="set-cost"><span class="cost-free">Miễn phí</span></div>
+    <button class="set-btn set-wearing">✓ Đang mặc</button>
+  </div>
+
+  <div class="set-card" onclick="wearSet(this,'🎓 Bộ Học sinh','🐑')">
+    <span class="badge-pop">HOT</span>
+    <div class="set-ico">🎓</div>
+    <div class="set-name">Học sinh</div>
+    <div class="set-desc">Cừu học giỏi, streak 30 ngày</div>
+    <div class="set-cost"><span class="cost-free">Đã mở khóa</span></div>
+    <button class="set-btn set-equip">Mặc ngay</button>
+  </div>
+
+  <div class="set-card" onclick="wearSet(this,'✈️ Bộ Du lịch','🐑')">
+    <span class="badge-new">MỚI</span>
+    <div class="set-ico">✈️</div>
+    <div class="set-name">Du lịch</div>
+    <div class="set-desc">Cho hội mê phượt và khám phá</div>
+    <div class="set-cost"><span class="cost-ix">💛 200 iXu</span></div>
+    <button class="set-btn set-buy" onclick="event.stopPropagation();buySet('Du lịch',200)">Mua ngay</button>
+  </div>
+
+  <div class="set-card">
+    <div class="set-ico">🚀</div>
+    <div class="set-name">Phi hành gia</div>
+    <div class="set-desc">Giấc mơ bay cao không giới hạn</div>
+    <div class="set-cost"><span class="cost-ix">💛 350 iXu</span></div>
+    <button class="set-btn set-buy" onclick="buySet('Phi hành gia',350)">Mua ngay</button>
+  </div>
+
+  <div class="set-card">
+    <div class="set-ico">👑</div>
+    <div class="set-name">Hoàng gia</div>
+    <div class="set-desc">Chỉ dành cho Lv.5 trở lên</div>
+    <div class="set-cost"><span class="cost-lock">🔒 Lv.5</span></div>
+    <button class="set-btn set-locked" disabled>Chưa mở được</button>
+  </div>
+
+  <div class="set-card">
+    <div class="set-ico">💎</div>
+    <div class="set-name">Diamond</div>
+    <div class="set-desc">Hiếm nhất — mời 10 bạn để mở</div>
+    <div class="set-cost"><span class="cost-lock">🔒 Mời 10 bạn</span></div>
+    <button class="set-btn set-locked" disabled>Chưa mở được</button>
+  </div>
+
+</div>
+
+<!-- INDIVIDUAL ITEMS -->
+<div class="sec-hd">🎩 Vật phẩm đơn lẻ</div>
+<div class="items-grid">
+  <div class="item on" onclick="toggleItem(this,'Mũ rơm')">
+    <div class="item-ico">👒</div>
+    <div class="item-name">Mũ rơm</div>
+  </div>
+  <div class="item on" onclick="toggleItem(this,'Balo Xuân')">
+    <div class="item-ico">🎒</div>
+    <div class="item-name">Balo Xuân</div>
+  </div>
+  <div class="item" onclick="toggleItem(this,'Kính râm')">
+    <div class="item-ico">😎</div>
+    <div class="item-name">Kính râm</div>
+  </div>
+  <div class="item" onclick="toggleItem(this,'Vương miện')">
+    <div class="item-ico">👑</div>
+    <div class="item-name">Vương miện</div>
+    <span class="item-lock">🔒</span>
+  </div>
+  <div class="item" onclick="toggleItem(this,'Nơ hồng')">
+    <div class="item-ico">🎀</div>
+    <div class="item-name">Nơ hồng</div>
+  </div>
+  <div class="item" onclick="toggleItem(this,'Mũ sinh nhật')">
+    <div class="item-ico">🎂</div>
+    <div class="item-name">Sinh nhật</div>
+  </div>
+  <div class="item" onclick="toggleItem(this,'Kính phi công')">
+    <div class="item-ico">🥽</div>
+    <div class="item-name">Kính phi công</div>
+    <span class="item-lock">🔒</span>
+  </div>
+  <div class="item" onclick="toggleItem(this,'Khăn quàng')">
+    <div class="item-ico">🧣</div>
+    <div class="item-name">Khăn quàng</div>
+  </div>
+</div>
+
+<script>
+var currentSet='🌱 Bộ Nông dân';
+function toast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2600);
+}
+function setCat(btn,cat){
+  document.querySelectorAll('.cat').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  toast('Đang lọc: '+btn.textContent.trim());
+}
+function wearSet(card,name,sheep){
+  if(card.querySelector('.set-btn.set-locked')) return;
+  document.querySelectorAll('.set-card').forEach(function(c){c.classList.remove('active');});
+  document.querySelectorAll('.set-btn.set-wearing').forEach(function(b){
+    b.className='set-btn set-equip';b.textContent='Mặc ngay';
+  });
+  card.classList.add('active');
+  var btn=card.querySelector('.set-btn');
+  btn.className='set-btn set-wearing';btn.textContent='✓ Đang mặc';
+  document.getElementById('activeSet').textContent='Đang mặc: '+name;
+  toast('✨ Đã mặc '+name+'!');
+}
+function buySet(name,cost){
+  toast('💛 Đã mua bộ '+name+' (–'+cost+' iXu)!');
+}
+function toggleItem(el,name){
+  if(el.querySelector('.item-lock')){toast('🔒 Chưa mở khóa vật phẩm này!');return;}
+  el.classList.toggle('on');
+  toast(el.classList.contains('on')?'✓ Đã trang bị '+name:'Đã bỏ '+name);
+}
+</script></body></html>"""
+        _comp3.html(_HTML_T4, height=2100, scrolling=True)
