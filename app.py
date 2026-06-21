@@ -2005,7 +2005,7 @@ with tab4:
             "Hãy tự nghiên cứu và/hoặc tham khảo chuyên gia trước khi ra quyết định đầu tư."
         )
 
-    # ══ TAB 5: Farm Game UI ═════════════════════════════════════════════════════
+    # ══ TAB 5: Social Farm ═══════════════════════════════════════════════════════
     with tab5:
         import os as _os
 
@@ -2020,376 +2020,572 @@ with tab4:
             return gh_url
 
         _FA = {
-            "sheep"   : _load_farm_asset("assets/sheep/sheep_main.png",    _GH+"/sheep_adult.png"),
-            "house"   : _load_farm_asset("assets/buildings/house.png",     _GH+"/house_lv1.png"),
-            "windmill": _load_farm_asset("assets/buildings/windmill.png",  _GH+"/windmill.png"),
-            "pond"    : _load_farm_asset("assets/buildings/pond.png",      _GH+"/lake.png"),
-            "carrot"  : _load_farm_asset("assets/items/carrot.png",        _GH+"/carrot.png"),
-            "f1"      : _load_farm_asset("assets/friends/friend1.png",     _GH+"/friend_sheep_1.png"),
-            "f2"      : _load_farm_asset("assets/friends/friend2.png",     _GH+"/friend_sheep_2.png"),
-            "f3"      : _load_farm_asset("assets/friends/friend3.png",     _GH+"/friend_sheep_3.png"),
+            "sheep": _load_farm_asset("assets/sheep/sheep_main.png", _GH + "/sheep_adult.png"),
+            "f1":    _load_farm_asset("assets/friends/friend1.png",  _GH + "/friend_sheep_1.png"),
+            "f2":    _load_farm_asset("assets/friends/friend2.png",  _GH + "/friend_sheep_2.png"),
+            "f3":    _load_farm_asset("assets/friends/friend3.png",  _GH + "/friend_sheep_3.png"),
         }
 
-        def _fi(key, style=""):
-            src = _FA.get(key, "")
-            if not src:
-                return ""
-            return '<img src="' + src + '" style="' + style + '" alt="' + key + '" onerror="this.style.display=\'none\'">'
+        def _src(k): return _FA.get(k, "")
 
-        _HTML_TEMPLATE = (
-            '<!DOCTYPE html>\n'
-            '<html lang="vi"><head><meta charset="utf-8">\n'
-            '<style>\n'
-            '*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}\n'
-            'html,body{width:100%;height:100%;overflow:hidden;background:#87C8F0;}\n'
-            '#game{width:860px;height:820px;position:relative;overflow:hidden;font-family:-apple-system,\'Helvetica Neue\',sans-serif;}\n'
-            '\n'
-            '/* TOP BAR */\n'
-            '.topbar{position:absolute;top:0;left:0;right:0;height:66px;background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:100;display:flex;align-items:center;padding:0 14px;gap:10px;box-shadow:0 1px 0 rgba(0,0,0,0.07),0 2px 12px rgba(0,0,0,0.06);}\n'
-            '.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#FFE066,#FF9500);border:2.5px solid #FFD700;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 8px rgba(255,150,0,0.35);}\n'
-            '.ui{flex:1;min-width:0;}\n'
-            '.un{font-size:14px;font-weight:700;color:#1a1a1a;}\n'
-            '.xt{height:5px;background:rgba(0,0,0,0.08);border-radius:10px;overflow:hidden;margin-top:4px;}\n'
-            '.xf{height:100%;border-radius:10px;background:linear-gradient(90deg,#FFB800,#FF6B00);width:65%;position:relative;overflow:hidden;}\n'
-            '.xf::after{content:\'\';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,0.45);animation:shimmer 2s infinite;}\n'
-            '.xl{font-size:10px;color:#999;margin-top:2px;}\n'
-            '.lv{background:linear-gradient(145deg,#7A4A00,#C47A0A);color:#FFE566;border-radius:12px;padding:6px 12px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.2);flex-shrink:0;}\n'
-            '.cur{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);border-radius:20px;padding:5px 10px;font-weight:700;font-size:13px;flex-shrink:0;}\n'
-            '.bell{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0;position:relative;}\n'
-            '.bd{position:absolute;top:3px;right:3px;width:8px;height:8px;background:#FF3B30;border-radius:50%;border:1.5px solid white;}\n'
-            '\n'
-            '/* SCENE */\n'
-            '.scene{position:absolute;top:66px;left:0;right:0;bottom:80px;overflow:hidden;}\n'
-            '\n'
-            '/* SKY */\n'
-            '.sky{position:absolute;inset:0;background:linear-gradient(180deg,#3D9ED8 0%,#5CAEDF 25%,#87C8EE 50%,#B2DCF0 68%,#C8ECBA 80%,#70C032 100%);z-index:0;}\n'
-            '\n'
-            '/* SUN */\n'
-            '.sun{position:absolute;top:22px;right:100px;width:62px;height:62px;background:radial-gradient(circle,#FFFFD0 0%,#FFE040 45%,rgba(255,200,0,0) 100%);border-radius:50%;box-shadow:0 0 60px 24px rgba(255,220,0,0.22);z-index:1;}\n'
-            '.sun-halo{position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(255,240,100,0.28) 0%,transparent 70%);animation:sun-pulse 3s ease-in-out infinite;}\n'
-            '\n'
-            '/* CLOUDS */\n'
-            '.cloud{position:absolute;z-index:2;}\n'
-            '.cb{position:relative;background:rgba(255,255,255,0.9);border-radius:50px;box-shadow:0 4px 14px rgba(0,0,0,0.05);}\n'
-            '.cp{position:absolute;background:rgba(255,255,255,0.9);border-radius:50%;}\n'
-            '\n'
-            '/* HILLS */\n'
-            '.hill{position:absolute;border-radius:50%;z-index:3;}\n'
-            '\n'
-            '/* FAR TREES */\n'
-            '.tree{position:absolute;z-index:4;display:flex;flex-direction:column;align-items:center;}\n'
-            '.tt{border-radius:50% 50% 40% 40%;box-shadow:inset 0 -5px 0 rgba(0,0,0,0.12);}\n'
-            '.tr{background:#7A5230;border-radius:3px;margin-top:-2px;}\n'
-            '\n'
-            '/* GROUND */\n'
-            '.ground{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#74D038 0%,#5CBE22 40%,#4CAE16 100%);z-index:5;border-radius:55% 55% 0 0/22px 22px 0 0;}\n'
-            '\n'
-            '/* PATHS */\n'
-            '.path{position:absolute;z-index:6;background:linear-gradient(90deg,#C8924C,#B87A38,#C8924C);border-radius:8px;}\n'
-            '\n'
-            '/* FLOWERS */\n'
-            '.fl{position:absolute;z-index:7;pointer-events:none;}\n'
-            '\n'
-            '/* BUILDING SHADOW */\n'
-            '.bsh{position:absolute;z-index:7;background:rgba(0,0,0,0.13);border-radius:50%;filter:blur(8px);}\n'
-            '\n'
-            '/* BUILDINGS */\n'
-            '.building{position:absolute;mix-blend-mode:multiply;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22));z-index:8;}\n'
-            '\n'
-            '/* SHEEP HERO */\n'
-            '.sheep-glow{position:absolute;z-index:9;border-radius:50%;background:radial-gradient(circle,rgba(255,255,180,0.38) 0%,rgba(255,240,100,0.14) 55%,transparent 100%);pointer-events:none;animation:glow-pulse 2.5s ease-in-out infinite;}\n'
-            '.sheep-pad{position:absolute;z-index:10;border-radius:50%;background:radial-gradient(ellipse,#84DC48 0%,#64C028 55%,transparent 100%);}\n'
-            '.sheep-sh{position:absolute;z-index:10;border-radius:50%;background:rgba(0,0,0,0.17);filter:blur(12px);}\n'
-            '#sheep{position:absolute;mix-blend-mode:multiply;filter:drop-shadow(0 14px 30px rgba(0,0,0,0.26));cursor:pointer;transition:transform 0.18s cubic-bezier(.34,1.56,.64,1);z-index:11;width:185px;height:185px;object-fit:contain;bottom:158px;left:50%;transform:translateX(-50%);}\n'
-            '#sheep:hover{transform:translateX(-50%) scale(1.07) translateY(-6px);}\n'
-            '#sheep:active{transform:translateX(-50%) scale(0.95);}\n'
-            '\n'
-            '/* SPEECH BUBBLE */\n'
-            '.bubble{position:absolute;z-index:20;background:white;border-radius:20px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.13);max-width:205px;animation:float 3.5s ease-in-out infinite;}\n'
-            '.bubble::after{content:\'\';position:absolute;bottom:-13px;left:28px;border-left:8px solid transparent;border-right:8px solid transparent;border-top:14px solid white;}\n'
-            '.bn{font-size:13px;font-weight:700;color:#FF6B00;margin-bottom:4px;}\n'
-            '.bt{font-size:12px;color:#555;line-height:1.6;}\n'
-            '\n'
-            '/* DREAM CARD */\n'
-            '.dc{position:absolute;z-index:20;background:rgba(255,255,255,0.96);border-radius:20px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.11);}\n'
-            '.dt{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.6px;}\n'
-            '.dn{font-size:14px;font-weight:800;color:#1a1a1a;margin-top:2px;}\n'
-            '.da{font-size:20px;font-weight:800;color:#FF6B00;margin-top:1px;}\n'
-            '.ds{font-size:10px;color:#bbb;margin-top:1px;}\n'
-            '.pt{height:8px;background:rgba(0,0,0,0.07);border-radius:10px;overflow:hidden;margin-top:8px;}\n'
-            '.pf{height:100%;border-radius:10px;background:linear-gradient(90deg,#FFB800,#FF6B00);position:relative;overflow:hidden;}\n'
-            '.pf::after{content:\'\';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,0.38);animation:shimmer 2s infinite;}\n'
-            '\n'
-            '/* FEED BUTTON */\n'
-            '.feed-btn{position:absolute;z-index:21;background:linear-gradient(160deg,#FFD840 0%,#FF8C00 100%);border:none;border-radius:40px;padding:15px 38px;font-size:17px;font-weight:800;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.18);box-shadow:0 6px 24px rgba(255,140,0,0.52),inset 0 1px 0 rgba(255,255,255,0.32);cursor:pointer;transition:all 0.18s cubic-bezier(.34,1.56,.64,1);letter-spacing:0.2px;display:flex;align-items:center;gap:9px;bottom:96px;left:50%;transform:translateX(-50%);}\n'
-            '.feed-btn:hover{transform:translateX(-50%) translateY(-3px) scale(1.04);box-shadow:0 12px 36px rgba(255,140,0,0.62);}\n'
-            '.feed-btn:active{transform:translateX(-50%) scale(0.97);}\n'
-            '.feed-btn img{width:22px;height:22px;mix-blend-mode:multiply;}\n'
-            '\n'
-            '/* FRIENDS */\n'
-            '.fc{position:absolute;z-index:20;background:rgba(255,255,255,0.95);border-radius:20px;padding:11px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.1);}\n'
-            '.ft{font-size:10px;font-weight:700;color:#aaa;margin-bottom:8px;display:flex;align-items:center;gap:5px;}\n'
-            '.od{width:7px;height:7px;background:#34C759;border-radius:50%;display:inline-block;}\n'
-            '.frow{display:flex;gap:10px;}\n'
-            '.fri{text-align:center;cursor:pointer;}\n'
-            '.fri img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);mix-blend-mode:multiply;background:#f0f5f0;display:block;}\n'
-            '.fri-n{font-size:9px;color:#777;margin-top:3px;font-weight:600;}\n'
-            '\n'
-            '/* BOTTOM NAV */\n'
-            '.bnav{position:absolute;bottom:0;left:0;right:0;height:80px;background:rgba(255,255,255,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;display:flex;align-items:flex-start;justify-content:space-around;padding-top:10px;box-shadow:0 -1px 0 rgba(0,0,0,0.07),0 -4px 20px rgba(0,0,0,0.05);}\n'
-            '.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:7px 12px 4px;border-radius:14px;transition:background 0.2s;flex:1;max-width:90px;}\n'
-            '.ni:hover{background:rgba(0,0,0,0.03);}\n'
-            '.nico{font-size:22px;transition:transform 0.2s;}\n'
-            '.ni.active .nico{transform:scale(1.12);}\n'
-            '.nlb{font-size:10px;font-weight:600;color:#C8C8C8;transition:color 0.2s;}\n'
-            '.ni.active .nlb{color:#FF8C00;}\n'
-            '.npip{width:5px;height:5px;background:#FF8C00;border-radius:50%;margin-top:1px;opacity:0;transition:opacity 0.2s;}\n'
-            '.ni.active .npip{opacity:1;}\n'
-            '#overlay{position:absolute;inset:0;z-index:30;pointer-events:none;}\n'
-            '\n'
-            '/* KEYFRAMES */\n'
-            '@keyframes shimmer{0%{left:-100%}100%{left:200%}}\n'
-            '@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}\n'
-            '@keyframes glow-pulse{0%,100%{opacity:0.7;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}\n'
-            '@keyframes sun-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}\n'
-            '@keyframes drop{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(190px) rotate(600deg)}}\n'
-            '@keyframes rise{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-80px)}}\n'
-            '</style>\n'
-            '</head>\n'
-            '<body>\n'
-            '<div id="game">\n'
-            '\n'
-            '  <!-- TOP BAR -->\n'
-            '  <div class="topbar">\n'
-            '    <div class="av">\U0001f411</div>\n'
-            '    <div class="ui">\n'
-            '      <div class="un">Bông Cần Cù</div>\n'
-            '      <div class="xt"><div class="xf"></div></div>\n'
-            '      <div class="xl">Cừu Kiên Trì · Cấp 5 · 65% ⭐</div>\n'
-            '    </div>\n'
-            '    <div class="lv">Lv.5 ⭐</div>\n'
-            '    <div class="cur">\U0001fa99 128.450</div>\n'
-            '    <div class="cur">\U0001f48e 320</div>\n'
-            '    <div class="bell">\U0001f514<div class="bd"></div></div>\n'
-            '  </div>\n'
-            '\n'
-            '  <!-- FARM SCENE -->\n'
-            '  <div class="scene">\n'
-            '    <div class="sky"></div>\n'
-            '    <div class="sun"><div class="sun-halo"></div></div>\n'
-            '\n'
-            '    <!-- Clouds -->\n'
-            '    <div class="cloud" style="top:26px;left:55px;">\n'
-            '      <div class="cb" style="width:92px;height:26px;">\n'
-            '        <div class="cp" style="width:46px;height:46px;top:-22px;left:12px;"></div>\n'
-            '        <div class="cp" style="width:32px;height:32px;top:-15px;left:48px;"></div>\n'
-            '        <div class="cp" style="width:24px;height:24px;top:-10px;left:4px;"></div>\n'
-            '      </div>\n'
-            '    </div>\n'
-            '    <div class="cloud" style="top:52px;left:250px;opacity:0.72;">\n'
-            '      <div class="cb" style="width:70px;height:20px;">\n'
-            '        <div class="cp" style="width:34px;height:34px;top:-16px;left:10px;"></div>\n'
-            '        <div class="cp" style="width:24px;height:24px;top:-10px;left:36px;"></div>\n'
-            '      </div>\n'
-            '    </div>\n'
-            '    <div class="cloud" style="top:18px;right:160px;opacity:0.88;">\n'
-            '      <div class="cb" style="width:108px;height:28px;">\n'
-            '        <div class="cp" style="width:54px;height:54px;top:-26px;left:16px;"></div>\n'
-            '        <div class="cp" style="width:38px;height:38px;top:-18px;left:60px;"></div>\n'
-            '        <div class="cp" style="width:28px;height:28px;top:-12px;left:4px;"></div>\n'
-            '      </div>\n'
-            '    </div>\n'
-            '\n'
-            '    <!-- Far hills -->\n'
-            '    <div class="hill" style="bottom:320px;left:-70px;width:290px;height:165px;background:#8ACE50;opacity:0.78;"></div>\n'
-            '    <div class="hill" style="bottom:310px;right:-50px;width:250px;height:145px;background:#7EC445;opacity:0.72;"></div>\n'
-            '    <div class="hill" style="bottom:330px;left:320px;width:210px;height:125px;background:#9AD860;opacity:0.62;"></div>\n'
-            '\n'
-            '    <!-- Far trees -->\n'
-            '    <div class="tree" style="bottom:342px;left:22px;"><div class="tt" style="width:34px;height:38px;background:#4A9C28;"></div><div class="tr" style="width:8px;height:18px;"></div></div>\n'
-            '    <div class="tree" style="bottom:352px;left:80px;"><div class="tt" style="width:44px;height:48px;background:#3E8C20;"></div><div class="tr" style="width:10px;height:21px;"></div></div>\n'
-            '    <div class="tree" style="bottom:338px;left:152px;"><div class="tt" style="width:32px;height:36px;background:#52A030;"></div><div class="tr" style="width:7px;height:15px;"></div></div>\n'
-            '    <div class="tree" style="bottom:345px;right:28px;"><div class="tt" style="width:40px;height:44px;background:#489824;"></div><div class="tr" style="width:9px;height:19px;"></div></div>\n'
-            '    <div class="tree" style="bottom:356px;right:94px;"><div class="tt" style="width:50px;height:54px;background:#3C8818;"></div><div class="tr" style="width:11px;height:23px;"></div></div>\n'
-            '\n'
-            '    <!-- Ground -->\n'
-            '    <div class="ground" style="height:348px;"></div>\n'
-            '\n'
-            '    <!-- Dirt paths -->\n'
-            '    <div class="path" style="bottom:178px;left:196px;width:155px;height:16px;transform:rotate(-4deg);opacity:0.75;"></div>\n'
-            '    <div class="path" style="bottom:180px;right:186px;width:148px;height:16px;transform:rotate(4deg);opacity:0.75;"></div>\n'
-            '\n'
-            '    <!-- Flowers -->\n'
-            '    <div class="fl" style="bottom:196px;left:262px;font-size:15px;">\U0001f33c</div>\n'
-            '    <div class="fl" style="bottom:206px;left:294px;font-size:13px;">\U0001f338</div>\n'
-            '    <div class="fl" style="bottom:220px;left:234px;font-size:14px;">\U0001f33b</div>\n'
-            '    <div class="fl" style="bottom:193px;right:255px;font-size:15px;">\U0001f33c</div>\n'
-            '    <div class="fl" style="bottom:204px;right:282px;font-size:13px;">\U0001f337</div>\n'
-            '    <div class="fl" style="bottom:218px;right:228px;font-size:14px;">\U0001f33a</div>\n'
-            '    <div class="fl" style="bottom:163px;left:315px;font-size:11px;">\U0001f33f</div>\n'
-            '    <div class="fl" style="bottom:162px;right:308px;font-size:11px;">\U0001f33f</div>\n'
-            '\n'
-            '    <!-- LEFT: House -->\n'
-            '    <div class="bsh" style="width:150px;height:28px;bottom:184px;left:26px;"></div>\n'
-            '    __HOUSE__\n'
-            '\n'
-            '    <!-- LEFT: Mailbox -->\n'
-            '    <div style="position:absolute;bottom:178px;left:200px;z-index:9;text-align:center;">\n'
-            '      <div style="font-size:24px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.2));">\U0001f4ec</div>\n'
-            '      <div style="width:5px;height:22px;background:#8B6340;margin:0 auto;border-radius:2px;margin-top:-2px;"></div>\n'
-            '    </div>\n'
-            '\n'
-            '    <!-- RIGHT: Windmill -->\n'
-            '    <div class="bsh" style="width:115px;height:22px;bottom:198px;right:46px;"></div>\n'
-            '    __WINDMILL__\n'
-            '\n'
-            '    <!-- RIGHT: Pond -->\n'
-            '    <div class="bsh" style="width:130px;height:18px;bottom:163px;right:148px;"></div>\n'
-            '    __POND__\n'
-            '\n'
-            '    <!-- RIGHT: Farm storage -->\n'
-            '    <div style="position:absolute;bottom:164px;right:58px;z-index:9;text-align:center;">\n'
-            '      <div style="background:linear-gradient(145deg,#A0682A,#8A5018);border-radius:8px;padding:8px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.22);">\n'
-            '        <div style="font-size:20px;">\U0001f33e</div>\n'
-            '        <div style="font-size:10px;color:#FFE08A;font-weight:700;margin-top:2px;">Kho: 12</div>\n'
-            '      </div>\n'
-            '    </div>\n'
-            '\n'
-            '    <!-- SHEEP HERO -->\n'
-            '    <div class="sheep-glow" style="width:270px;height:270px;bottom:118px;left:50%;margin-left:-135px;"></div>\n'
-            '    <div class="sheep-pad" style="width:210px;height:56px;bottom:155px;left:50%;margin-left:-105px;"></div>\n'
-            '    <div class="sheep-sh" style="width:140px;height:22px;bottom:160px;left:50%;margin-left:-70px;"></div>\n'
-            '    __SHEEP__\n'
-            '\n'
-            '    <!-- SPEECH BUBBLE -->\n'
-            '    <div class="bubble" id="bubble" style="top:18px;left:248px;">\n'
-            '      <div class="bn">Chào Hoa ☀️</div>\n'
-            '      <div class="bt">Hôm qua bạn giúp mình<br>lớn thêm 2% rồi \U0001f60a<br>Hôm nay mình nhớ bạn ❤️</div>\n'
-            '    </div>\n'
-            '\n'
-            '    <!-- DREAM CARD -->\n'
-            '    <div class="dc" style="top:14px;right:14px;min-width:175px;">\n'
-            '      <div class="dt">\U0001f3af Giấc mơ</div>\n'
-            '      <div class="dn">Quỹ du học</div>\n'
-            '      <div class="da">128.450đ</div>\n'
-            '      <div class="ds">/ 500.000đ mục tiêu</div>\n'
-            '      <div class="pt"><div class="pf" style="width:26%"></div></div>\n'
-            '      <div style="display:flex;justify-content:space-between;margin-top:5px;">\n'
-            '        <span style="font-size:10px;color:#bbb;">26% hoàn thành</span>\n'
-            '        <span style="font-size:10px;color:#FF8C00;font-weight:700;">⭐ +250 XP</span>\n'
-            '      </div>\n'
-            '    </div>\n'
-            '\n'
-            '    <!-- FRIENDS -->\n'
-            '    <div class="fc" style="bottom:96px;left:14px;">\n'
-            '      <div class="ft"><span class="od"></span> Bạn bè online (3)</div>\n'
-            '      <div class="frow">\n'
-            '        <div class="fri">__F1__<div class="fri-n">Bông Mập</div></div>\n'
-            '        <div class="fri">__F2__<div class="fri-n">Cậu Nhanh</div></div>\n'
-            '        <div class="fri">__F3__<div class="fri-n">Mây Tích</div></div>\n'
-            '      </div>\n'
-            '    </div>\n'
-            '\n'
-            '    <!-- FEED BUTTON -->\n'
-            '    <button class="feed-btn" onclick="feedSheep()">\n'
-            '      __CARROT__ Cho cỪu ăn 50.000đ\n'
-            '    </button>\n'
-            '\n'
-            '    <div id="overlay"></div>\n'
-            '  </div>\n'
-            '\n'
-            '  <!-- BOTTOM NAV -->\n'
-            '  <div class="bnav">\n'
-            '    <div class="ni active" onclick="setNav(this)"><div class="nico">\U0001f3e1</div><div class="nlb">Trang trại</div><div class="npip"></div></div>\n'
-            '    <div class="ni" onclick="setNav(this)"><div class="nico">\U0001f4d6</div><div class="nlb">Nhật ký</div><div class="npip"></div></div>\n'
-            '    <div class="ni" onclick="setNav(this)"><div class="nico">✨</div><div class="nlb">Giấc mơ</div><div class="npip"></div></div>\n'
-            '    <div class="ni" onclick="setNav(this)"><div class="nico">\U0001f3c6</div><div class="nlb">Thành tựu</div><div class="npip"></div></div>\n'
-            '    <div class="ni" onclick="setNav(this)"><div class="nico">\U0001f464</div><div class="nlb">Cá nhân</div><div class="npip"></div></div>\n'
-            '  </div>\n'
-            '\n'
-            '</div>\n'
-            '<script>\n'
-            'var msgs=[\n'
-            '  ["Chào Hoa ☀️","Hôm qua bạn giúp mình<br>lớn thêm 2% rồi \U0001f60a<br>Hôm nay mình nhớ bạn ❤️"],\n'
-            '  ["Ngon quá! \U0001f60b","Mình sẽ tiết kiệm<br>thêm cho bạn! \U0001f4aa"],\n'
-            '  ["Yay! \U0001f389","Bạn thật tuyệt vời<br>Hoa ơi! \U0001f49a"],\n'
-            '  ["Mình đầy năng lượng! \U0001f31f","Cảm ơn bạn đã nuôi mình ❤️"]\n'
-            '];\n'
-            'function feedSheep(){\n'
-            '  var s=document.getElementById("sheep");\n'
-            '  if(!s)return;\n'
-            '  s.style.transition="transform 0.25s cubic-bezier(.34,1.56,.64,1)";\n'
-            '  s.style.transform="translateX(-50%) scale(1.14) translateY(-10px)";\n'
-            '  setTimeout(function(){s.style.transform="translateX(-50%) scale(1)";},300);\n'
-            '  spawnConfetti();\n'
-            '  showCoin();\n'
-            '  var m=msgs[Math.floor(Math.random()*msgs.length)];\n'
-            '  var b=document.getElementById("bubble");\n'
-            '  if(b){b.innerHTML=\'<div class="bn">\'+m[0]+\'</div><div class="bt">\'+m[1]+\'</div>\';}\n'
-            '}\n'
-            'function spawnConfetti(){\n'
-            '  var ov=document.getElementById("overlay");\n'
-            '  if(!ov)return;\n'
-            '  var cols=["#FF6B6B","#FFD93D","#6BCF6B","#4ECDC4","#FF9500","#C77DFF","#FF85A1"];\n'
-            '  for(var i=0;i<20;i++){\n'
-            '    (function(){\n'
-            '      var el=document.createElement("div");\n'
-            '      var sz=6+Math.random()*8;\n'
-            '      el.style.cssText=[\n'
-            '        "position:absolute","width:"+sz+"px","height:"+sz+"px",\n'
-            '        "background:"+cols[Math.floor(Math.random()*cols.length)],\n'
-            '        "border-radius:"+(Math.random()>.5?"50%":"3px"),\n'
-            '        "left:"+(340+(Math.random()-.5)*220)+"px",\n'
-            '        "top:"+(260+(Math.random()-.5)*100)+"px",\n'
-            '        "animation:drop "+(0.8+Math.random()*0.8)+"s ease-out forwards",\n'
-            '        "pointer-events:none"\n'
-            '      ].join(";");\n'
-            '      ov.appendChild(el);\n'
-            '      setTimeout(function(){el.remove();},1700);\n'
-            '    })();\n'
-            '  }\n'
-            '}\n'
-            'function showCoin(){\n'
-            '  var sc=document.querySelector(".scene");\n'
-            '  if(!sc)return;\n'
-            '  var el=document.createElement("div");\n'
-            '  el.textContent="+50.000đ \U0001f33e";\n'
-            '  el.style.cssText=[\n'
-            '    "position:absolute","left:50%","bottom:290px",\n'
-            '    "font-size:16px","font-weight:800","color:#FF8C00",\n'
-            '    "text-shadow:0 2px 8px rgba(255,140,0,0.38)",\n'
-            '    "animation:rise 1.2s ease-out forwards",\n'
-            '    "pointer-events:none","white-space:nowrap"\n'
-            '  ].join(";");\n'
-            '  sc.appendChild(el);\n'
-            '  setTimeout(function(){el.remove();},1300);\n'
-            '}\n'
-            'function setNav(el){\n'
-            '  document.querySelectorAll(".ni").forEach(function(n){n.classList.remove("active");});\n'
-            '  el.classList.add("active");\n'
-            '}\n'
-            '</script>\n'
-            '</body>\n'
-            '</html>\n'
+        def _avatar(key, size=40, fallback="🐑"):
+            s = _src(key)
+            style = (
+                "width:" + str(size) + "px;height:" + str(size) + "px;"
+                "border-radius:50%;object-fit:cover;display:block;"
+                "mix-blend-mode:multiply;background:#f0efe8;"
+            )
+            if s:
+                return '<img src="' + s + '" style="' + style + '" onerror="this.style.display=\'none\'">'
+            return '<div style="' + style + 'background:#F5ECD8;display:flex;align-items:center;justify-content:center;font-size:' + str(size//2) + 'px;">' + fallback + '</div>'
+
+        _sheep_avatar = (
+            '<img id="sheep-hero" src="' + _src("sheep") + '" '
+            'style="width:130px;height:130px;object-fit:contain;mix-blend-mode:multiply;cursor:pointer;'
+            'transition:transform 0.2s cubic-bezier(.34,1.56,.64,1);" '
+            'onclick="feedSheep()" onerror="this.outerHTML=\'<div style=&quot;font-size:80px;cursor:pointer;&quot; id=&quot;sheep-hero&quot; onclick=&quot;feedSheep()&quot;>🐑</div>\'">'
+            if _src("sheep") else
+            '<div id="sheep-hero" style="font-size:80px;cursor:pointer;line-height:1;" onclick="feedSheep()">🐑</div>'
         )
 
-        _HTML = _HTML_TEMPLATE
-        _s_style = "position:absolute;width:185px;height:185px;object-fit:contain;bottom:158px;left:50%;transform:translateX(-50%);mix-blend-mode:multiply;filter:drop-shadow(0 14px 30px rgba(0,0,0,0.26));cursor:pointer;transition:transform 0.18s cubic-bezier(.34,1.56,.64,1);z-index:11;"
-        _sheep_html = _fi("sheep", _s_style)
-        if not _sheep_html:
-            _sheep_html = '<div id="sheep" style="' + _s_style + 'font-size:90px;display:flex;align-items:center;justify-content:center;" onclick="feedSheep()">\U0001f411</div>'
-        else:
-            _sheep_html = _sheep_html.replace('<img ', '<img id="sheep" onclick="feedSheep()" ', 1)
-        _HTML = _HTML.replace("__SHEEP__", _sheep_html)
-        _HTML = _HTML.replace("__HOUSE__", _fi("house", "position:absolute;width:168px;height:168px;object-fit:contain;bottom:182px;left:14px;mix-blend-mode:multiply;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22));z-index:8;"))
-        _HTML = _HTML.replace("__WINDMILL__", _fi("windmill", "position:absolute;width:135px;height:152px;object-fit:contain;bottom:194px;right:28px;mix-blend-mode:multiply;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22));z-index:8;"))
-        _HTML = _HTML.replace("__POND__", _fi("pond", "position:absolute;width:138px;height:104px;object-fit:contain;bottom:160px;right:140px;mix-blend-mode:multiply;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.2));z-index:8;"))
-        _f_style = "width:44px;height:44px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);mix-blend-mode:multiply;background:#f0f5f0;display:block;"
-        _HTML = _HTML.replace("__F1__", _fi("f1", _f_style))
-        _HTML = _HTML.replace("__F2__", _fi("f2", _f_style))
-        _HTML = _HTML.replace("__F3__", _fi("f3", _f_style))
-        _carrot = _fi("carrot", "width:22px;height:22px;object-fit:contain;mix-blend-mode:multiply;")
-        _HTML = _HTML.replace("__CARROT__", _carrot if _carrot else "\U0001f955")
+        _HTML = """\
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+html,body{width:100%;height:100%;overflow:hidden;background:#F7F5F0;font-family:-apple-system,'Helvetica Neue',sans-serif;}
+#app{width:860px;height:820px;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── TOP BAR ── */
+.topbar{
+  flex-shrink:0;height:66px;
+  background:rgba(255,255,255,0.97);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:center;padding:0 16px;gap:12px;
+  box-shadow:0 1px 0 rgba(0,0,0,0.07);
+  z-index:10;
+}
+.tb-av{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#FFE066,#FF9500);
+  border:2.5px solid #FFD700;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(255,150,0,0.3);
+}
+.tb-info{flex:1;min-width:0;}
+.tb-name{font-size:14px;font-weight:700;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-level{font-size:11px;color:#888;margin-top:1px;}
+.streak-pill{
+  display:flex;align-items:center;gap:4px;
+  background:linear-gradient(135deg,#FF6B00,#FF3B00);
+  color:white;border-radius:20px;padding:5px 10px;
+  font-size:12px;font-weight:800;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(255,80,0,0.35);
+}
+.cur-pill{
+  display:flex;align-items:center;gap:4px;
+  background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);
+  border-radius:20px;padding:5px 9px;
+  font-size:12px;font-weight:700;color:#1a1a1a;flex-shrink:0;
+}
+
+/* ── SCROLL AREA ── */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px 8px;}
+.scroll::-webkit-scrollbar{width:0;}
+
+/* ── SHEEP HERO CARD ── */
+.sheep-card{
+  background:white;border-radius:24px;
+  padding:20px 20px 16px;
+  box-shadow:0 2px 16px rgba(0,0,0,0.07);
+  display:flex;gap:16px;align-items:center;
+  margin-bottom:12px;
+}
+.sheep-circle{
+  width:150px;height:150px;flex-shrink:0;
+  border-radius:50%;
+  background:radial-gradient(circle,#FFF9E6 0%,#FFF0CC 70%,#FFE5A0 100%);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  box-shadow:0 0 0 4px rgba(255,180,0,0.15), 0 4px 20px rgba(255,150,0,0.2);
+}
+.sheep-pulse{
+  position:absolute;inset:-6px;border-radius:50%;
+  border:2px solid rgba(255,180,0,0.3);
+  animation:pulse-ring 2s ease-out infinite;
+}
+.sheep-info{flex:1;min-width:0;}
+.sheep-name{font-size:18px;font-weight:800;color:#1a1a1a;}
+.sheep-sub{font-size:12px;color:#888;margin-top:2px;margin-bottom:10px;}
+.xp-label{font-size:10px;color:#aaa;display:flex;justify-content:space-between;margin-bottom:4px;}
+.xp-track{height:8px;background:rgba(0,0,0,0.07);border-radius:10px;overflow:hidden;}
+.xp-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#FFB800,#FF6B00);position:relative;overflow:hidden;}
+.xp-fill::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,0.4);animation:shimmer 2s infinite;}
+.bubble-msg{
+  margin-top:10px;background:#F7F5F0;border-radius:14px;padding:8px 12px;
+  font-size:12px;color:#555;line-height:1.5;border-left:3px solid #FF9500;
+}
+
+/* ── CTAs ── */
+.cta-row{display:flex;gap:10px;margin-top:12px;}
+.btn-primary{
+  flex:1;background:linear-gradient(145deg,#FFD840,#FF8C00);
+  border:none;border-radius:16px;padding:13px 16px;
+  font-size:14px;font-weight:800;color:white;
+  text-shadow:0 1px 3px rgba(0,0,0,0.15);
+  box-shadow:0 4px 16px rgba(255,140,0,0.45),inset 0 1px 0 rgba(255,255,255,0.25);
+  cursor:pointer;transition:all 0.15s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-primary:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px rgba(255,140,0,0.55);}
+.btn-primary:active{transform:scale(0.97);}
+.btn-secondary{
+  flex:1;background:white;
+  border:1.5px solid rgba(0,0,0,0.1);border-radius:16px;padding:13px 16px;
+  font-size:14px;font-weight:700;color:#1a1a1a;
+  cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-secondary:hover{background:#F5F5F5;border-color:rgba(0,0,0,0.15);}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.sec-title{font-size:15px;font-weight:800;color:#1a1a1a;}
+.sec-link{font-size:12px;font-weight:600;color:#FF8C00;cursor:pointer;}
+
+/* ── ACTIVITY FEED ── */
+.feed-card{
+  background:white;border-radius:20px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.06);
+  overflow:hidden;margin-bottom:12px;
+}
+.feed-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;
+  border-bottom:1px solid rgba(0,0,0,0.05);
+  transition:background 0.15s;cursor:pointer;
+}
+.feed-item:last-child{border-bottom:none;}
+.feed-item:hover{background:rgba(0,0,0,0.02);}
+.feed-av-wrap{position:relative;flex-shrink:0;}
+.feed-badge{
+  position:absolute;bottom:-2px;right:-2px;
+  width:18px;height:18px;border-radius:50%;
+  background:white;display:flex;align-items:center;justify-content:center;
+  font-size:10px;box-shadow:0 1px 4px rgba(0,0,0,0.15);
+}
+.feed-text{flex:1;min-width:0;}
+.feed-main{font-size:13px;color:#1a1a1a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.feed-sub{font-size:11px;color:#aaa;margin-top:2px;}
+.feed-action{
+  flex-shrink:0;
+  background:rgba(255,140,0,0.1);color:#FF8C00;
+  border:none;border-radius:12px;padding:6px 12px;
+  font-size:12px;font-weight:700;cursor:pointer;
+  transition:all 0.15s;white-space:nowrap;
+}
+.feed-action:hover{background:rgba(255,140,0,0.2);}
+.feed-action.green{background:rgba(52,199,89,0.1);color:#28A745;}
+.feed-action.green:hover{background:rgba(52,199,89,0.2);}
+.feed-action.blue{background:rgba(0,122,255,0.1);color:#0077FF;}
+.feed-action.blue:hover{background:rgba(0,122,255,0.2);}
+
+/* Friend quick-actions */
+.quick-actions{
+  display:flex;gap:8px;padding:12px 16px 14px;
+  border-top:1px solid rgba(0,0,0,0.05);
+}
+.qa-btn{
+  flex:1;background:#F7F5F0;border:none;border-radius:14px;
+  padding:9px 6px;font-size:11px;font-weight:700;color:#555;
+  cursor:pointer;transition:all 0.15s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.qa-btn:hover{background:#EEEAE0;color:#1a1a1a;}
+.qa-ico{font-size:17px;}
+
+/* ── REFERRAL BANNER ── */
+.referral-card{
+  background:linear-gradient(135deg,#667EEA 0%,#764BA2 100%);
+  border-radius:20px;padding:18px 20px;
+  margin-bottom:12px;
+  box-shadow:0 4px 20px rgba(102,126,234,0.4);
+  display:flex;align-items:center;gap:16px;
+  position:relative;overflow:hidden;
+}
+.referral-card::before{
+  content:'';position:absolute;
+  top:-40px;right:-40px;
+  width:140px;height:140px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+}
+.referral-card::after{
+  content:'';position:absolute;
+  bottom:-60px;right:60px;
+  width:120px;height:120px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.05);
+}
+.referral-ico{font-size:36px;flex-shrink:0;z-index:1;}
+.referral-text{flex:1;z-index:1;}
+.ref-title{font-size:15px;font-weight:800;color:white;}
+.ref-rewards{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.ref-chip{
+  background:rgba(255,255,255,0.2);color:white;
+  border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;
+}
+.ref-btn{
+  z-index:1;flex-shrink:0;
+  background:white;color:#667EEA;
+  border:none;border-radius:14px;padding:10px 16px;
+  font-size:13px;font-weight:800;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  transition:all 0.15s;white-space:nowrap;
+}
+.ref-btn:hover{transform:scale(1.04);}
+
+/* ── GIFT SECTION ── */
+.gift-card{
+  background:white;border-radius:20px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.06);
+  padding:14px 16px 16px;
+  margin-bottom:8px;
+}
+.gift-scroll{
+  display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;
+}
+.gift-scroll::-webkit-scrollbar{height:0;}
+.gift-item{
+  flex-shrink:0;
+  background:#F7F5F0;border-radius:16px;
+  padding:10px;width:70px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;transition:all 0.15s;
+  border:2px solid transparent;
+}
+.gift-item:hover,.gift-item.selected{background:#FFF5E6;border-color:#FF9500;}
+.gift-ico{font-size:26px;}
+.gift-name{font-size:10px;font-weight:600;color:#777;text-align:center;line-height:1.2;}
+.gift-price{font-size:10px;color:#FF8C00;font-weight:700;}
+.btn-gift{
+  width:100%;background:linear-gradient(145deg,#34C759,#28A745);
+  border:none;border-radius:14px;padding:12px;
+  font-size:14px;font-weight:800;color:white;cursor:pointer;
+  box-shadow:0 4px 14px rgba(52,199,89,0.4);
+  transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-gift:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(52,199,89,0.5);}
+
+/* ── BOTTOM NAV ── */
+.bnav{
+  flex-shrink:0;height:80px;
+  background:rgba(255,255,255,0.98);
+  backdrop-filter:blur(20px);
+  display:flex;align-items:flex-start;justify-content:space-around;
+  padding-top:10px;
+  box-shadow:0 -1px 0 rgba(0,0,0,0.07);
+  z-index:10;
+}
+.ni{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;padding:7px 10px 4px;border-radius:14px;
+  transition:background 0.2s;flex:1;max-width:80px;
+  position:relative;
+}
+.ni:hover{background:rgba(0,0,0,0.03);}
+.nico{font-size:22px;transition:transform 0.2s;}
+.ni.active .nico{transform:scale(1.1);}
+.nlb{font-size:10px;font-weight:600;color:#C0C0C0;transition:color 0.2s;}
+.ni.active .nlb{color:#FF8C00;}
+.npip{width:5px;height:5px;background:#FF8C00;border-radius:50%;margin-top:2px;opacity:0;transition:opacity 0.2s;}
+.ni.active .npip{opacity:1;}
+.nbadge{
+  position:absolute;top:4px;right:8px;
+  background:#FF3B30;color:white;border-radius:10px;
+  font-size:9px;font-weight:800;padding:1px 5px;
+  min-width:16px;text-align:center;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes shimmer{0%{left:-100%}100%{left:200%}}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.18);opacity:0}}
+@keyframes rise{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-200%)}}
+@keyframes confetti-drop{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(160px) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(0.8);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── TOP BAR ── -->
+  <div class="topbar">
+    <div class="tb-av">🐑</div>
+    <div class="tb-info">
+      <div class="tb-name">Bông Cần Cù</div>
+      <div class="tb-level">Cừu Kiên Trì · Cấp 5</div>
+    </div>
+    <div class="streak-pill">🔥 7 ngày</div>
+    <div class="cur-pill">🪙 128.450</div>
+    <div class="cur-pill">💎 320</div>
+  </div>
+
+  <!-- ── SCROLL CONTENT ── -->
+  <div class="scroll">
+
+    <!-- Sheep Hero -->
+    <div class="sheep-card">
+      <div class="sheep-circle">
+        <div class="sheep-pulse"></div>
+        __SHEEP_HERO__
+      </div>
+      <div class="sheep-info">
+        <div class="sheep-name">Bông Cần Cù</div>
+        <div class="sheep-sub">Cừu Kiên Trì · Cấp 5 → 6</div>
+        <div class="xp-label">
+          <span>XP: 65%</span>
+          <span style="color:#FF8C00;font-weight:700;">+250 XP tiếp theo</span>
+        </div>
+        <div class="xp-track"><div class="xp-fill" style="width:65%"></div></div>
+        <div class="bubble-msg" id="sheep-msg">
+          Chào Hoa ☀️ Hôm nay mình nhớ bạn lắm đó ❤️
+        </div>
+        <div class="cta-row">
+          <button class="btn-primary" onclick="feedSheep()">🥕 Cho ăn 50.000đ</button>
+          <button class="btn-secondary" onclick="chatSheep()">💬 Trò chuyện</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="sec-hdr">
+      <div class="sec-title">👥 Hoạt động bạn bè</div>
+      <div class="sec-link" onclick="setNav(document.querySelectorAll('.ni')[1])">Xem tất cả →</div>
+    </div>
+    <div class="feed-card">
+      <div class="feed-item" onclick="celebrate(this)">
+        <div class="feed-av-wrap">
+          __F1_AVATAR__
+          <div class="feed-badge">🔥</div>
+        </div>
+        <div class="feed-text">
+          <div class="feed-main">Bông Mập đạt Level 6!</div>
+          <div class="feed-sub">2 phút trước · Tiết kiệm 500k/tuần</div>
+        </div>
+        <button class="feed-action" onclick="event.stopPropagation();toast('Đã chúc mừng! 🎉')">Chúc mừng</button>
+      </div>
+      <div class="feed-item" onclick="openGift()">
+        <div class="feed-av-wrap">
+          __F2_AVATAR__
+          <div class="feed-badge">🎁</div>
+        </div>
+        <div class="feed-text">
+          <div class="feed-main">Mây Tích gửi bạn 1 phần cỏ</div>
+          <div class="feed-sub">15 phút trước · Nhận trước 23:59</div>
+        </div>
+        <button class="feed-action green" onclick="event.stopPropagation();toast('Đã nhận quà! 🎁')">Nhận quà</button>
+      </div>
+      <div class="feed-item" onclick="">
+        <div class="feed-av-wrap">
+          __F3_AVATAR__
+          <div class="feed-badge">❤️</div>
+        </div>
+        <div class="feed-text">
+          <div class="feed-main">Cậu Nhanh thích cừu của bạn</div>
+          <div class="feed-sub">1 giờ trước · Bấm để cảm ơn</div>
+        </div>
+        <button class="feed-action blue" onclick="event.stopPropagation();toast('Đã cảm ơn! ❤️')">Cảm ơn</button>
+      </div>
+      <div class="quick-actions">
+        <button class="qa-btn" onclick="toast('Mở Chat...')"><div class="qa-ico">💬</div>Chat</button>
+        <button class="qa-btn" onclick="openGift()"><div class="qa-ico">🎁</div>Tặng quà</button>
+        <button class="qa-btn" onclick="toast('Đang mở nông trại...')"><div class="qa-ico">🏡</div>Thăm nông trại</button>
+        <button class="qa-btn" onclick="toast('Đang tải bảng xếp hạng...')"><div class="qa-ico">🏆</div>Xếp hạng</button>
+      </div>
+    </div>
+
+    <!-- Referral Banner -->
+    <div class="referral-card">
+      <div class="referral-ico">🐑</div>
+      <div class="referral-text">
+        <div class="ref-title">Mời bạn mới nuôi cừu</div>
+        <div class="ref-rewards">
+          <span class="ref-chip">+500 XP</span>
+          <span class="ref-chip">+10 💎</span>
+          <span class="ref-chip">Skin độc quyền 🌟</span>
+        </div>
+      </div>
+      <button class="ref-btn" onclick="toast('Đã sao chép link mời! 🔗')">Mời ngay</button>
+    </div>
+
+    <!-- Gift Section -->
+    <div class="sec-hdr">
+      <div class="sec-title">🎁 Gửi quà cho bạn bè</div>
+      <div class="sec-link">Lịch sử →</div>
+    </div>
+    <div class="gift-card" id="gift-section">
+      <div class="gift-scroll">
+        <div class="gift-item selected" onclick="selectGift(this)">
+          <div class="gift-ico">🌿</div>
+          <div class="gift-name">Cỏ tươi</div>
+          <div class="gift-price">Miễn phí</div>
+        </div>
+        <div class="gift-item" onclick="selectGift(this)">
+          <div class="gift-ico">🎩</div>
+          <div class="gift-name">Mũ dạ</div>
+          <div class="gift-price">50 💎</div>
+        </div>
+        <div class="gift-item" onclick="selectGift(this)">
+          <div class="gift-ico">🧥</div>
+          <div class="gift-name">Áo ấm</div>
+          <div class="gift-price">80 💎</div>
+        </div>
+        <div class="gift-item" onclick="selectGift(this)">
+          <div class="gift-ico">🌸</div>
+          <div class="gift-name">Hoa nhỏ</div>
+          <div class="gift-price">20 💎</div>
+        </div>
+        <div class="gift-item" onclick="selectGift(this)">
+          <div class="gift-ico">⚡</div>
+          <div class="gift-name">XP Boost</div>
+          <div class="gift-price">100 💎</div>
+        </div>
+        <div class="gift-item" onclick="selectGift(this)">
+          <div class="gift-ico">🍎</div>
+          <div class="gift-name">Táo đỏ</div>
+          <div class="gift-price">30 💎</div>
+        </div>
+      </div>
+      <button class="btn-gift" onclick="sendGift()">🎁 Gửi tặng cho Bông Mập</button>
+    </div>
+
+  </div>
+
+  <!-- ── BOTTOM NAV ── -->
+  <div class="bnav">
+    <div class="ni active" onclick="setNav(this)">
+      <div class="nico">🏡</div>
+      <div class="nlb">Nông trại</div>
+      <div class="npip"></div>
+    </div>
+    <div class="ni" onclick="setNav(this)">
+      <div class="nico">👥</div>
+      <div class="nlb">Bạn bè</div>
+      <div class="npip"></div>
+      <div class="nbadge">3</div>
+    </div>
+    <div class="ni" onclick="setNav(this)">
+      <div class="nico">💬</div>
+      <div class="nlb">Chat</div>
+      <div class="npip"></div>
+      <div class="nbadge">1</div>
+    </div>
+    <div class="ni" onclick="setNav(this)">
+      <div class="nico">✨</div>
+      <div class="nlb">Giấc mơ</div>
+      <div class="npip"></div>
+    </div>
+    <div class="ni" onclick="setNav(this)">
+      <div class="nico">👤</div>
+      <div class="nlb">Cá nhân</div>
+      <div class="npip"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,30,0.88);color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all 0.3s;z-index:50;pointer-events:none;white-space:nowrap;"></div>
+
+<!-- CONFETTI -->
+<div id="confetti-layer" style="position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden;"></div>
+
+<script>
+var feedMsgs=[
+  "Ngon quá! Cảm ơn bạn Hoa 😊",
+  "Mình đầy năng lượng rồi! 💪",
+  "Yay! Tiết kiệm thêm rồi 🎉",
+  "Mình sẽ cố gắng hơn cho bạn! 🌟"
+];
+
+function feedSheep(){
+  var s=document.getElementById('sheep-hero');
+  if(s){
+    s.style.transition='transform 0.25s cubic-bezier(.34,1.56,.64,1)';
+    s.style.transform='scale(1.18)';
+    setTimeout(function(){s.style.transform='scale(1)';},300);
+  }
+  spawnConfetti(10);
+  var msg=feedMsgs[Math.floor(Math.random()*feedMsgs.length)];
+  document.getElementById('sheep-msg').textContent=msg;
+  toast('+50.000đ tiết kiệm! 🥕');
+}
+
+function chatSheep(){toast('Đang mở trò chuyện với Bông... 💬');}
+function openGift(){document.getElementById('gift-section').scrollIntoView({behavior:'smooth'});toast('Chọn quà cho bạn bè! 🎁');}
+function celebrate(el){el.style.background='rgba(255,140,0,0.04)';setTimeout(function(){el.style.background='';},300);spawnConfetti(6);}
+
+function sendGift(){
+  spawnConfetti(15);
+  toast('Đã gửi quà cho Bông Mập! 🎁');
+}
+
+function selectGift(el){
+  document.querySelectorAll('.gift-item').forEach(function(g){g.classList.remove('selected');});
+  el.classList.add('selected');
+}
+
+function setNav(el){
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
+  el.classList.add('active');
+}
+
+var _toast;
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(_toast);
+  _toast=setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(8px)';},2200);
+}
+
+function spawnConfetti(n){
+  var layer=document.getElementById('confetti-layer');
+  var cols=["#FF6B6B","#FFD93D","#6BCF6B","#4ECDC4","#FF9500","#C77DFF","#FF85A1"];
+  for(var i=0;i<(n||12);i++){
+    (function(){
+      var el=document.createElement('div');
+      var sz=6+Math.random()*8;
+      el.style.cssText=[
+        'position:absolute',
+        'width:'+sz+'px','height:'+sz+'px',
+        'background:'+cols[Math.floor(Math.random()*cols.length)],
+        'border-radius:'+(Math.random()>.5?'50%':'3px'),
+        'left:'+(Math.random()*860)+'px',
+        'top:'+(Math.random()*200+100)+'px',
+        'animation:confetti-drop '+(0.8+Math.random()*0.9)+'s ease-out forwards',
+        'pointer-events:none'
+      ].join(';');
+      layer.appendChild(el);
+      setTimeout(function(){el.remove();},1800);
+    })();
+  }
+}
+</script>
+</body>
+</html>
+"""
+
+        _HTML = _HTML.replace("__SHEEP_HERO__", _sheep_avatar)
+        _HTML = _HTML.replace("__F1_AVATAR__",  _avatar("f1", 44, "🐑"))
+        _HTML = _HTML.replace("__F2_AVATAR__",  _avatar("f2", 44, "🐑"))
+        _HTML = _HTML.replace("__F3_AVATAR__",  _avatar("f3", 44, "🐑"))
 
         import streamlit.components.v1 as components
         components.html(_HTML, height=820, scrolling=False)
