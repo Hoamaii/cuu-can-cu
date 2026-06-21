@@ -2010,30 +2010,47 @@ with tab4:
         import os as _os
 
         # ── Asset loader ──
-        def _load_asset(rel_path: str) -> str:
-            """Return base64 data-URI for asset, or empty string if missing."""
+        _GH_RAW = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
+        _GH_MAP = {
+            "farm_bg"   : f"{_GH_RAW}/farm_bg_day.png",
+            "sheep_main": f"{_GH_RAW}/sheep_adult.png",
+            "sheep_f"   : f"{_GH_RAW}/friend_sheep_1.png",
+            "sheep_m"   : f"{_GH_RAW}/friend_sheep_2.png",
+            "house"     : f"{_GH_RAW}/house_lv1.png",
+            "windmill"  : f"{_GH_RAW}/windmill.png",
+            "pond"      : f"{_GH_RAW}/lake.png",
+            "carrot"    : f"{_GH_RAW}/carrot.png",
+            "gift"      : f"{_GH_RAW}/gift_box.png",
+            "f1"        : f"{_GH_RAW}/friend_sheep_1.png",
+            "f2"        : f"{_GH_RAW}/friend_sheep_2.png",
+            "f3"        : f"{_GH_RAW}/friend_sheep_3.png",
+        }
+
+        def _load_asset(rel_path: str, gh_key: str = "") -> str:
+            """Return base64 data-URI if local file exists, else GitHub raw URL."""
             full = _os.path.join(_os.path.dirname(__file__), rel_path)
-            if not _os.path.exists(full):
-                return ""
-            with open(full, "rb") as _f:
-                _data = base64.b64encode(_f.read()).decode()
-            ext = rel_path.rsplit(".", 1)[-1].lower()
-            mime = "image/png" if ext == "png" else f"image/{ext}"
-            return f"data:{mime};base64,{_data}"
+            if _os.path.exists(full):
+                with open(full, "rb") as _f:
+                    _data = base64.b64encode(_f.read()).decode()
+                ext = rel_path.rsplit(".", 1)[-1].lower()
+                mime = "image/png" if ext == "png" else f"image/{ext}"
+                return f"data:{mime};base64,{_data}"
+            # Fallback: use GitHub raw URL directly
+            return _GH_MAP.get(gh_key, "")
 
         _A = {
-            "farm_bg"   : _load_asset("assets/farm/farm_bg.png"),
-            "sheep_main": _load_asset("assets/sheep/sheep_main.png"),
-            "sheep_f"   : _load_asset("assets/sheep/sheep_female.png"),
-            "sheep_m"   : _load_asset("assets/sheep/sheep_male.png"),
-            "house"     : _load_asset("assets/buildings/house.png"),
-            "windmill"  : _load_asset("assets/buildings/windmill.png"),
-            "pond"      : _load_asset("assets/buildings/pond.png"),
-            "carrot"    : _load_asset("assets/items/carrot.png"),
-            "gift"      : _load_asset("assets/items/gift_box.png"),
-            "f1"        : _load_asset("assets/friends/friend1.png"),
-            "f2"        : _load_asset("assets/friends/friend2.png"),
-            "f3"        : _load_asset("assets/friends/friend3.png"),
+            "farm_bg"   : _load_asset("assets/farm/farm_bg.png",        "farm_bg"),
+            "sheep_main": _load_asset("assets/sheep/sheep_main.png",     "sheep_main"),
+            "sheep_f"   : _load_asset("assets/sheep/sheep_female.png",   "sheep_f"),
+            "sheep_m"   : _load_asset("assets/sheep/sheep_male.png",     "sheep_m"),
+            "house"     : _load_asset("assets/buildings/house.png",      "house"),
+            "windmill"  : _load_asset("assets/buildings/windmill.png",   "windmill"),
+            "pond"      : _load_asset("assets/buildings/pond.png",       "pond"),
+            "carrot"    : _load_asset("assets/items/carrot.png",         "carrot"),
+            "gift"      : _load_asset("assets/items/gift_box.png",       "gift"),
+            "f1"        : _load_asset("assets/friends/friend1.png",      "f1"),
+            "f2"        : _load_asset("assets/friends/friend2.png",      "f2"),
+            "f3"        : _load_asset("assets/friends/friend3.png",      "f3"),
         }
 
         # ── Missing-asset notice ──
