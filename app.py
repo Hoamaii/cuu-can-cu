@@ -945,13 +945,14 @@ with st.sidebar:
 
 
 # ═══════════════════════════════════════════════════════
-# 4 TABS NAVIGATION
+# 5 TABS NAVIGATION
 # ═══════════════════════════════════════════════════════
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "💬 Chia sẻ cảm xúc",
     "📔 Nhật ký tâm sự",
     "❤️ Hành trình nuôi cừu",
     "🧬 Hồ sơ tài chính",
+    "🎨 Xem Thiết Kế",
 ])
 
 
@@ -2003,3 +2004,69 @@ with tab4:
             "Cừu Cần Cù KHÔNG phải công ty tư vấn đầu tư được cấp phép. "
             "Hãy tự nghiên cứu và/hoặc tham khảo chuyên gia trước khi ra quyết định đầu tư."
         )
+
+    # ── TAB 5: Design Demo ──────────────────────────────────────────────
+    with tab5:
+        GITHUB_RAW = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
+
+        st.markdown("""<div style='text-align:center; padding: 24px 0 8px;'>
+            <div style='font-size:2.2rem;'>🐑</div>
+            <h1 style='color:#C4607F; font-size:1.9rem; margin:6px 0 4px;'>
+                Cừu Cần Cù — Design Vision</h1>
+            <p style='color:#888; font-size:0.95rem; margin:0;'>
+                Đây là thiết kế đích đến · Mỗi màn hình được build dần theo roadmap
+            </p></div>""", unsafe_allow_html=True)
+
+        st.divider()
+
+        st.markdown('<p style="font-size:1.1rem;font-weight:800;color:#C4607F;">🏡 Màn hình 1 — Trang Trại Chính</p>', unsafe_allow_html=True)
+        st.caption("Sheep farm · AI chat · Bảng ăn hàng ngày · Cảm xúc tài chính")
+        st.image(f"{GITHUB_RAW}/demo_main.png", use_container_width=True, caption="Main screen — Trang trại & Chat AI")
+
+        st.divider()
+
+        st.markdown('<p style="font-size:1.1rem;font-weight:800;color:#C4607F;">🌟 Concept — 3 Kịch Bản Chính</p>', unsafe_allow_html=True)
+        st.caption("Tiết kiệm · Đầu tư · Vượt khó — 3 hành trình người dùng")
+        st.image(f"{GITHUB_RAW}/demo_scenarios.png", use_container_width=True, caption="3 main scenarios")
+
+        st.divider()
+
+        st.markdown('<p style="font-size:1.1rem;font-weight:800;color:#C4607F;">👯 Màn hình — Bạn Bè & Cộng Đồng</p>', unsafe_allow_html=True)
+        st.caption("Xem cừu bạn bè · Gửi cỏ · Cheer lẫn nhau")
+        st.image(f"{GITHUB_RAW}/demo_friends.png", use_container_width=True, caption="Friends feed")
+
+        st.divider()
+
+        st.markdown('<p style="font-size:1.1rem;font-weight:800;color:#C4607F;">💬 Màn hình — Hội Nhóm & Chat</p>', unsafe_allow_html=True)
+        st.caption("Community chat · Group missions · Chia sẻ kinh nghiệm")
+        st.image(f"{GITHUB_RAW}/demo_community.png", use_container_width=True, caption="Community & group chat")
+
+        st.divider()
+
+        st.markdown('<p style="font-size:1.1rem;font-weight:800;color:#C4607F;">🚀 Màn hình — Crowdfunding Ước Mơ</p>', unsafe_allow_html=True)
+        st.caption("Đăng dream · Cộng đồng góp vốn · Theo dõi tiến độ")
+        st.image(f"{GITHUB_RAW}/demo_crowdfund.png", use_container_width=True, caption="Dream crowdfunding")
+
+        st.divider()
+
+        rm1, rm2, rm3 = st.columns(3)
+        with rm1:
+            st.success("✅ **MVP hiện tại**\n\nChat AI · Cho cừu ăn · Nhật ký · Growth stages")
+        with rm2:
+            st.warning("🔄 **Phase 2 — Social**\n\nBạn bè · Hội nhóm · Daily quest · Streak")
+        with rm3:
+            st.info("🚀 **Phase 3 — Game**\n\nFarm animation · Crowdfunding · Mobile app")
+
+        st.divider()
+
+        with st.expander("📁 Hướng dẫn đặt tên ảnh trong assets/"):
+            st.code("""assets/
+├── mascot.png
+├── sheep_baby.png
+├── sheep_adult.png
+├── demo_main.png
+├── demo_scenarios.png
+├── demo_friends.png
+├── demo_community.png
+└── demo_crowdfund.png""", language="text")
+
