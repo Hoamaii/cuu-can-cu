@@ -2609,11 +2609,24 @@ function copyCode() {
     )
     _inv_local3 = _os3.path.join(_os3.path.dirname(__file__), "assets", "invite_friend.png")
     _inv_gh3    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets/invite_friend.png"
-    if _os3.path.exists(_inv_local3):
-        st.image(_inv_local3, use_container_width=True)
-    else:
+    try:
+        # Validate it's a real image before passing to st.image
+        from PIL import Image as _PIL_Img
+        if _os3.path.exists(_inv_local3):
+            _PIL_Img.open(_inv_local3).verify()   # raises if corrupted
+            st.image(_inv_local3, use_container_width=True)
+        else:
+            raise FileNotFoundError
+    except Exception:
+        # Local file missing or corrupted — load from GitHub directly
         try:
-            st.image(_inv_gh3, use_container_width=True)
+            import urllib.request as _ur_inv
+            import io as _io_inv
+            from PIL import Image as _PIL_Inv
+            _req_inv = _ur_inv.Request(_inv_gh3, headers={"User-Agent": "Mozilla/5.0"})
+            with _ur_inv.urlopen(_req_inv, timeout=8) as _r_inv:
+                _img_bytes = _r_inv.read()
+            st.image(_img_bytes, use_container_width=True)
         except Exception:
             st.markdown(
                 '<div style="background:linear-gradient(135deg,#f8f4ff,#f0f8ff);'
