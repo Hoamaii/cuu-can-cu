@@ -1986,701 +1986,597 @@ with tab3:
     import os as _os3
     import streamlit.components.v1 as _comp3
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # SECTION 1 — HERO: community_banner.png full-width
+    # ──────────────────────────────────────────────────────────────────────────
+    _banner3 = _os3.path.join(_os3.path.dirname(__file__), "assets", "community_banner.png")
+
+    # Round the Streamlit image widget
+    st.markdown(
+        """<style>
+        div[data-testid="stImage"] > img {
+            border-radius: 20px !important;
+            max-height: 320px;
+            object-fit: cover;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+        </style>""",
+        unsafe_allow_html=True,
+    )
+
+    if _os3.path.exists(_banner3):
+        st.image(_banner3, use_container_width=True)
+    else:
+        # Fallback: text-only hero card (no gradient drawing)
+        st.markdown(
+            """<div style="
+                background:#1A1A2E;
+                border-radius:20px;
+                padding:48px 32px;
+                text-align:center;
+                margin-bottom:16px;
+            ">
+            <div style="font-size:3.5rem;margin-bottom:12px;">🐑🐑🐑</div>
+            <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:8px;">
+                👥 Cộng đồng Cừu Cần Cù
+            </div>
+            <div style="font-size:0.9rem;color:rgba(255,255,255,0.65);">
+                Ảnh cộng đồng sẽ hiển thị sau khi upload assets/community_banner.png
+            </div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # Hero caption card — below the image
+    st.markdown(
+        """<div style="
+            background:#fff;
+            border:1.5px solid #f0f0f5;
+            border-radius:18px;
+            padding:20px 24px;
+            margin: 10px 0 8px;
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+        ">
+            <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;letter-spacing:-0.02em;">
+                👥 Cộng đồng Cừu Cần Cù
+            </div>
+            <div style="font-size:0.85rem;color:#5a4a9a;font-weight:600;">
+                12.847 cừu đang cùng nhau theo đuổi giấc mơ
+            </div>
+            <div style="font-size:0.82rem;color:#888;font-style:italic;margin-top:2px;">
+                "Không ai tiết kiệm một mình."
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Community stats row
+    _s1, _s2, _s3 = st.columns(3)
+    _s1.metric("🐑 Thành viên", "12.847")
+    _s2.metric("⚡ Hoạt động hôm nay", "4.230")
+    _s3.metric("🏆 Giấc mơ hoàn thành", "892")
+
+    # Primary CTA
+    _ca, _cb, _cc = st.columns([1, 2, 1])
+    with _cb:
+        if st.button("👥 Tham gia hội quán", use_container_width=True, type="primary", key="comm_join_hero"):
+            st.success("🐑 Chào mừng bạn đến với đàn cừu!")
+
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # SECTIONS 2–5 via components.html for premium social UX
+    # ──────────────────────────────────────────────────────────────────────────
+
+    # Load friend avatars
     _GH3 = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
 
-    def _load_comm_asset(local_path, gh_url=""):
+    def _lca3(local_path, gh_url=""):
         full = _os3.path.join(_os3.path.dirname(__file__), local_path)
         if _os3.path.exists(full):
-            import base64 as _b64m
+            import base64 as _b3
             with open(full, "rb") as _f:
-                _d = _b64m.b64encode(_f.read()).decode()
+                _d = _b3.b64encode(_f.read()).decode()
             ext = local_path.rsplit(".", 1)[-1].lower()
             mime = {"png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp"}.get(ext,"image/png")
-            return f"data:{mime};base64,{_d}"
+            return "data:" + mime + ";base64," + _d
         return gh_url
 
-    # ── load assets ──────────────────────────────────────────────────────────
-    _hero_src    = _load_comm_asset("assets/community/community_hero.png",   _GH3 + "/community_hero.png")
-    _sheep_src3  = _load_comm_asset("assets/sheep/sheep_main.png",           _GH3 + "/sheep_adult.png")
-    _f1_src3     = _load_comm_asset("assets/friends/friend1.png",            _GH3 + "/friend_sheep_1.png")
-    _f2_src3     = _load_comm_asset("assets/friends/friend2.png",            _GH3 + "/friend_sheep_2.png")
-    _f3_src3     = _load_comm_asset("assets/friends/friend3.png",            _GH3 + "/friend_sheep_3.png")
+    _f1s3 = _lca3("assets/friends/friend1.png", _GH3 + "/friend_sheep_1.png")
+    _f2s3 = _lca3("assets/friends/friend2.png", _GH3 + "/friend_sheep_2.png")
+    _f3s3 = _lca3("assets/friends/friend3.png", _GH3 + "/friend_sheep_3.png")
 
-    # ── user data ─────────────────────────────────────────────────────────────
-    _uname3  = mem.get("name", "") or "Bạn"
-    _streak3 = mem.get("streak", 0)
-    _saved3  = mem.get("total_saved", 0)
-    _dreams3 = mem.get("dreams", [])
-    _dream3_name = _dreams3[0]["name"].title() if _dreams3 else "Giấc mơ của tôi"
-    _key3, _sname3, _lv3, _ldesc3, _ = (
-        get_growth_stage(_saved3) if _saved3 >= 0 else ("baby","Cừu Sơ Sinh",1,"","")
-    )
-
-    # ── avatar helper (inline, no function call overhead) ─────────────────────
-    def _av3(src, size=48, fallback="🐑"):
-        base_s = f"width:{size}px;height:{size}px;border-radius:50%;object-fit:cover;flex-shrink:0;"
-        if src and not src.startswith("http"):
-            return f'<img src="{src}" style="{base_s}" onerror="this.parentNode.innerHTML=\'<div style=&quot;{base_s}display:flex;align-items:center;justify-content:center;font-size:{size//2}px;&quot;>{fallback}</div>\'">'
+    def _av3(src, fb="🐑"):
+        s = "width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"
         if src:
-            return f'<img src="{src}" style="{base_s}">'
-        return f'<div style="{base_s}display:flex;align-items:center;justify-content:center;font-size:{size//2}px;">{fallback}</div>'
+            return '<img src="' + src + '" style="' + s + '" onerror="this.outerHTML=\'<div style=&quot;' + s + 'display:flex;align-items:center;justify-content:center;font-size:22px;background:#f5f0ff;&quot;>' + fb + '</div>\'">'
+        return '<div style="' + s + 'display:flex;align-items:center;justify-content:center;font-size:22px;background:#f5f0ff;">' + fb + '</div>'
 
-    _av1 = _av3(_f1_src3, 48, "🐑")
-    _av2 = _av3(_f2_src3, 48, "🐑")
-    _av3_ = _av3(_f3_src3, 48, "🐑")
-    _hero_img = (
-        f'<img src="{_hero_src}" style="width:100%;max-height:320px;object-fit:cover;border-radius:20px;display:block;" '
-        f'onerror="this.style.display=\'none\'">'
-        if _hero_src else ""
-    )
-    _sheep_img3 = (
-        f'<img src="{_sheep_src3}" style="width:120px;height:120px;object-fit:contain;border-radius:50%;'
-        f'border:3px solid rgba(255,255,255,0.3);" onerror="this.style.display=\'none\'">'
-        if _sheep_src3 else '<div style="font-size:72px;">🐑</div>'
-    )
+    _av1s = _av3(_f1s3)
+    _av2s = _av3(_f2s3)
+    _av3s = _av3(_f3s3)
 
-    _HTML_COMM = """
-<!DOCTYPE html>
-<html>
-<head>
+    # User data
+    _uname3 = mem.get("name", "") or "Bạn"
+    _lv3    = get_growth_stage(mem.get("total_saved", 0))[2]
+
+    import hashlib as _hl3
+    _ref3 = "CUU-" + _hl3.md5(_uname3.encode()).hexdigest()[:4].upper()
+
+    _HTML3 = """
+<!DOCTYPE html><html><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: transparent;
     color: #1a1a2e;
-    padding: 0 0 40px 0;
-  }
+    padding: 0 0 32px;
+}
 
-  /* ── SECTION WRAPPER ── */
-  .section { margin-bottom: 28px; }
-
-  /* ── SECTION HEADER ── */
-  .sec-header {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 14px;
-    letter-spacing: -0.01em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .sec-header span {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #8b94a8;
-    margin-left: auto;
-    cursor: pointer;
-  }
-
-  /* ══ SECTION 1 — COMMUNITY HERO ══ */
-  .hero-wrapper {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    background: linear-gradient(135deg, #1A1A2E 0%, #2D1B69 50%, #1a2a4a 100%);
-    margin-bottom: 16px;
-  }
-  .hero-img-box { width: 100%; }
-  .hero-overlay {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, rgba(10,10,30,0.88) 0%, rgba(10,10,30,0.3) 60%, transparent 100%);
-    padding: 28px 24px 22px;
-  }
-  .hero-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 0.72rem;
-    color: #fff;
-    font-weight: 600;
-    margin-bottom: 8px;
-    letter-spacing: 0.03em;
-  }
-  .hero-title {
-    font-size: 1.3rem;
+/* ── SECTION HEADER ── */
+.sh {
+    font-size: 0.95rem;
     font-weight: 800;
-    color: #fff;
-    line-height: 1.25;
-    margin-bottom: 6px;
-    letter-spacing: -0.02em;
-  }
-  .hero-sub {
-    font-size: 0.82rem;
-    color: rgba(255,255,255,0.72);
-    line-height: 1.5;
-  }
-  .hero-placeholder {
-    width: 100%;
-    height: 220px;
-    background: linear-gradient(135deg, #1A1A2E 0%, #2D1B69 50%, #1a2a4a 100%);
+    color: #1a1a2e;
+    margin: 0 0 12px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    justify-content: space-between;
+}
+.sh a {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #7B5EA7;
+    cursor: pointer;
+    text-decoration: none;
+    background: #f4eeff;
     border-radius: 20px;
-    margin-bottom: 0;
-  }
-  .hero-placeholder .emoji { font-size: 3.5rem; }
-  .hero-stats {
-    display: flex;
-    gap: 20px;
-    margin-top: 14px;
-    flex-wrap: wrap;
-  }
-  .h-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 14px;
-    padding: 10px 20px;
-    flex: 1;
-    min-width: 80px;
-  }
-  .h-stat-num { font-size: 1.25rem; font-weight: 800; color: #fff; }
-  .h-stat-lbl { font-size: 0.65rem; color: rgba(255,255,255,0.55); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    padding: 3px 10px;
+}
+.sh a:hover { background: #e8d8ff; }
 
-  /* ══ SECTION 2 — FRIEND FEED ══ */
-  .feed-card {
+/* ══ SECTION 2 — FRIEND FEED ══ */
+.feed { margin-bottom: 28px; }
+.fc {
     background: #fff;
     border: 1.5px solid #f0f0f5;
-    border-radius: 16px;
-    padding: 14px 16px;
+    border-radius: 18px;
+    padding: 14px 16px 12px;
     margin-bottom: 10px;
-    transition: box-shadow 0.2s, transform 0.2s;
-    cursor: default;
-  }
-  .feed-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.07); transform: translateY(-1px); }
-  .feed-top {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    margin-bottom: 10px;
-  }
-  .feed-av {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #f5f0ff;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-  }
-  .feed-av img { width: 100%; height: 100%; object-fit: cover; }
-  .feed-name { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; }
-  .feed-time { font-size: 0.68rem; color: #aaa; margin-top: 1px; }
-  .feed-badge {
-    margin-left: auto;
-    background: linear-gradient(135deg, #f0e6ff, #e6f0ff);
+    transition: box-shadow 0.18s, transform 0.18s;
+}
+.fc:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.07); transform: translateY(-1px); }
+
+.fc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.fc-info { flex: 1; }
+.fc-name { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; }
+.fc-time { font-size: 0.65rem; color: #bbb; margin-top: 1px; }
+
+.fc-badge {
+    background: linear-gradient(135deg, #f0e6ff, #e0eeff);
     border-radius: 20px;
     padding: 4px 10px;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: #7B5EA7;
+    color: #6B4EAD;
     white-space: nowrap;
-  }
-  .feed-msg {
-    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.fc-msg {
+    font-size: 0.84rem;
     color: #444;
-    line-height: 1.5;
+    line-height: 1.55;
     padding: 10px 12px;
-    background: #f8f8fc;
-    border-radius: 10px;
+    background: #f8f7fc;
+    border-radius: 12px;
     margin-bottom: 10px;
-  }
-  .feed-msg strong { color: #1a1a2e; }
-  .feed-actions { display: flex; gap: 8px; }
-  .feed-btn {
-    flex: 1;
-    padding: 7px 0;
+    border-left: 3px solid #d4b8ff;
+}
+.fc-msg strong { color: #1a1a2e; }
+
+.fc-row { display: flex; gap: 7px; align-items: center; }
+.fc-likes {
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-right: auto;
+}
+.fc-btn {
+    padding: 7px 12px;
     border: 1.5px solid #ede8f8;
     border-radius: 10px;
     background: #fff;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #5a4a9a;
     cursor: pointer;
     transition: all 0.15s;
-    text-align: center;
-  }
-  .feed-btn:hover { background: #f0e6ff; border-color: #c4a8f8; }
-  .feed-btn.primary { background: linear-gradient(135deg, #7B5EA7, #5a3d9a); color: #fff; border-color: transparent; }
-  .feed-btn.primary:hover { opacity: 0.9; }
+    white-space: nowrap;
+}
+.fc-btn:hover { background: #f0e6ff; border-color: #c4a8f8; }
+.fc-btn.hi { background: linear-gradient(135deg,#7B5EA7,#5a3d9a); color:#fff; border-color:transparent; }
+.fc-btn.hi:hover { opacity:0.88; }
 
-  /* ══ SECTION 3 — DREAM GUILDS ══ */
-  .guild-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-  }
-  .guild-card {
+/* ══ SECTION 3 — GUILDS ══ */
+.guilds { margin-bottom: 28px; }
+.g-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.g-card {
     background: #fff;
     border: 1.5px solid #f0f0f5;
     border-radius: 16px;
     padding: 14px 12px;
     cursor: pointer;
     transition: all 0.2s;
-    text-align: center;
-  }
-  .guild-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); border-color: #d4b8ff; }
-  .guild-icon { font-size: 1.8rem; margin-bottom: 6px; }
-  .guild-name { font-size: 0.78rem; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
-  .guild-members { font-size: 0.68rem; color: #8b94a8; margin-bottom: 8px; }
-  .guild-activity { font-size: 0.65rem; color: #b8a8d8; background: #f8f4ff; border-radius: 6px; padding: 3px 7px; margin-bottom: 8px; }
-  .guild-join {
+}
+.g-card:hover { box-shadow: 0 5px 18px rgba(0,0,0,0.09); transform: translateY(-2px); border-color: #d4b8ff; }
+.g-icon { font-size: 1.9rem; margin-bottom: 7px; }
+.g-name { font-size: 0.8rem; font-weight: 800; color: #1a1a2e; margin-bottom: 3px; line-height: 1.3; }
+.g-count { font-size: 0.65rem; color: #8b94a8; margin-bottom: 6px; }
+.g-news {
+    font-size: 0.62rem;
+    color: #a88dd8;
+    background: #f8f4ff;
+    border-radius: 6px;
+    padding: 4px 7px;
+    line-height: 1.4;
+    margin-bottom: 9px;
+}
+.g-btn {
     width: 100%;
-    padding: 6px 0;
+    padding: 7px 0;
     border: 1.5px solid #d4b8ff;
-    border-radius: 8px;
+    border-radius: 9px;
     background: #fff;
     font-size: 0.72rem;
     font-weight: 700;
     color: #7B5EA7;
     cursor: pointer;
     transition: all 0.15s;
-  }
-  .guild-join:hover { background: #f0e6ff; }
-  .guild-join.joined { background: linear-gradient(135deg, #7B5EA7, #5a3d9a); color: #fff; border-color: transparent; }
+}
+.g-btn:hover { background: #f0e6ff; }
+.g-btn.on { background: linear-gradient(135deg,#7B5EA7,#5a3d9a); color:#fff; border:none; }
 
-  /* ══ SECTION 4 — COMMUNITY PROJECTS ══ */
-  .proj-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-  }
-  .proj-card {
+/* ══ SECTION 4 — VIỆC TỐT CỦA ĐÀN CỪU ══ */
+.good { margin-bottom: 28px; }
+.good-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.good-card {
     background: #fff;
     border: 1.5px solid #f0f0f5;
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 16px;
     transition: all 0.2s;
-  }
-  .proj-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.07); transform: translateY(-2px); }
-  .proj-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .proj-icon {
-    width: 44px; height: 44px;
-    border-radius: 12px;
+}
+.good-card:hover { box-shadow: 0 5px 18px rgba(0,0,0,0.07); transform: translateY(-2px); }
+.good-top { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }
+.good-ico {
+    width: 46px; height: 46px;
+    border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem;
+    font-size: 1.35rem;
     flex-shrink: 0;
-  }
-  .proj-name { font-size: 0.85rem; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
-  .proj-members { font-size: 0.68rem; color: #8b94a8; margin-top: 2px; }
-  .proj-prog-wrap {
-    background: #f0f0f7;
-    border-radius: 8px;
-    height: 8px;
-    overflow: hidden;
-    margin-bottom: 8px;
-  }
-  .proj-prog-bar {
-    height: 100%;
-    border-radius: 8px;
-    transition: width 0.6s cubic-bezier(.4,0,.2,1);
-  }
-  .proj-prog-label {
+}
+.good-name { font-size: 0.85rem; font-weight: 800; color: #1a1a2e; line-height: 1.3; }
+.good-members { font-size: 0.66rem; color: #8b94a8; margin-top: 2px; }
+.prog-wrap { background:#f0f0f7; border-radius:8px; height:8px; overflow:hidden; margin-bottom:7px; }
+.prog-bar { height:100%; border-radius:8px; }
+.prog-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    font-size: 0.68rem;
-    color: #8b94a8;
+    font-size: 0.66rem;
+    color: #aaa;
     margin-bottom: 10px;
-  }
-  .proj-pct { font-weight: 700; }
-  .proj-join {
+}
+.prog-pct { font-weight: 700; }
+.good-join {
     width: 100%;
     padding: 8px 0;
     border: none;
     border-radius: 10px;
     font-size: 0.78rem;
     font-weight: 700;
+    color: #fff;
     cursor: pointer;
     transition: all 0.15s;
-    color: #fff;
-  }
+}
+.good-join:hover { opacity: 0.9; transform: translateY(-1px); }
 
-  /* ══ SECTION 5 — REFERRAL ══ */
-  .ref-card {
-    background: linear-gradient(135deg, #1A1A2E 0%, #2D1B69 60%, #0d2040 100%);
+/* ══ SECTION 5 — REFERRAL ══ */
+.ref-card {
+    background: #1A1A2E;
     border-radius: 20px;
-    padding: 28px 24px;
+    padding: 26px 22px;
     position: relative;
     overflow: hidden;
-  }
-  .ref-card::before {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(123,94,167,0.4) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .ref-card::after {
-    content: '';
-    position: absolute;
-    bottom: -40px; left: -40px;
-    width: 150px; height: 150px;
-    background: radial-gradient(circle, rgba(90,61,154,0.3) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .ref-inner { position: relative; z-index: 1; }
-  .ref-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-  .ref-sheep { font-size: 3rem; }
-  .ref-title { font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
-  .ref-sub { font-size: 0.78rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
-  .ref-tiers {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .ref-tier {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 14px;
-    padding: 12px 10px;
-    text-align: center;
-    backdrop-filter: blur(8px);
-  }
-  .ref-tier-num { font-size: 1.1rem; font-weight: 800; color: #fff; }
-  .ref-tier-lbl { font-size: 0.6rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
-  .ref-tier-reward {
-    font-size: 0.7rem;
-    color: #d4b8ff;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-  .ref-chips {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 18px;
-  }
-  .ref-chip {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 0.72rem;
-    color: #fff;
-    font-weight: 600;
-  }
-  .ref-code-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255,255,255,0.08);
-    border: 1.5px solid rgba(255,255,255,0.15);
-    border-radius: 12px;
-    padding: 12px 14px;
-    margin-bottom: 14px;
-  }
-  .ref-code-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.5); flex-shrink: 0; }
-  .ref-code-val { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: 0.12em; flex: 1; }
-  .ref-copy-btn {
-    padding: 6px 14px;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-  .ref-copy-btn:hover { background: rgba(255,255,255,0.25); }
-  .ref-invite-btn {
-    width: 100%;
-    padding: 14px 0;
-    background: linear-gradient(135deg, #7B5EA7 0%, #5a3d9a 100%);
-    border: none;
-    border-radius: 14px;
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #fff;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    transition: all 0.2s;
-    box-shadow: 0 4px 16px rgba(123,94,167,0.5);
-  }
-  .ref-invite-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(123,94,167,0.6); }
+}
+.ref-card::before {
+    content:'';
+    position:absolute;
+    top:-70px;right:-70px;
+    width:220px;height:220px;
+    background:radial-gradient(circle,rgba(123,94,167,0.35) 0%,transparent 70%);
+    pointer-events:none;
+}
+.ref-inner { position:relative; z-index:1; }
+.ref-hed { margin-bottom:18px; }
+.ref-title { font-size:1.15rem; font-weight:800; color:#fff; margin-bottom:5px; letter-spacing:-0.02em; }
+.ref-sub { font-size:0.78rem; color:rgba(255,255,255,0.55); line-height:1.55; }
+.ref-tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:18px; }
+.ref-tier {
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px;
+    padding:12px 8px;
+    text-align:center;
+}
+.ref-t-lbl { font-size:0.58rem; color:rgba(255,255,255,0.45); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+.ref-t-num { font-size:1.15rem; font-weight:800; color:#fff; line-height:1; }
+.ref-t-rew { font-size:0.68rem; color:#d4b8ff; font-weight:600; margin-top:5px; line-height:1.35; }
+.ref-code-box {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:rgba(255,255,255,0.07);
+    border:1.5px solid rgba(255,255,255,0.12);
+    border-radius:12px;
+    padding:11px 14px;
+    margin-bottom:13px;
+}
+.ref-c-lbl { font-size:0.67rem; color:rgba(255,255,255,0.45); flex-shrink:0; }
+.ref-c-val { font-size:1rem; font-weight:800; color:#fff; letter-spacing:.12em; flex:1; }
+.ref-copy {
+    padding:6px 13px;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:8px;
+    font-size:0.7rem;
+    font-weight:700;
+    color:#fff;
+    cursor:pointer;
+    transition:all .15s;
+    white-space:nowrap;
+}
+.ref-copy:hover { background:rgba(255,255,255,0.24); }
+.ref-invite {
+    width:100%;
+    padding:14px 0;
+    background:linear-gradient(135deg,#7B5EA7,#5a3d9a);
+    border:none;
+    border-radius:14px;
+    font-size:0.92rem;
+    font-weight:800;
+    color:#fff;
+    cursor:pointer;
+    letter-spacing:.01em;
+    transition:all .2s;
+    box-shadow:0 4px 16px rgba(123,94,167,0.45);
+}
+.ref-invite:hover { opacity:.9; transform:translateY(-1px); }
 
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 20px; left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: #1a1a2e;
-    color: #fff;
-    padding: 10px 22px;
-    border-radius: 24px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(.4,0,.2,1);
-    z-index: 9999;
-    white-space: nowrap;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    pointer-events: none;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ── TOAST ── */
+#toast {
+    position:fixed; bottom:18px; left:50%;
+    transform:translateX(-50%) translateY(70px);
+    background:#1a1a2e; color:#fff;
+    padding:9px 20px;
+    border-radius:22px;
+    font-size:0.8rem; font-weight:600;
+    opacity:0;
+    transition:all .28s cubic-bezier(.4,0,.2,1);
+    z-index:9999;
+    white-space:nowrap;
+    box-shadow:0 6px 20px rgba(0,0,0,0.28);
+    pointer-events:none;
+}
+#toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
+<div id="toast"></div>
 
-<div id="toast" class="toast"></div>
+<!-- ══ SECTION 2: BẠN CỪU HÔM NAY ══ -->
+<div class="feed">
+  <div class="sh">🐑 Bạn cừu hôm nay <a onclick="toast('Đang tải thêm bạn cừu...')">Xem tất cả →</a></div>
 
-<!-- ══ 1. COMMUNITY HERO ══ -->
-<div class="section">
-  __HERO_BLOCK__
-  <div class="hero-stats">
-    <div class="h-stat" style="background:linear-gradient(135deg,#f0e6ff,#e6f0ff);border:none;">
-      <div class="h-stat-num" style="color:#7B5EA7;">12.847</div>
-      <div class="h-stat-lbl" style="color:#9b8cbf;">Cừu thành viên</div>
+  <!-- Card 1 -->
+  <div class="fc">
+    <div class="fc-top">
+      <div>__AV1__</div>
+      <div class="fc-info">
+        <div class="fc-name">Bông Mập</div>
+        <div class="fc-time">2 phút trước · Hà Nội</div>
+      </div>
+      <div class="fc-badge">🔥 Streak 30</div>
     </div>
-    <div class="h-stat" style="background:linear-gradient(135deg,#e6fff4,#e6f9ff);border:none;">
-      <div class="h-stat-num" style="color:#2a9d5c;">4.230</div>
-      <div class="h-stat-lbl" style="color:#5ab888;">Hoạt động hôm nay</div>
+    <div class="fc-msg">
+      Vừa hoàn thành chuỗi <strong>tiết kiệm 30 ngày không bỏ lỡ</strong>. Ai bảo giữ tiền khó? Mình làm được rồi nè 🐑
     </div>
-    <div class="h-stat" style="background:linear-gradient(135deg,#fff8e6,#ffe6f0);border:none;">
-      <div class="h-stat-num" style="color:#e6820a;">892</div>
-      <div class="h-stat-lbl" style="color:#c8922a;">Giấc mơ hoàn thành</div>
+    <div class="fc-row">
+      <span class="fc-likes">❤️ 24 · 💬 5</span>
+      <button class="fc-btn" onclick="likeAct(this,'Bông Mập')">❤️ Chúc mừng</button>
+      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà cho Bông Mập!')">🎁 Tặng quà</button>
+      <button class="fc-btn" onclick="toast('💬 Đang mở nhắn tin...')">💬 Nhắn</button>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="fc">
+    <div class="fc-top">
+      <div>__AV2__</div>
+      <div class="fc-info">
+        <div class="fc-name">Mây Tích</div>
+        <div class="fc-time">15 phút trước · TP.HCM</div>
+      </div>
+      <div class="fc-badge">🎯 Mục tiêu</div>
+    </div>
+    <div class="fc-msg">
+      Chính thức hoàn thành giấc mơ <strong>MBA</strong> hôm nay 🎓. Mất 2 năm. Không nghĩ mình làm được. Cảm ơn đàn cừu đã đồng hành!
+    </div>
+    <div class="fc-row">
+      <span class="fc-likes">❤️ 87 · 💬 31</span>
+      <button class="fc-btn" onclick="likeAct(this,'Mây Tích')">🎉 Ăn mừng</button>
+      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà cho Mây Tích!')">🎁 Tặng quà</button>
+      <button class="fc-btn" onclick="toast('💬 Đang mở nhắn tin...')">💬 Nhắn</button>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class="fc">
+    <div class="fc-top">
+      <div>__AV3__</div>
+      <div class="fc-info">
+        <div class="fc-name">Cậu Nhanh</div>
+        <div class="fc-time">1 giờ trước · Đà Nẵng</div>
+      </div>
+      <div class="fc-badge">🌟 Lv.__LV__</div>
+    </div>
+    <div class="fc-msg">
+      Cừu của mình vừa lên <strong>cấp độ mới</strong> — tích tiểu thành đại thật sự có nghĩa 💪
+    </div>
+    <div class="fc-row">
+      <span class="fc-likes">❤️ 12 · 💬 3</span>
+      <button class="fc-btn" onclick="likeAct(this,'Cậu Nhanh')">👏 Khen ngợi</button>
+      <button class="fc-btn hi" onclick="toast('🎁 Đã tặng quà cho Cậu Nhanh!')">🎁 Tặng quà</button>
+      <button class="fc-btn" onclick="toast('💬 Đang mở nhắn tin...')">💬 Nhắn</button>
     </div>
   </div>
 </div>
 
-<!-- ══ 2. BẠN CỪU HÔM NAY ══ -->
-<div class="section">
-  <div class="sec-header">🐑 Bạn cừu hôm nay <span onclick="showToast('Đang tải thêm...')">Xem tất cả →</span></div>
+<!-- ══ SECTION 3: HỘI QUÁN GIẤC MƠ ══ -->
+<div class="guilds">
+  <div class="sh">🏡 Hội quán giấc mơ <a onclick="toast('Đang tải thêm hội quán...')">Tất cả →</a></div>
+  <div class="g-grid">
 
-  <!-- Friend 1 -->
-  <div class="feed-card">
-    <div class="feed-top">
-      <div class="feed-av">__AV1__</div>
-      <div>
-        <div class="feed-name">Bông Mập</div>
-        <div class="feed-time">2 phút trước</div>
-      </div>
-      <div class="feed-badge">🔥 Streak 30</div>
-    </div>
-    <div class="feed-msg">
-      Hoàn thành <strong>30 ngày tiết kiệm liên tục</strong> — không bỏ lỡ một ngày nào! 🎉
-    </div>
-    <div class="feed-actions">
-      <button class="feed-btn" onclick="showToast('❤️ Đã chúc mừng Bông Mập!')">❤️ Chúc mừng</button>
-      <button class="feed-btn primary" onclick="showToast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-    </div>
-  </div>
-
-  <!-- Friend 2 -->
-  <div class="feed-card">
-    <div class="feed-top">
-      <div class="feed-av">__AV2__</div>
-      <div>
-        <div class="feed-name">Mây Tích</div>
-        <div class="feed-time">15 phút trước</div>
-      </div>
-      <div class="feed-badge">🎯 Mục tiêu</div>
-    </div>
-    <div class="feed-msg">
-      Vừa hoàn thành giấc mơ <strong>học MBA</strong>! Cần cù ắt có ngày thành công 🐑✨
-    </div>
-    <div class="feed-actions">
-      <button class="feed-btn" onclick="showToast('🎉 Đã ăn mừng cùng Mây Tích!')">🎉 Ăn mừng</button>
-      <button class="feed-btn primary" onclick="showToast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-    </div>
-  </div>
-
-  <!-- Friend 3 -->
-  <div class="feed-card">
-    <div class="feed-top">
-      <div class="feed-av">__AV3__</div>
-      <div>
-        <div class="feed-name">Cậu Nhanh</div>
-        <div class="feed-time">1 giờ trước</div>
-      </div>
-      <div class="feed-badge">🌟 Lv.__USER_LV__</div>
-    </div>
-    <div class="feed-msg">
-      Cừu vừa lên <strong>cấp độ mới</strong>! Nhờ tích cóp đều đặn mỗi ngày 💪
-    </div>
-    <div class="feed-actions">
-      <button class="feed-btn" onclick="showToast('👏 Đã khen ngợi Cậu Nhanh!')">👏 Khen ngợi</button>
-      <button class="feed-btn primary" onclick="showToast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ 3. HỘI QUÁN GIẤC MƠ ══ -->
-<div class="section">
-  <div class="sec-header">🏡 Hội quán giấc mơ <span onclick="showToast('Đang tải thêm hội quán...')">Xem tất cả →</span></div>
-  <div class="guild-grid">
-
-    <div class="guild-card" onclick="">
-      <div class="guild-icon">🎓</div>
-      <div class="guild-name">Du học &amp; MBA</div>
-      <div class="guild-members">👥 3.241 thành viên</div>
-      <div class="guild-activity">Mới: Mây Tích hoàn thành</div>
-      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán MBA!':'Rời hội quán')">Tham gia</button>
+    <div class="g-card">
+      <div class="g-icon">🏠</div>
+      <div class="g-name">Ngôi nhà đầu tiên</div>
+      <div class="g-count">👥 5.018 thành viên</div>
+      <div class="g-news">Mới: An Khang vừa đặt cọc căn hộ đầu tiên 🎉</div>
+      <button class="g-btn" onclick="toggleGuild(this,'nhà')">Tham gia</button>
     </div>
 
-    <div class="guild-card">
-      <div class="guild-icon">🏠</div>
-      <div class="guild-name">Mua nhà</div>
-      <div class="guild-members">👥 5.018 thành viên</div>
-      <div class="guild-activity">Mới: An Khang đặt cọc</div>
-      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán Nhà!':'Rời hội quán')">Tham gia</button>
+    <div class="g-card">
+      <div class="g-icon">🚗</div>
+      <div class="g-name">Chiếc xe đầu tiên</div>
+      <div class="g-count">👥 2.876 thành viên</div>
+      <div class="g-news">Mới: Hùng Mập vừa nhận chìa khóa xe 🚗</div>
+      <button class="g-btn" onclick="toggleGuild(this,'xe')">Tham gia</button>
     </div>
 
-    <div class="guild-card">
-      <div class="guild-icon">🚗</div>
-      <div class="guild-name">Mua xe</div>
-      <div class="guild-members">👥 2.876 thành viên</div>
-      <div class="guild-activity">Mới: Hùng Mập đặt mục tiêu</div>
-      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán Xe!':'Rời hội quán')">Tham gia</button>
+    <div class="g-card">
+      <div class="g-icon">✈️</div>
+      <div class="g-name">Nhật Bản 2027</div>
+      <div class="g-count">👥 4.112 thành viên</div>
+      <div class="g-news">Mới: Lan Anh vừa đặt vé bay Osaka ✈️</div>
+      <button class="g-btn" onclick="toggleGuild(this,'nhật')">Tham gia</button>
     </div>
 
-    <div class="guild-card">
-      <div class="guild-icon">✈️</div>
-      <div class="guild-name">Du lịch Nhật</div>
-      <div class="guild-members">👥 4.112 thành viên</div>
-      <div class="guild-activity">Mới: Lan Anh đặt vé</div>
-      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán Du lịch!':'Rời hội quán')">Tham gia</button>
+    <div class="g-card">
+      <div class="g-icon">🎓</div>
+      <div class="g-name">MBA</div>
+      <div class="g-count">👥 3.241 thành viên</div>
+      <div class="g-news">Mới: Mây Tích hoàn thành chương trình 🎓</div>
+      <button class="g-btn" onclick="toggleGuild(this,'mba')">Tham gia</button>
     </div>
 
-    <div class="guild-card">
-      <div class="guild-icon">💰</div>
-      <div class="guild-name">Tự do tài chính</div>
-      <div class="guild-members">👥 7.654 thành viên</div>
-      <div class="guild-activity">Mới: Quang Minh đạt FIRE</div>
-      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán FIRE!':'Rời hội quán')">Tham gia</button>
+    <div class="g-card">
+      <div class="g-icon">💰</div>
+      <div class="g-name">Tự do tài chính</div>
+      <div class="g-count">👥 7.654 thành viên</div>
+      <div class="g-news">Mới: Quang Minh vừa đạt FIRE 💎</div>
+      <button class="g-btn" onclick="toggleGuild(this,'fire')">Tham gia</button>
     </div>
 
   </div>
 </div>
 
-<!-- ══ 4. DỰ ÁN CỘNG ĐỒNG ══ -->
-<div class="section">
-  <div class="sec-header">🌱 Dự án cộng đồng</div>
-  <div class="proj-grid">
+<!-- ══ SECTION 4: VIỆC TỐT CỦA ĐÀN CỪU ══ -->
+<div class="good">
+  <div class="sh">🌱 Việc tốt của Đàn Cừu</div>
+  <div class="good-grid">
 
-    <div class="proj-card">
-      <div class="proj-top">
-        <div class="proj-icon" style="background:#e8f8ef;">🌳</div>
+    <div class="good-card">
+      <div class="good-top">
+        <div class="good-ico" style="background:#e8f8ef;">🌳</div>
         <div>
-          <div class="proj-name">Dự án cây xanh</div>
-          <div class="proj-members">👥 1.200 cừu tham gia</div>
+          <div class="good-name">Trồng cây</div>
+          <div class="good-members">👥 1.200 cừu tham gia</div>
         </div>
       </div>
-      <div class="proj-prog-wrap">
-        <div class="proj-prog-bar" style="width:65%;background:linear-gradient(90deg,#34C759,#2eaa4b);"></div>
-      </div>
-      <div class="proj-prog-label">
-        <span>Tiến độ</span><span class="proj-pct" style="color:#34C759;">65%</span>
-      </div>
-      <button class="proj-join" style="background:linear-gradient(135deg,#34C759,#2eaa4b);" onclick="showToast('🌳 Đã tham gia Dự án cây xanh!')">Tham gia</button>
+      <div class="prog-wrap"><div class="prog-bar" style="width:65%;background:linear-gradient(90deg,#34C759,#2eaa4b);"></div></div>
+      <div class="prog-row"><span>Tiến độ</span><span class="prog-pct" style="color:#34C759;">65%</span></div>
+      <button class="good-join" style="background:linear-gradient(135deg,#34C759,#2eaa4b);" onclick="toast('🌳 Cừu đã tham gia Dự án Trồng cây!')">Tham gia</button>
     </div>
 
-    <div class="proj-card">
-      <div class="proj-top">
-        <div class="proj-icon" style="background:#e8f0ff;">📚</div>
+    <div class="good-card">
+      <div class="good-top">
+        <div class="good-ico" style="background:#e8f0ff;">📚</div>
         <div>
-          <div class="proj-name">Quỹ học tập</div>
-          <div class="proj-members">👥 600 cừu tham gia</div>
+          <div class="good-name">Học bổng học sinh</div>
+          <div class="good-members">👥 600 cừu tham gia</div>
         </div>
       </div>
-      <div class="proj-prog-wrap">
-        <div class="proj-prog-bar" style="width:40%;background:linear-gradient(90deg,#007AFF,#0056cc);"></div>
-      </div>
-      <div class="proj-prog-label">
-        <span>Tiến độ</span><span class="proj-pct" style="color:#007AFF;">40%</span>
-      </div>
-      <button class="proj-join" style="background:linear-gradient(135deg,#007AFF,#0056cc);" onclick="showToast('📚 Đã tham gia Quỹ học tập!')">Tham gia</button>
+      <div class="prog-wrap"><div class="prog-bar" style="width:40%;background:linear-gradient(90deg,#007AFF,#0056cc);"></div></div>
+      <div class="prog-row"><span>Tiến độ</span><span class="prog-pct" style="color:#007AFF;">40%</span></div>
+      <button class="good-join" style="background:linear-gradient(135deg,#007AFF,#0056cc);" onclick="toast('📚 Cừu đã tham gia Quỹ học bổng!')">Tham gia</button>
     </div>
 
-    <div class="proj-card">
-      <div class="proj-top">
-        <div class="proj-icon" style="background:#f4e8ff;">🏠</div>
+    <div class="good-card">
+      <div class="good-top">
+        <div class="good-ico" style="background:#f4e8ff;">🏠</div>
         <div>
-          <div class="proj-name">Nhà ở xã hội</div>
-          <div class="proj-members">👥 340 cừu tham gia</div>
+          <div class="good-name">Mái ấm cộng đồng</div>
+          <div class="good-members">👥 340 cừu tham gia</div>
         </div>
       </div>
-      <div class="proj-prog-wrap">
-        <div class="proj-prog-bar" style="width:28%;background:linear-gradient(90deg,#AF52DE,#8a3ebc);"></div>
-      </div>
-      <div class="proj-prog-label">
-        <span>Tiến độ</span><span class="proj-pct" style="color:#AF52DE;">28%</span>
-      </div>
-      <button class="proj-join" style="background:linear-gradient(135deg,#AF52DE,#8a3ebc);" onclick="showToast('🏠 Đã tham gia Dự án nhà ở!')">Tham gia</button>
+      <div class="prog-wrap"><div class="prog-bar" style="width:28%;background:linear-gradient(90deg,#AF52DE,#8a3ebc);"></div></div>
+      <div class="prog-row"><span>Tiến độ</span><span class="prog-pct" style="color:#AF52DE;">28%</span></div>
+      <button class="good-join" style="background:linear-gradient(135deg,#AF52DE,#8a3ebc);" onclick="toast('🏠 Cừu đã tham gia Mái ấm cộng đồng!')">Tham gia</button>
     </div>
 
   </div>
 </div>
 
-<!-- ══ 5. ĐƯA CỪU MỚI VÀO ĐÀN ══ -->
-<div class="section">
-  <div class="sec-header">🐑 Đưa cừu mới vào đàn</div>
+<!-- ══ SECTION 5: ĐƯA CỪU MỚI VÀO ĐÀN ══ -->
+<div>
+  <div class="sh">🐑 Đưa cừu mới vào đàn</div>
   <div class="ref-card">
     <div class="ref-inner">
-      <div class="ref-header">
-        <div class="ref-sheep">🐑</div>
-        <div>
-          <div class="ref-title">Rủ bạn cùng tiết kiệm</div>
-          <div class="ref-sub">Mỗi người bạn tham gia — cả hai cùng nhận thưởng.<br>Đàn cừu lớn mạnh hơn khi có nhau.</div>
-        </div>
+      <div class="ref-hed">
+        <div class="ref-title">Rủ bạn cùng tiết kiệm</div>
+        <div class="ref-sub">Mỗi người bạn tham gia — cả hai cùng nhận thưởng.<br>Đàn cừu lớn mạnh hơn khi có nhau.</div>
       </div>
 
       <div class="ref-tiers">
         <div class="ref-tier">
-          <div class="ref-tier-lbl">Mời 1 người</div>
-          <div class="ref-tier-num">+100</div>
-          <div class="ref-tier-reward">XP cho cả hai</div>
+          <div class="ref-t-lbl">Mời 1 người</div>
+          <div class="ref-t-num">+100</div>
+          <div class="ref-t-rew">XP cho cả hai</div>
         </div>
         <div class="ref-tier">
-          <div class="ref-tier-lbl">Mời 5 người</div>
-          <div class="ref-tier-num">🎨</div>
-          <div class="ref-tier-reward">Skin độc quyền</div>
+          <div class="ref-t-lbl">Mời 5 người</div>
+          <div class="ref-t-num">🎨</div>
+          <div class="ref-t-rew">Skin độc quyền</div>
         </div>
         <div class="ref-tier">
-          <div class="ref-tier-lbl">Mời 10 người</div>
-          <div class="ref-tier-num">👑</div>
-          <div class="ref-tier-reward">Huy hiệu Trưởng đàn</div>
+          <div class="ref-t-lbl">Mời 10 người</div>
+          <div class="ref-t-num">👑</div>
+          <div class="ref-t-rew">Huy hiệu Trưởng Đàn</div>
         </div>
       </div>
 
       <div class="ref-code-box">
-        <div class="ref-code-lbl">Mã của bạn</div>
-        <div class="ref-code-val" id="refCodeVal">__REF_CODE__</div>
-        <button class="ref-copy-btn" onclick="copyRef()">📋 Sao chép</button>
+        <span class="ref-c-lbl">Mã của bạn</span>
+        <span class="ref-c-val" id="rc">__REFCODE__</span>
+        <button class="ref-copy" onclick="copyCode()">📋 Sao chép</button>
       </div>
 
-      <button class="ref-invite-btn" onclick="showToast('🔗 Đã sao chép link mời!')">
+      <button class="ref-invite" onclick="toast('🔗 Đã sao chép link mời! Chia sẻ ngay nhé.')">
         Mời ngay — cùng nhau tiết kiệm 🐑
       </button>
     </div>
@@ -2688,69 +2584,54 @@ with tab3:
 </div>
 
 <script>
-function showToast(msg) {
+function toast(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+  t.classList.add('on');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function(){ t.classList.remove('on'); }, 2600);
 }
 
-function copyRef() {
-  var code = document.getElementById('refCodeVal').textContent.trim();
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(code).then(function(){
-      showToast('✅ Đã sao chép mã ' + code);
-    }).catch(function(){ showToast('Mã: ' + code); });
+function likeAct(btn, name) {
+  btn.textContent = '✅ Đã gửi';
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  toast('❤️ Đã gửi lời chúc đến ' + name + '!');
+}
+
+function toggleGuild(btn, name) {
+  var joined = btn.classList.contains('on');
+  if (!joined) {
+    btn.classList.add('on');
+    btn.textContent = '✓ Đã tham gia';
+    toast('✅ Đã vào hội quán ' + name + '!');
   } else {
-    showToast('Mã của bạn: ' + code);
+    btn.classList.remove('on');
+    btn.textContent = 'Tham gia';
+    toast('Rời hội quán ' + name);
+  }
+}
+
+function copyCode() {
+  var code = document.getElementById('rc').textContent.trim();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(function(){ toast('✅ Đã sao chép mã ' + code); }).catch(function(){ toast('Mã: ' + code); });
+  } else {
+    toast('Mã của bạn: ' + code);
   }
 }
 </script>
-</body>
-</html>
+</body></html>
 """
 
-    # ── generate ref code from username ──────────────────────────────────────
-    import hashlib as _hl3
-    _ref_code3 = "CUU-" + _hl3.md5(_uname3.encode()).hexdigest()[:4].upper()
-
-    # ── hero block: image if available, else elegant fallback ─────────────────
-    if _hero_src and not _hero_src.startswith("http"):
-        _hero_block3 = (
-            '<div class="hero-wrapper">'
-            '<div class="hero-img-box">'
-            '<img src="__HERO_SRC__" style="width:100%;max-height:300px;object-fit:cover;display:block;"'
-            ' onerror="this.parentNode.parentNode.querySelector(\'.hero-overlay\').style.position=\'relative\'">'
-            '</div>'
-            '<div class="hero-overlay">'
-            '<div class="hero-tag">👥 Cộng đồng Cừu Cần Cù</div>'
-            '<div class="hero-title">Không ai tiết kiệm một mình</div>'
-            '<div class="hero-sub">Nơi những người đang theo đuổi giấc mơ cùng nhau trưởng thành.</div>'
-            '</div>'
-            '</div>'
-        ).replace("__HERO_SRC__", _hero_src)
-    else:
-        _hero_block3 = (
-            '<div class="hero-wrapper">'
-            '<div class="hero-placeholder">'
-            '<div class="emoji">🐑</div>'
-            '<div class="hero-tag" style="position:relative;">👥 Cộng đồng Cừu Cần Cù</div>'
-            '<div class="hero-title" style="color:#fff;text-align:center;">Không ai tiết kiệm một mình</div>'
-            '<div class="hero-sub" style="color:rgba(255,255,255,0.65);text-align:center;max-width:320px;">'
-            'Nơi những người đang theo đuổi giấc mơ cùng nhau trưởng thành.</div>'
-            '</div>'
-            '</div>'
-        )
-
-    # ── apply substitutions ───────────────────────────────────────────────────
-    _HTML_COMM = (
-        _HTML_COMM
-        .replace("__HERO_BLOCK__",  _hero_block3)
-        .replace("__AV1__",         _av1)
-        .replace("__AV2__",         _av2)
-        .replace("__AV3__",         _av3_)
-        .replace("__USER_LV__",     str(_lv3))
-        .replace("__REF_CODE__",    _ref_code3)
+    # Substitute dynamic values
+    _HTML3 = (
+        _HTML3
+        .replace("__AV1__",   _av1s)
+        .replace("__AV2__",   _av2s)
+        .replace("__AV3__",   _av3s)
+        .replace("__LV__",    str(_lv3))
+        .replace("__REFCODE__", _ref3)
     )
 
-    _comp3.html(_HTML_COMM, height=1900, scrolling=True)
+    _comp3.html(_HTML3, height=1780, scrolling=True)
