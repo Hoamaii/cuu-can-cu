@@ -2088,6 +2088,7 @@ with tab3:
     _f1s3 = _lca3("assets/friends/friend1.png", _GH3 + "/friend_sheep_1.png")
     _f2s3 = _lca3("assets/friends/friend2.png", _GH3 + "/friend_sheep_2.png")
     _f3s3 = _lca3("assets/friends/friend3.png", _GH3 + "/friend_sheep_3.png")
+    _inv3 = _lca3("assets/invite_friend.png",    _GH3 + "/invite_friend.png")
 
     def _av3(src, fb="🐑"):
         s = "width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"
@@ -2286,76 +2287,38 @@ body {
 }
 .good-join:hover { opacity: 0.9; transform: translateY(-1px); }
 
-/* ══ SECTION 5 — REFERRAL ══ */
-.ref-card {
-    background: #1A1A2E;
-    border-radius: 20px;
-    padding: 26px 22px;
-    position: relative;
-    overflow: hidden;
-}
-.ref-card::before {
-    content:'';
-    position:absolute;
-    top:-70px;right:-70px;
-    width:220px;height:220px;
-    background:radial-gradient(circle,rgba(123,94,167,0.35) 0%,transparent 70%);
-    pointer-events:none;
-}
+/* ══ SECTION 5 — CÓ BẠN ĐỒNG HÀNH ══ */
+.inv-hero { background:#fff; border:1.5px solid #f0f0f5; border-radius:20px; overflow:hidden; margin-bottom:12px; }
+.inv-hero img { width:100%; max-height:200px; object-fit:cover; display:block; }
+.inv-img-fallback { width:100%; padding:32px 0 24px; display:flex; flex-direction:column; align-items:center; gap:6px; background:linear-gradient(135deg,#f8f4ff,#f0f8ff); }
+.inv-img-fallback .sheep-duo { font-size:3.8rem; letter-spacing:-4px; }
+.inv-body { padding:20px 20px 18px; }
+.inv-title { font-size:1.1rem; font-weight:800; color:#1a1a2e; margin-bottom:7px; letter-spacing:-0.02em; line-height:1.3; }
+.inv-sub { font-size:0.82rem; color:#666; line-height:1.6; margin-bottom:16px; }
+.inv-sub em { color:#7B5EA7; font-style:normal; font-weight:700; }
+.inv-proof { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:18px; }
+.inv-chip { background:#f4eeff; border-radius:20px; padding:5px 12px; font-size:0.72rem; font-weight:700; color:#7B5EA7; white-space:nowrap; }
+.inv-benefits { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.inv-benefit { background:#f8f7fc; border-radius:14px; padding:13px 12px; display:flex; align-items:flex-start; gap:9px; }
+.inv-b-ico { font-size:1.2rem; flex-shrink:0; margin-top:1px; }
+.inv-b-name { font-size:0.77rem; font-weight:700; color:#1a1a2e; margin-bottom:2px; }
+.inv-b-desc { font-size:0.63rem; color:#888; line-height:1.4; }
+.ref-card { background:#1A1A2E; border-radius:20px; padding:20px 18px; position:relative; overflow:hidden; }
+.ref-card::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; background:radial-gradient(circle,rgba(123,94,167,0.28) 0%,transparent 70%); pointer-events:none; }
 .ref-inner { position:relative; z-index:1; }
-.ref-hed { margin-bottom:18px; }
-.ref-title { font-size:1.15rem; font-weight:800; color:#fff; margin-bottom:5px; letter-spacing:-0.02em; }
-.ref-sub { font-size:0.78rem; color:rgba(255,255,255,0.55); line-height:1.55; }
-.ref-tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:18px; }
-.ref-tier {
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:14px;
-    padding:12px 8px;
-    text-align:center;
-}
-.ref-t-lbl { font-size:0.58rem; color:rgba(255,255,255,0.45); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
-.ref-t-num { font-size:1.15rem; font-weight:800; color:#fff; line-height:1; }
-.ref-t-rew { font-size:0.68rem; color:#d4b8ff; font-weight:600; margin-top:5px; line-height:1.35; }
-.ref-code-box {
-    display:flex;
-    align-items:center;
-    gap:10px;
-    background:rgba(255,255,255,0.07);
-    border:1.5px solid rgba(255,255,255,0.12);
-    border-radius:12px;
-    padding:11px 14px;
-    margin-bottom:13px;
-}
-.ref-c-lbl { font-size:0.67rem; color:rgba(255,255,255,0.45); flex-shrink:0; }
-.ref-c-val { font-size:1rem; font-weight:800; color:#fff; letter-spacing:.12em; flex:1; }
-.ref-copy {
-    padding:6px 13px;
-    background:rgba(255,255,255,0.14);
-    border:1px solid rgba(255,255,255,0.18);
-    border-radius:8px;
-    font-size:0.7rem;
-    font-weight:700;
-    color:#fff;
-    cursor:pointer;
-    transition:all .15s;
-    white-space:nowrap;
-}
-.ref-copy:hover { background:rgba(255,255,255,0.24); }
-.ref-invite {
-    width:100%;
-    padding:14px 0;
-    background:linear-gradient(135deg,#7B5EA7,#5a3d9a);
-    border:none;
-    border-radius:14px;
-    font-size:0.92rem;
-    font-weight:800;
-    color:#fff;
-    cursor:pointer;
-    letter-spacing:.01em;
-    transition:all .2s;
-    box-shadow:0 4px 16px rgba(123,94,167,0.45);
-}
+.ref-rew-lbl { font-size:0.62rem; color:rgba(255,255,255,0.38); text-transform:uppercase; letter-spacing:.05em; margin-bottom:9px; font-weight:600; }
+.ref-tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:15px; }
+.ref-tier { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.09); border-radius:12px; padding:10px 6px; text-align:center; }
+.ref-t-lbl { font-size:0.55rem; color:rgba(255,255,255,0.38); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.ref-t-num { font-size:1.05rem; font-weight:800; color:#fff; line-height:1; }
+.ref-t-rew { font-size:0.62rem; color:#d4b8ff; font-weight:600; margin-top:4px; line-height:1.3; }
+.ref-code-box { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.12); border-radius:12px; padding:10px 13px; margin-bottom:12px; }
+.ref-c-lbl { font-size:0.63rem; color:rgba(255,255,255,0.4); flex-shrink:0; }
+.ref-c-val { font-size:0.95rem; font-weight:800; color:#fff; letter-spacing:.12em; flex:1; }
+.ref-copy { padding:6px 12px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.16); border-radius:8px; font-size:0.68rem; font-weight:700; color:#fff; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.ref-copy:hover { background:rgba(255,255,255,0.22); }
+.ref-ctas { display:flex; gap:9px; }
+.ref-invite { flex:1; padding:13px 0; background:linear-gradient(135deg,#7B5EA7,#5a3d9a); border:none; border-radius:13px; font-size:0.82rem; font-weight:800; color:#fff; cursor:pointer; transition:all .2s; box-shadow:0 4px 14px rgba(123,94,167,0.42); }
 .ref-invite:hover { opacity:.9; transform:translateY(-1px); }
 
 /* ── TOAST ── */
@@ -2542,43 +2505,63 @@ body {
   </div>
 </div>
 
-<!-- ══ SECTION 5: ĐƯA CỪU MỚI VÀO ĐÀN ══ -->
+<!-- ══ SECTION 5: CÓ BẠN ĐỒNG HÀNH VUI HƠN ══ -->
 <div>
-  <div class="sh">🐑 Đưa cừu mới vào đàn</div>
+  <div class="sh">🐑 Có bạn đồng hành vui hơn</div>
+
+  <!-- Hero card (light) -->
+  <div class="inv-hero">
+    __INVITE_IMG__
+    <div class="inv-body">
+      <div class="inv-title">Bạn không cần theo đuổi<br>giấc mơ một mình.</div>
+      <div class="inv-sub">
+        Rủ một người bạn cùng nuôi cừu — cả hai cùng lớn lên.<br>
+        <em>12.847 cừu đang đồng hành cùng nhau mỗi ngày.</em>
+      </div>
+      <div class="inv-proof">
+        <span class="inv-chip">🔥 247 cừu mới tuần này</span>
+        <span class="inv-chip">🐑 12.847 thành viên</span>
+        <span class="inv-chip">🎉 892 giấc mơ hoàn thành</span>
+      </div>
+      <div class="inv-benefits">
+        <div class="inv-benefit">
+          <div class="inv-b-ico">❤️</div>
+          <div><div class="inv-b-name">Kết bạn với cừu khác</div><div class="inv-b-desc">Theo dõi hành trình của nhau</div></div>
+        </div>
+        <div class="inv-benefit">
+          <div class="inv-b-ico">🎁</div>
+          <div><div class="inv-b-name">Gửi quà cho nhau</div><div class="inv-b-desc">Quà tặng tăng động lực tiết kiệm</div></div>
+        </div>
+        <div class="inv-benefit">
+          <div class="inv-b-ico">💬</div>
+          <div><div class="inv-b-name">Động viên mỗi ngày</div><div class="inv-b-desc">Không ai bỏ cuộc một mình</div></div>
+        </div>
+        <div class="inv-benefit">
+          <div class="inv-b-ico">🏆</div>
+          <div><div class="inv-b-name">Thi đua chuỗi tiết kiệm</div><div class="inv-b-desc">Ai dài hơn? Vui hơn!</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark reward + invite card -->
   <div class="ref-card">
     <div class="ref-inner">
-      <div class="ref-hed">
-        <div class="ref-title">Rủ bạn cùng tiết kiệm</div>
-        <div class="ref-sub">Mỗi người bạn tham gia — cả hai cùng nhận thưởng.<br>Đàn cừu lớn mạnh hơn khi có nhau.</div>
-      </div>
-
+      <div class="ref-rew-lbl">Thêm phần thưởng khi bạn mời</div>
       <div class="ref-tiers">
-        <div class="ref-tier">
-          <div class="ref-t-lbl">Mời 1 người</div>
-          <div class="ref-t-num">+100</div>
-          <div class="ref-t-rew">XP cho cả hai</div>
-        </div>
-        <div class="ref-tier">
-          <div class="ref-t-lbl">Mời 5 người</div>
-          <div class="ref-t-num">🎨</div>
-          <div class="ref-t-rew">Skin độc quyền</div>
-        </div>
-        <div class="ref-tier">
-          <div class="ref-t-lbl">Mời 10 người</div>
-          <div class="ref-t-num">👑</div>
-          <div class="ref-t-rew">Huy hiệu Trưởng Đàn</div>
-        </div>
+        <div class="ref-tier"><div class="ref-t-lbl">Mời 1 bạn</div><div class="ref-t-num">+100</div><div class="ref-t-rew">XP cho cả hai</div></div>
+        <div class="ref-tier"><div class="ref-t-lbl">Mời 5 bạn</div><div class="ref-t-num">🎨</div><div class="ref-t-rew">Skin độc quyền</div></div>
+        <div class="ref-tier"><div class="ref-t-lbl">Mời 10 bạn</div><div class="ref-t-num">👑</div><div class="ref-t-rew">Huy hiệu Trưởng Đàn</div></div>
       </div>
-
       <div class="ref-code-box">
         <span class="ref-c-lbl">Mã của bạn</span>
         <span class="ref-c-val" id="rc">__REFCODE__</span>
         <button class="ref-copy" onclick="copyCode()">📋 Sao chép</button>
       </div>
-
-      <button class="ref-invite" onclick="toast('🔗 Đã sao chép link mời! Chia sẻ ngay nhé.')">
-        Mời ngay — cùng nhau tiết kiệm 🐑
-      </button>
+      <div class="ref-ctas">
+        <button class="ref-invite" onclick="toast('🐑 Đã sao chép link! Rủ bạn cùng nuôi cừu nhé.')">🐑 Rủ bạn cùng nuôi cừu</button>
+        <button class="ref-invite" style="flex:0 0 auto;padding:13px 16px;background:rgba(255,255,255,0.1);box-shadow:none;border:1.5px solid rgba(255,255,255,0.14);" onclick="toast('🎁 Đã tạo quà tặng một chú cừu!')">🎁 Tặng cừu</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2625,13 +2608,21 @@ function copyCode() {
 """
 
     # Substitute dynamic values
+    # Build invite image tag
+    if _inv3 and not _inv3.startswith('http'):
+        _inv_img_tag = '<img src="' + _inv3 + '" style="width:100%;max-height:200px;object-fit:cover;display:block;">'
+    elif _inv3:
+        _inv_img_tag = '<img src="' + _inv3 + '" style="width:100%;max-height:200px;object-fit:cover;display:block;" onerror="this.outerHTML=\'<div class=inv-img-fallback><div class=sheep-duo>🐑🐑</div></div>\'">'
+    else:
+        _inv_img_tag = '<div class=\'inv-img-fallback\'><div class=\'sheep-duo\'>🐑🐑</div><div style=\'font-size:0.75rem;color:#aaa;margin-top:4px;\'>Upload assets/invite_friend.png</div></div>'
     _HTML3 = (
         _HTML3
-        .replace("__AV1__",   _av1s)
-        .replace("__AV2__",   _av2s)
-        .replace("__AV3__",   _av3s)
-        .replace("__LV__",    str(_lv3))
-        .replace("__REFCODE__", _ref3)
+        .replace("__AV1__",        _av1s)
+        .replace("__AV2__",        _av2s)
+        .replace("__AV3__",        _av3s)
+        .replace("__LV__",         str(_lv3))
+        .replace("__REFCODE__",    _ref3)
+        .replace("__INVITE_IMG__", _inv_img_tag)
     )
 
     _comp3.html(_HTML3, height=1780, scrolling=True)
