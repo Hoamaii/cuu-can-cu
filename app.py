@@ -2555,6 +2555,33 @@ function followFriend(btn,name){
   else{btn.classList.add('on');btn.textContent='✓ Đã kết bạn';toast('✅ Đã kết bạn với '+name+'!');}
 }
 </script></body></html>""".replace("__REF__", _ref3)
+        # ── buddy_sheep.png (native Streamlit — PIL-safe, no iframe CSP) ──────
+        st.markdown("""<style>
+        div[data-testid="stImage"] img {
+            border-radius:20px !important; max-height:300px;
+            object-fit:cover; box-shadow:0 5px 18px rgba(0,0,0,.1);
+        }</style>""", unsafe_allow_html=True)
+        _buddy_local = _os3.path.join(_os3.path.dirname(__file__), "assets", "buddy_sheep.png")
+        _buddy_gh    = _GH3 + "/buddy_sheep.png"
+        try:
+            from PIL import Image as _PIL_B
+            if _os3.path.exists(_buddy_local):
+                _PIL_B.open(_buddy_local).verify()
+                st.image(_buddy_local, use_container_width=True)
+            else:
+                raise FileNotFoundError
+        except Exception:
+            try:
+                import urllib.request as _ur_b
+                _req_b = _ur_b.Request(_buddy_gh, headers={"User-Agent": "Mozilla/5.0"})
+                with _ur_b.urlopen(_req_b, timeout=8) as _r_b:
+                    _buddy_bytes = _r_b.read()
+                st.image(_buddy_bytes, use_container_width=True)
+            except Exception:
+                st.markdown(
+                    '<div style="background:linear-gradient(135deg,#f0e8ff,#e8f8ff);'
+                    'border-radius:20px;padding:40px;text-align:center;font-size:3rem;">🐑💛🐑</div>',
+                    unsafe_allow_html=True)
         _comp3.html(_HTML_T2, height=2000, scrolling=True)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -2771,6 +2798,28 @@ function toast(msg){
   clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2600);
 }
 </script></body></html>"""
+        # ── family_sheep.png (native Streamlit — PIL-safe, no iframe CSP) ─────
+        _fam_local = _os3.path.join(_os3.path.dirname(__file__), "assets", "family_sheep.png")
+        _fam_gh    = _GH3 + "/family_sheep.png"
+        try:
+            from PIL import Image as _PIL_F
+            if _os3.path.exists(_fam_local):
+                _PIL_F.open(_fam_local).verify()
+                st.image(_fam_local, use_container_width=True)
+            else:
+                raise FileNotFoundError
+        except Exception:
+            try:
+                import urllib.request as _ur_f
+                _req_f = _ur_f.Request(_fam_gh, headers={"User-Agent": "Mozilla/5.0"})
+                with _ur_f.urlopen(_req_f, timeout=8) as _r_f:
+                    _fam_bytes = _r_f.read()
+                st.image(_fam_bytes, use_container_width=True)
+            except Exception:
+                st.markdown(
+                    '<div style="background:linear-gradient(135deg,#fff8e8,#f0e8ff);'
+                    'border-radius:20px;padding:40px;text-align:center;font-size:3rem;">🐏👩🐑🐑</div>',
+                    unsafe_allow_html=True)
         _comp3.html(_HTML_T3, height=2200, scrolling=True)
 
     # ─────────────────────────────────────────────────────────────────────────
