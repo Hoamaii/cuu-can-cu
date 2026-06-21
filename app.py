@@ -2005,7 +2005,7 @@ with tab4:
             "Hãy tự nghiên cứu và/hoặc tham khảo chuyên gia trước khi ra quyết định đầu tư."
         )
 
-    # ══ TAB 5: Social Farm ═══════════════════════════════════════════════════════
+    # ══ TAB 5: AI Sheep Companion ════════════════════════════════════════════════
     with tab5:
         import os as _os
 
@@ -2026,27 +2026,34 @@ with tab4:
             "f3":    _load_farm_asset("assets/friends/friend3.png",  _GH + "/friend_sheep_3.png"),
         }
 
-        def _src(k): return _FA.get(k, "")
-
-        def _avatar(key, size=40, fallback="🐑"):
-            s = _src(key)
-            style = (
+        def _av(key, size=44, fb="🐑"):
+            s = _FA.get(key, "")
+            base = (
                 "width:" + str(size) + "px;height:" + str(size) + "px;"
-                "border-radius:50%;object-fit:cover;display:block;"
-                "mix-blend-mode:multiply;background:#f0efe8;"
+                "border-radius:50%;object-fit:cover;flex-shrink:0;"
+                "mix-blend-mode:multiply;background:#EDE8DC;"
             )
             if s:
-                return '<img src="' + s + '" style="' + style + '" onerror="this.style.display=\'none\'">'
-            return '<div style="' + style + 'background:#F5ECD8;display:flex;align-items:center;justify-content:center;font-size:' + str(size//2) + 'px;">' + fallback + '</div>'
+                return '<img src="' + s + '" style="' + base + '" onerror="this.style.display=\'none\'">'
+            return (
+                '<div style="' + base + 'display:flex;align-items:center;'
+                'justify-content:center;font-size:' + str(size // 2) + 'px;">' + fb + '</div>'
+            )
 
-        _sheep_avatar = (
-            '<img id="sheep-hero" src="' + _src("sheep") + '" '
-            'style="width:130px;height:130px;object-fit:contain;mix-blend-mode:multiply;cursor:pointer;'
-            'transition:transform 0.2s cubic-bezier(.34,1.56,.64,1);" '
-            'onclick="feedSheep()" onerror="this.outerHTML=\'<div style=&quot;font-size:80px;cursor:pointer;&quot; id=&quot;sheep-hero&quot; onclick=&quot;feedSheep()&quot;>🐑</div>\'">'
-            if _src("sheep") else
-            '<div id="sheep-hero" style="font-size:80px;cursor:pointer;line-height:1;" onclick="feedSheep()">🐑</div>'
-        )
+        _sheep_src = _FA.get("sheep", "")
+        if _sheep_src:
+            _sheep_el = (
+                '<img id="sheep" src="' + _sheep_src + '" '
+                'style="width:200px;height:200px;object-fit:contain;'
+                'mix-blend-mode:multiply;cursor:pointer;display:block;'
+                'animation:sheep-bob 3.5s ease-in-out infinite,sheep-tilt 7s ease-in-out infinite;"'
+                ' onclick="feedSheep()" onerror="this.style.display=\'none\'">'
+            )
+        else:
+            _sheep_el = (
+                '<div id="sheep" style="font-size:110px;line-height:1;cursor:pointer;'
+                'animation:sheep-bob 3.5s ease-in-out infinite;" onclick="feedSheep()">🐑</div>'
+            )
 
         _HTML = """\
 <!DOCTYPE html>
@@ -2055,537 +2062,773 @@ with tab4:
 <meta charset="utf-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-html,body{width:100%;height:100%;overflow:hidden;background:#F7F5F0;font-family:-apple-system,'Helvetica Neue',sans-serif;}
-#app{width:860px;height:820px;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+html,body{width:100%;height:100%;overflow:hidden;
+  background:linear-gradient(180deg,#EEF5FF 0%,#FFF8F0 45%,#F5F0E8 80%,#E8F5D8 100%);
+  font-family:-apple-system,'Helvetica Neue',sans-serif;}
+#app{width:860px;height:820px;position:relative;display:flex;flex-direction:column;}
 
-/* ── TOP BAR ── */
-.topbar{
-  flex-shrink:0;height:66px;
-  background:rgba(255,255,255,0.97);
-  backdrop-filter:blur(16px);
-  display:flex;align-items:center;padding:0 16px;gap:12px;
-  box-shadow:0 1px 0 rgba(0,0,0,0.07);
-  z-index:10;
+/* ── TOPBAR ── */
+.tb{
+  flex-shrink:0;height:58px;display:flex;align-items:center;
+  padding:0 18px;gap:10px;
+  background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  box-shadow:0 1px 0 rgba(0,0,0,0.06);z-index:20;
 }
-.tb-av{
-  width:40px;height:40px;border-radius:50%;
-  background:linear-gradient(135deg,#FFE066,#FF9500);
-  border:2.5px solid #FFD700;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;flex-shrink:0;
-  box-shadow:0 2px 8px rgba(255,150,0,0.3);
+.tb-streak{
+  display:flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,#FF6B00,#FF3500);
+  color:#fff;border-radius:20px;padding:5px 12px;
+  font-size:13px;font-weight:800;
+  box-shadow:0 2px 10px rgba(255,80,0,0.3);
 }
-.tb-info{flex:1;min-width:0;}
-.tb-name{font-size:14px;font-weight:700;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tb-level{font-size:11px;color:#888;margin-top:1px;}
-.streak-pill{
-  display:flex;align-items:center;gap:4px;
-  background:linear-gradient(135deg,#FF6B00,#FF3B00);
-  color:white;border-radius:20px;padding:5px 10px;
-  font-size:12px;font-weight:800;flex-shrink:0;
-  box-shadow:0 2px 8px rgba(255,80,0,0.35);
-}
-.cur-pill{
+.tb-name{flex:1;text-align:center;font-size:16px;font-weight:800;color:#1a1a1a;letter-spacing:-0.3px;}
+.tb-mood{font-size:13px;color:#FF8C00;font-weight:600;}
+.tb-pill{
   display:flex;align-items:center;gap:4px;
   background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);
-  border-radius:20px;padding:5px 9px;
-  font-size:12px;font-weight:700;color:#1a1a1a;flex-shrink:0;
+  border-radius:20px;padding:5px 10px;
+  font-size:12px;font-weight:700;color:#1a1a1a;
+}
+.tb-bell{font-size:20px;cursor:pointer;position:relative;flex-shrink:0;}
+.tb-dot{
+  position:absolute;top:0;right:0;
+  width:8px;height:8px;background:#FF3B30;
+  border-radius:50%;border:1.5px solid rgba(255,255,255,0.9);
 }
 
 /* ── SCROLL AREA ── */
-.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px 8px;}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
 .scroll::-webkit-scrollbar{width:0;}
 
-/* ── SHEEP HERO CARD ── */
-.sheep-card{
-  background:white;border-radius:24px;
-  padding:20px 20px 16px;
-  box-shadow:0 2px 16px rgba(0,0,0,0.07);
-  display:flex;gap:16px;align-items:center;
-  margin-bottom:12px;
+/* ── SHEEP SCENE ── */
+.scene{
+  position:relative;height:268px;overflow:hidden;
+  background:linear-gradient(180deg,
+    #C8E8FF 0%,#D8EEFF 20%,
+    #FFF5E8 55%,#F0EDDE 75%,
+    #C8E898 88%,#A8D878 100%);
 }
-.sheep-circle{
-  width:150px;height:150px;flex-shrink:0;
+
+/* Ambient light orb */
+.scene-sun{
+  position:absolute;top:20px;right:130px;
+  width:56px;height:56px;
+  background:radial-gradient(circle,#FFF8C0 0%,#FFE040 40%,transparent 100%);
   border-radius:50%;
-  background:radial-gradient(circle,#FFF9E6 0%,#FFF0CC 70%,#FFE5A0 100%);
-  display:flex;align-items:center;justify-content:center;
-  position:relative;
-  box-shadow:0 0 0 4px rgba(255,180,0,0.15), 0 4px 20px rgba(255,150,0,0.2);
-}
-.sheep-pulse{
-  position:absolute;inset:-6px;border-radius:50%;
-  border:2px solid rgba(255,180,0,0.3);
-  animation:pulse-ring 2s ease-out infinite;
-}
-.sheep-info{flex:1;min-width:0;}
-.sheep-name{font-size:18px;font-weight:800;color:#1a1a1a;}
-.sheep-sub{font-size:12px;color:#888;margin-top:2px;margin-bottom:10px;}
-.xp-label{font-size:10px;color:#aaa;display:flex;justify-content:space-between;margin-bottom:4px;}
-.xp-track{height:8px;background:rgba(0,0,0,0.07);border-radius:10px;overflow:hidden;}
-.xp-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#FFB800,#FF6B00);position:relative;overflow:hidden;}
-.xp-fill::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,0.4);animation:shimmer 2s infinite;}
-.bubble-msg{
-  margin-top:10px;background:#F7F5F0;border-radius:14px;padding:8px 12px;
-  font-size:12px;color:#555;line-height:1.5;border-left:3px solid #FF9500;
+  box-shadow:0 0 60px 30px rgba(255,220,0,0.18);
+  z-index:1;
 }
 
-/* ── CTAs ── */
-.cta-row{display:flex;gap:10px;margin-top:12px;}
-.btn-primary{
-  flex:1;background:linear-gradient(145deg,#FFD840,#FF8C00);
-  border:none;border-radius:16px;padding:13px 16px;
-  font-size:14px;font-weight:800;color:white;
-  text-shadow:0 1px 3px rgba(0,0,0,0.15);
-  box-shadow:0 4px 16px rgba(255,140,0,0.45),inset 0 1px 0 rgba(255,255,255,0.25);
-  cursor:pointer;transition:all 0.15s cubic-bezier(.34,1.56,.64,1);
-  display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.btn-primary:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px rgba(255,140,0,0.55);}
-.btn-primary:active{transform:scale(0.97);}
-.btn-secondary{
-  flex:1;background:white;
-  border:1.5px solid rgba(0,0,0,0.1);border-radius:16px;padding:13px 16px;
-  font-size:14px;font-weight:700;color:#1a1a1a;
-  cursor:pointer;transition:all 0.15s;
-  display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.btn-secondary:hover{background:#F5F5F5;border-color:rgba(0,0,0,0.15);}
+/* Background tree silhouettes */
+.bg-tree{position:absolute;z-index:2;opacity:0.55;}
+.bt-top{background:#5A9C30;border-radius:50% 50% 40% 40%;}
+.bt-trunk{background:#7A5228;border-radius:2px;margin:0 auto;}
 
-/* ── SECTION HEADER ── */
-.sec-hdr{
+/* Soft ground */
+.ground{
+  position:absolute;bottom:0;left:0;right:0;
+  height:88px;
+  background:linear-gradient(180deg,#82CC44 0%,#68B82C 50%,#58A01C 100%);
+  border-radius:55% 55% 0 0/20px 20px 0 0;
+  z-index:3;
+}
+/* Ground texture dots */
+.ground::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 20% 60%,rgba(255,255,255,0.08) 0%,transparent 40%),
+             radial-gradient(circle at 80% 40%,rgba(0,0,0,0.05) 0%,transparent 40%);
+  border-radius:inherit;
+}
+
+/* Small flowers on ground */
+.gflower{position:absolute;z-index:5;font-size:13px;pointer-events:none;}
+
+/* Sheep zone */
+.sheep-zone{
+  position:absolute;bottom:60px;left:50%;
+  transform:translateX(-50%);
+  z-index:6;
+  display:flex;flex-direction:column;align-items:center;
+}
+.sheep-glow{
+  position:absolute;
+  width:220px;height:220px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,240,180,0.45) 0%,rgba(255,200,80,0.12) 55%,transparent 100%);
+  bottom:-20px;left:50%;transform:translateX(-50%);
+  z-index:-1;
+  animation:glow-breathe 3.5s ease-in-out infinite;
+}
+.sheep-shadow{
+  width:130px;height:18px;
+  background:rgba(0,0,0,0.15);
+  border-radius:50%;
+  filter:blur(8px);
+  margin-top:-6px;
+  animation:shadow-bob 3.5s ease-in-out infinite;
+}
+
+/* Sheep mood floating badge */
+.mood-badge{
+  background:rgba(255,255,255,0.95);
+  border-radius:20px;padding:5px 12px;
+  font-size:12px;font-weight:700;color:#1a1a1a;
+  box-shadow:0 4px 16px rgba(0,0,0,0.1);
+  margin-bottom:10px;
+  animation:float-mood 4s ease-in-out infinite;
+  white-space:nowrap;
+}
+
+/* Sheep animations */
+@keyframes sheep-bob{
+  0%,100%{transform:translateY(0) scale(1,1);}
+  30%{transform:translateY(-7px) scale(1.01,0.99);}
+  60%{transform:translateY(-4px) scale(1,1);}
+}
+@keyframes sheep-tilt{
+  0%,100%{transform:rotate(0deg);}
+  25%{transform:rotate(-1.2deg);}
+  75%{transform:rotate(1.2deg);}
+}
+@keyframes shadow-bob{
+  0%,100%{transform:scaleX(1);opacity:0.15;}
+  30%{transform:scaleX(0.8);opacity:0.08;}
+}
+@keyframes glow-breathe{
+  0%,100%{opacity:0.6;transform:translateX(-50%) scale(1);}
+  50%{opacity:1;transform:translateX(-50%) scale(1.1);}
+}
+@keyframes float-mood{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-4px);}
+}
+
+/* ── COMPANION CARD ── */
+.comp-card{
+  margin:0 14px;
+  background:rgba(255,255,255,0.95);
+  border-radius:24px;
+  padding:18px 20px 14px;
+  box-shadow:0 2px 20px rgba(0,0,0,0.07);
+}
+.comp-header{
   display:flex;align-items:center;justify-content:space-between;
   margin-bottom:10px;
 }
-.sec-title{font-size:15px;font-weight:800;color:#1a1a1a;}
-.sec-link{font-size:12px;font-weight:600;color:#FF8C00;cursor:pointer;}
-
-/* ── ACTIVITY FEED ── */
-.feed-card{
-  background:white;border-radius:20px;
-  box-shadow:0 2px 12px rgba(0,0,0,0.06);
-  overflow:hidden;margin-bottom:12px;
+.comp-name{font-size:17px;font-weight:800;color:#1a1a1a;}
+.comp-mood-tag{
+  background:rgba(52,199,89,0.1);color:#1A8C3A;
+  border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;
 }
-.feed-item{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 16px;
-  border-bottom:1px solid rgba(0,0,0,0.05);
-  transition:background 0.15s;cursor:pointer;
-}
-.feed-item:last-child{border-bottom:none;}
-.feed-item:hover{background:rgba(0,0,0,0.02);}
-.feed-av-wrap{position:relative;flex-shrink:0;}
-.feed-badge{
-  position:absolute;bottom:-2px;right:-2px;
-  width:18px;height:18px;border-radius:50%;
-  background:white;display:flex;align-items:center;justify-content:center;
-  font-size:10px;box-shadow:0 1px 4px rgba(0,0,0,0.15);
-}
-.feed-text{flex:1;min-width:0;}
-.feed-main{font-size:13px;color:#1a1a1a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.feed-sub{font-size:11px;color:#aaa;margin-top:2px;}
-.feed-action{
-  flex-shrink:0;
-  background:rgba(255,140,0,0.1);color:#FF8C00;
-  border:none;border-radius:12px;padding:6px 12px;
-  font-size:12px;font-weight:700;cursor:pointer;
-  transition:all 0.15s;white-space:nowrap;
-}
-.feed-action:hover{background:rgba(255,140,0,0.2);}
-.feed-action.green{background:rgba(52,199,89,0.1);color:#28A745;}
-.feed-action.green:hover{background:rgba(52,199,89,0.2);}
-.feed-action.blue{background:rgba(0,122,255,0.1);color:#0077FF;}
-.feed-action.blue:hover{background:rgba(0,122,255,0.2);}
-
-/* Friend quick-actions */
-.quick-actions{
-  display:flex;gap:8px;padding:12px 16px 14px;
-  border-top:1px solid rgba(0,0,0,0.05);
-}
-.qa-btn{
-  flex:1;background:#F7F5F0;border:none;border-radius:14px;
-  padding:9px 6px;font-size:11px;font-weight:700;color:#555;
-  cursor:pointer;transition:all 0.15s;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-}
-.qa-btn:hover{background:#EEEAE0;color:#1a1a1a;}
-.qa-ico{font-size:17px;}
-
-/* ── REFERRAL BANNER ── */
-.referral-card{
-  background:linear-gradient(135deg,#667EEA 0%,#764BA2 100%);
-  border-radius:20px;padding:18px 20px;
+.comp-thinking{
+  font-size:13px;color:#555;line-height:1.6;
+  background:#F8F5EE;border-radius:16px;padding:12px 14px;
   margin-bottom:12px;
-  box-shadow:0 4px 20px rgba(102,126,234,0.4);
-  display:flex;align-items:center;gap:16px;
-  position:relative;overflow:hidden;
+  border-left:3px solid #FF9500;
+  font-style:italic;
 }
-.referral-card::before{
+.comp-thinking strong{font-style:normal;color:#FF8C00;}
+.comp-memory{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.mem-tag{
+  background:#F0EDE8;color:#666;
+  border-radius:20px;padding:4px 11px;font-size:11px;font-weight:600;
+}
+.comp-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.streak-badge{
+  display:flex;align-items:center;gap:5px;
+  font-size:12px;font-weight:700;color:#FF5500;
+}
+.days-together{font-size:11px;color:#aaa;}
+
+/* Dynamic chat prompt */
+.chat-prompt{
+  background:linear-gradient(145deg,#1A1A2E,#16213E);
+  border-radius:18px;padding:13px 16px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:all 0.18s;
+  box-shadow:0 4px 16px rgba(0,0,0,0.15);
+}
+.chat-prompt:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2);}
+.chat-prompt:active{transform:scale(0.98);}
+.cp-text{flex:1;font-size:13px;color:rgba(255,255,255,0.92);font-weight:600;line-height:1.4;}
+.cp-ico{font-size:20px;flex-shrink:0;}
+.cp-arrow{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,0.12);
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-size:14px;flex-shrink:0;
+}
+
+/* ── SECTION HEADER ── */
+.sec{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 10px;}
+.sec-t{font-size:15px;font-weight:800;color:#1a1a1a;}
+.sec-a{font-size:12px;font-weight:600;color:#FF8C00;cursor:pointer;}
+
+/* ── FRIENDS FEED ── */
+.feed{margin:0 14px;background:rgba(255,255,255,0.95);border-radius:22px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);}
+.fi{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid rgba(0,0,0,0.05);
+  cursor:pointer;transition:background 0.15s;
+}
+.fi:last-child{border-bottom:none;}
+.fi:hover{background:rgba(0,0,0,0.015);}
+.fi-av{position:relative;flex-shrink:0;}
+.fi-badge{
+  position:absolute;bottom:-3px;right:-3px;
+  width:20px;height:20px;border-radius:50%;
+  background:white;display:flex;align-items:center;justify-content:center;
+  font-size:11px;box-shadow:0 1px 6px rgba(0,0,0,0.15);
+}
+.fi-body{flex:1;min-width:0;}
+.fi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.fi-name{font-size:13px;font-weight:700;color:#1a1a1a;}
+.fi-state{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.fi-state.fire{background:rgba(255,100,0,0.1);color:#FF5500;}
+.fi-state.sad{background:rgba(100,100,255,0.1);color:#5555DD;}
+.fi-state.win{background:rgba(255,200,0,0.12);color:#B88A00;}
+.fi-desc{font-size:12px;color:#777;margin-bottom:9px;line-height:1.45;}
+.fi-actions{display:flex;gap:7px;flex-wrap:wrap;}
+.fa-btn{
+  border:none;border-radius:12px;padding:6px 13px;
+  font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;
+}
+.fa-btn.orange{background:rgba(255,140,0,0.12);color:#D97700;}
+.fa-btn.orange:hover{background:rgba(255,140,0,0.22);}
+.fa-btn.green{background:rgba(52,199,89,0.12);color:#1A8C3A;}
+.fa-btn.green:hover{background:rgba(52,199,89,0.22);}
+.fa-btn.blue{background:rgba(0,122,255,0.1);color:#0062CC;}
+.fa-btn.blue:hover{background:rgba(0,122,255,0.18);}
+.fa-btn.pink{background:rgba(255,45,85,0.1);color:#CC1140;}
+.fa-btn.pink:hover{background:rgba(255,45,85,0.18);}
+.fa-btn.purple{background:rgba(175,82,222,0.1);color:#8B00CC;}
+.fa-btn.purple:hover{background:rgba(175,82,222,0.18);}
+
+/* ── REFERRAL ── */
+.ref-card{
+  margin:12px 14px;
+  background:linear-gradient(135deg,#4C3699 0%,#6B4FBB 50%,#8966D6 100%);
+  border-radius:22px;padding:18px 20px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 6px 24px rgba(76,54,153,0.4);
+  position:relative;overflow:hidden;cursor:pointer;
+  transition:all 0.18s;
+}
+.ref-card:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(76,54,153,0.5);}
+.ref-card::before{
   content:'';position:absolute;
-  top:-40px;right:-40px;
-  width:140px;height:140px;
-  border-radius:50%;
-  background:rgba(255,255,255,0.08);
+  top:-50px;right:-50px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(255,255,255,0.07);
 }
-.referral-card::after{
+.ref-card::after{
   content:'';position:absolute;
-  bottom:-60px;right:60px;
-  width:120px;height:120px;
-  border-radius:50%;
-  background:rgba(255,255,255,0.05);
+  bottom:-40px;left:50%;
+  width:100px;height:100px;border-radius:50%;
+  background:rgba(255,255,255,0.04);
 }
-.referral-ico{font-size:36px;flex-shrink:0;z-index:1;}
-.referral-text{flex:1;z-index:1;}
-.ref-title{font-size:15px;font-weight:800;color:white;}
-.ref-rewards{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.ref-ico{font-size:38px;z-index:1;flex-shrink:0;}
+.ref-text{flex:1;z-index:1;}
+.ref-title{font-size:15px;font-weight:800;color:white;margin-bottom:6px;}
+.ref-chips{display:flex;gap:6px;flex-wrap:wrap;}
 .ref-chip{
-  background:rgba(255,255,255,0.2);color:white;
-  border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;
+  background:rgba(255,255,255,0.18);
+  color:rgba(255,255,255,0.95);
+  border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;
 }
 .ref-btn{
   z-index:1;flex-shrink:0;
-  background:white;color:#667EEA;
+  background:white;color:#4C3699;
   border:none;border-radius:14px;padding:10px 16px;
   font-size:13px;font-weight:800;cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,0.15);
-  transition:all 0.15s;white-space:nowrap;
+  box-shadow:0 2px 12px rgba(0,0,0,0.15);
+  transition:all 0.15s;
 }
-.ref-btn:hover{transform:scale(1.04);}
+.ref-btn:hover{transform:scale(1.05);}
 
-/* ── GIFT SECTION ── */
-.gift-card{
-  background:white;border-radius:20px;
-  box-shadow:0 2px 12px rgba(0,0,0,0.06);
-  padding:14px 16px 16px;
-  margin-bottom:8px;
-}
-.gift-scroll{
-  display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;
-}
-.gift-scroll::-webkit-scrollbar{height:0;}
-.gift-item{
-  flex-shrink:0;
-  background:#F7F5F0;border-radius:16px;
-  padding:10px;width:70px;
-  display:flex;flex-direction:column;align-items:center;gap:5px;
-  cursor:pointer;transition:all 0.15s;
-  border:2px solid transparent;
-}
-.gift-item:hover,.gift-item.selected{background:#FFF5E6;border-color:#FF9500;}
-.gift-ico{font-size:26px;}
-.gift-name{font-size:10px;font-weight:600;color:#777;text-align:center;line-height:1.2;}
-.gift-price{font-size:10px;color:#FF8C00;font-weight:700;}
-.btn-gift{
-  width:100%;background:linear-gradient(145deg,#34C759,#28A745);
-  border:none;border-radius:14px;padding:12px;
-  font-size:14px;font-weight:800;color:white;cursor:pointer;
-  box-shadow:0 4px 14px rgba(52,199,89,0.4);
-  transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn-gift:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(52,199,89,0.5);}
+/* spacer */
+.spacer{height:16px;}
 
 /* ── BOTTOM NAV ── */
 .bnav{
   flex-shrink:0;height:80px;
-  background:rgba(255,255,255,0.98);
-  backdrop-filter:blur(20px);
+  background:rgba(255,255,255,0.97);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   display:flex;align-items:flex-start;justify-content:space-around;
   padding-top:10px;
   box-shadow:0 -1px 0 rgba(0,0,0,0.07);
-  z-index:10;
+  z-index:20;
 }
 .ni{
+  flex:1;max-width:80px;
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  cursor:pointer;padding:7px 10px 4px;border-radius:14px;
-  transition:background 0.2s;flex:1;max-width:80px;
-  position:relative;
+  cursor:pointer;padding:6px 8px 4px;border-radius:14px;
+  transition:background 0.2s;position:relative;
 }
 .ni:hover{background:rgba(0,0,0,0.03);}
 .nico{font-size:22px;transition:transform 0.2s;}
-.ni.active .nico{transform:scale(1.1);}
+.ni.active .nico{transform:scale(1.12);}
 .nlb{font-size:10px;font-weight:600;color:#C0C0C0;transition:color 0.2s;}
 .ni.active .nlb{color:#FF8C00;}
 .npip{width:5px;height:5px;background:#FF8C00;border-radius:50%;margin-top:2px;opacity:0;transition:opacity 0.2s;}
 .ni.active .npip{opacity:1;}
 .nbadge{
-  position:absolute;top:4px;right:8px;
+  position:absolute;top:2px;right:4px;
   background:#FF3B30;color:white;border-radius:10px;
   font-size:9px;font-weight:800;padding:1px 5px;
-  min-width:16px;text-align:center;
 }
 
-/* ── ANIMATIONS ── */
+/* ── CHAT OVERLAY ── */
+.overlay{
+  position:absolute;inset:0;z-index:50;
+  background:rgba(255,255,255,0.98);
+  backdrop-filter:blur(16px);
+  display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.overlay.open{transform:translateY(0);}
+.ov-header{
+  height:58px;display:flex;align-items:center;padding:0 18px;gap:14px;
+  border-bottom:1px solid rgba(0,0,0,0.07);flex-shrink:0;
+}
+.ov-back{font-size:22px;cursor:pointer;color:#FF8C00;}
+.ov-title{font-size:17px;font-weight:800;color:#1a1a1a;flex:1;}
+.ov-scroll{flex:1;overflow-y:auto;padding:12px 0;}
+.ov-scroll::-webkit-scrollbar{width:0;}
+.ov-sec{padding:10px 18px 4px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.7px;}
+.chat-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 18px;cursor:pointer;transition:background 0.15s;
+}
+.chat-row:hover{background:rgba(0,0,0,0.025);}
+.chat-row-av{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+}
+.cr-name{font-size:14px;font-weight:700;color:#1a1a1a;}
+.cr-sub{font-size:12px;color:#aaa;margin-top:2px;}
+.cr-badge{background:#FF3B30;color:white;border-radius:10px;font-size:10px;font-weight:800;padding:2px 6px;margin-left:auto;}
+.community-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;padding:10px 18px;
+}
+.comm-card{
+  background:#F8F5EE;border-radius:18px;padding:14px 16px;
+  cursor:pointer;transition:all 0.15s;
+}
+.comm-card:hover{background:#EDE8DC;transform:translateY(-1px);}
+.comm-ico{font-size:26px;margin-bottom:6px;}
+.comm-name{font-size:13px;font-weight:700;color:#1a1a1a;}
+.comm-members{font-size:11px;color:#aaa;margin-top:2px;}
+
+/* ── FEED ANIMATION ── */
 @keyframes shimmer{0%{left:-100%}100%{left:200%}}
-@keyframes pulse-ring{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.18);opacity:0}}
-@keyframes rise{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-200%)}}
-@keyframes confetti-drop{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(160px) rotate(540deg)}}
-@keyframes pop{0%{transform:scale(0.8);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes drop{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(180px) rotate(560deg)}}
+@keyframes rise{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-240%)}}
+@keyframes pop{0%{transform:scale(0.7);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(12px);
+  background:rgba(20,20,20,0.88);color:white;
+  padding:10px 20px;border-radius:22px;
+  font-size:13px;font-weight:600;
+  opacity:0;transition:all 0.28s;z-index:60;
+  pointer-events:none;white-space:nowrap;
+}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:55;overflow:hidden;}
 </style>
 </head>
 <body>
 <div id="app">
 
   <!-- ── TOP BAR ── -->
-  <div class="topbar">
-    <div class="tb-av">🐑</div>
-    <div class="tb-info">
-      <div class="tb-name">Bông Cần Cù</div>
-      <div class="tb-level">Cừu Kiên Trì · Cấp 5</div>
-    </div>
-    <div class="streak-pill">🔥 7 ngày</div>
-    <div class="cur-pill">🪙 128.450</div>
-    <div class="cur-pill">💎 320</div>
+  <div class="tb">
+    <div class="tb-streak">🔥 7 ngày</div>
+    <div class="tb-name">Bông Cần Cù <span class="tb-mood">😊</span></div>
+    <div class="tb-pill">🪙 128.450</div>
+    <div class="tb-pill">💎 320</div>
+    <div class="tb-bell">🔔<div class="tb-dot"></div></div>
   </div>
 
   <!-- ── SCROLL CONTENT ── -->
   <div class="scroll">
 
-    <!-- Sheep Hero -->
-    <div class="sheep-card">
-      <div class="sheep-circle">
-        <div class="sheep-pulse"></div>
-        __SHEEP_HERO__
+    <!-- SHEEP SCENE -->
+    <div class="scene">
+      <div class="scene-sun"></div>
+
+      <!-- Background trees -->
+      <div class="bg-tree" style="bottom:78px;left:30px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bt-top" style="width:42px;height:46px;"></div>
+        <div class="bt-trunk" style="width:9px;height:20px;"></div>
       </div>
-      <div class="sheep-info">
-        <div class="sheep-name">Bông Cần Cù</div>
-        <div class="sheep-sub">Cừu Kiên Trì · Cấp 5 → 6</div>
-        <div class="xp-label">
-          <span>XP: 65%</span>
-          <span style="color:#FF8C00;font-weight:700;">+250 XP tiếp theo</span>
+      <div class="bg-tree" style="bottom:82px;left:78px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bt-top" style="width:52px;height:56px;background:#4A8C28;border-radius:50% 50% 40% 40%;"></div>
+        <div class="bt-trunk" style="width:11px;height:24px;background:#7A5228;border-radius:2px;margin:0 auto;"></div>
+      </div>
+      <div class="bg-tree" style="bottom:80px;right:34px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bt-top" style="width:46px;height:50px;background:#528C30;border-radius:50% 50% 40% 40%;"></div>
+        <div class="bt-trunk" style="width:10px;height:22px;background:#7A5228;border-radius:2px;margin:0 auto;"></div>
+      </div>
+      <div class="bg-tree" style="bottom:84px;right:90px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bt-top" style="width:38px;height:42px;background:#3A8020;border-radius:50% 50% 40% 40%;"></div>
+        <div class="bt-trunk" style="width:8px;height:18px;background:#7A5228;border-radius:2px;margin:0 auto;"></div>
+      </div>
+
+      <!-- Ground -->
+      <div class="ground"></div>
+
+      <!-- Ground flowers -->
+      <div class="gflower" style="bottom:22px;left:200px;">🌼</div>
+      <div class="gflower" style="bottom:28px;left:236px;">🌸</div>
+      <div class="gflower" style="bottom:18px;right:198px;">🌷</div>
+      <div class="gflower" style="bottom:26px;right:238px;">🌼</div>
+      <div class="gflower" style="bottom:14px;left:310px;font-size:10px;">🌿</div>
+      <div class="gflower" style="bottom:13px;right:305px;font-size:10px;">🌿</div>
+
+      <!-- Sheep zone -->
+      <div class="sheep-zone">
+        <div class="mood-badge">😊 Bông đang vui hôm nay</div>
+        <div class="sheep-glow"></div>
+        __SHEEP__
+        <div class="sheep-shadow"></div>
+      </div>
+    </div>
+
+    <!-- AI COMPANION CARD -->
+    <div class="comp-card" style="margin-top:-4px;border-radius:0 0 24px 24px;position:relative;z-index:2;">
+      <div class="comp-header">
+        <div class="comp-name">🐑 Bông Cần Cù</div>
+        <div class="comp-mood-tag">😊 Đang vui</div>
+      </div>
+      <div class="comp-thinking" id="ai-thinking">
+        💭 <strong>"Hoa</strong>, bạn vẫn đang tiết kiệm cho giấc mơ MBA không? Mình đang nghĩ về bạn đó..."
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📌 Mình nhớ</div>
+      <div class="comp-memory">
+        <div class="mem-tag">🏠 Muốn mua nhà</div>
+        <div class="mem-tag">🎓 Giấc mơ MBA</div>
+        <div class="mem-tag">💰 Tự do tài chính</div>
+        <div class="mem-tag">💭 Hay lo về dòng tiền</div>
+      </div>
+      <div class="comp-footer">
+        <div class="streak-badge">🔥 <span>7 ngày cùng nhau</span></div>
+        <div class="days-together">Quen nhau từ 01/01/2026</div>
+      </div>
+      <div class="chat-prompt" id="chat-btn" onclick="openChat()">
+        <div class="cp-ico">💬</div>
+        <div class="cp-text" id="prompt-text">Mình đang lo cho giấc mơ của bạn...</div>
+        <div class="cp-arrow">→</div>
+      </div>
+    </div>
+
+    <!-- FRIENDS FEED -->
+    <div class="sec">
+      <div class="sec-t">🐑 Đàn cừu hôm nay</div>
+      <div class="sec-a" onclick="setNav(document.querySelectorAll('.ni')[1])">Xem thêm →</div>
+    </div>
+    <div class="feed">
+      <div class="fi" onclick="">
+        <div class="fi-av">
+          __F1__
+          <div class="fi-badge">🔥</div>
         </div>
-        <div class="xp-track"><div class="xp-fill" style="width:65%"></div></div>
-        <div class="bubble-msg" id="sheep-msg">
-          Chào Hoa ☀️ Hôm nay mình nhớ bạn lắm đó ❤️
+        <div class="fi-body">
+          <div class="fi-top">
+            <div class="fi-name">Bông Mập</div>
+            <div class="fi-state fire">🔥 30 ngày</div>
+          </div>
+          <div class="fi-desc">Hoàn thành chuỗi tiết kiệm 30 ngày liên tiếp — không bỏ ngày nào! 💪</div>
+          <div class="fi-actions">
+            <button class="fa-btn orange" onclick="event.stopPropagation();celebrate()">❤️ Chúc mừng</button>
+            <button class="fa-btn green" onclick="event.stopPropagation();toast('Đã gửi quà cho Bông Mập! 🎁')">🎁 Gửi quà</button>
+            <button class="fa-btn blue" onclick="event.stopPropagation();toast('Đang mở chat...')">💬 Nhắn tin</button>
+          </div>
         </div>
-        <div class="cta-row">
-          <button class="btn-primary" onclick="feedSheep()">🥕 Cho ăn 50.000đ</button>
-          <button class="btn-secondary" onclick="chatSheep()">💬 Trò chuyện</button>
+      </div>
+      <div class="fi" onclick="">
+        <div class="fi-av">
+          __F2__
+          <div class="fi-badge">😔</div>
+        </div>
+        <div class="fi-body">
+          <div class="fi-top">
+            <div class="fi-name">Mây Tích</div>
+            <div class="fi-state sad">😔 Buồn</div>
+          </div>
+          <div class="fi-desc">Hôm nay Mây Tích có vẻ không được vui... Mình có thể gửi gì cho bạn ấy không?</div>
+          <div class="fi-actions">
+            <button class="fa-btn pink" onclick="event.stopPropagation();toast('Đã gửi hoa cho Mây Tích! 🌸')">🌸 Gửi hoa</button>
+            <button class="fa-btn blue" onclick="event.stopPropagation();toast('Đang mở chat...')">💬 Nhắn tin</button>
+            <button class="fa-btn orange" onclick="event.stopPropagation();toast('Đã gửi XP Boost! ⚡')">⚡ Boost</button>
+          </div>
+        </div>
+      </div>
+      <div class="fi" onclick="">
+        <div class="fi-av">
+          __F3__
+          <div class="fi-badge">🏆</div>
+        </div>
+        <div class="fi-body">
+          <div class="fi-top">
+            <div class="fi-name">Cậu Nhanh</div>
+            <div class="fi-state win">🏆 Lv.12</div>
+          </div>
+          <div class="fi-desc">Vừa đạt Level 12 — Cừu Trí Tuệ! Cùng chúc mừng Cậu Nhanh nha! 🎉</div>
+          <div class="fi-actions">
+            <button class="fa-btn purple" onclick="event.stopPropagation();celebrate()">🎉 Ăn mừng</button>
+            <button class="fa-btn orange" onclick="event.stopPropagation();toast('Đã khen ngợi! 👏')">👏 Khen ngợi</button>
+            <button class="fa-btn green" onclick="event.stopPropagation();toast('Đang thăm nông trại...')">🏡 Thăm trại</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Activity Feed -->
-    <div class="sec-hdr">
-      <div class="sec-title">👥 Hoạt động bạn bè</div>
-      <div class="sec-link" onclick="setNav(document.querySelectorAll('.ni')[1])">Xem tất cả →</div>
-    </div>
-    <div class="feed-card">
-      <div class="feed-item" onclick="celebrate(this)">
-        <div class="feed-av-wrap">
-          __F1_AVATAR__
-          <div class="feed-badge">🔥</div>
-        </div>
-        <div class="feed-text">
-          <div class="feed-main">Bông Mập đạt Level 6!</div>
-          <div class="feed-sub">2 phút trước · Tiết kiệm 500k/tuần</div>
-        </div>
-        <button class="feed-action" onclick="event.stopPropagation();toast('Đã chúc mừng! 🎉')">Chúc mừng</button>
-      </div>
-      <div class="feed-item" onclick="openGift()">
-        <div class="feed-av-wrap">
-          __F2_AVATAR__
-          <div class="feed-badge">🎁</div>
-        </div>
-        <div class="feed-text">
-          <div class="feed-main">Mây Tích gửi bạn 1 phần cỏ</div>
-          <div class="feed-sub">15 phút trước · Nhận trước 23:59</div>
-        </div>
-        <button class="feed-action green" onclick="event.stopPropagation();toast('Đã nhận quà! 🎁')">Nhận quà</button>
-      </div>
-      <div class="feed-item" onclick="">
-        <div class="feed-av-wrap">
-          __F3_AVATAR__
-          <div class="feed-badge">❤️</div>
-        </div>
-        <div class="feed-text">
-          <div class="feed-main">Cậu Nhanh thích cừu của bạn</div>
-          <div class="feed-sub">1 giờ trước · Bấm để cảm ơn</div>
-        </div>
-        <button class="feed-action blue" onclick="event.stopPropagation();toast('Đã cảm ơn! ❤️')">Cảm ơn</button>
-      </div>
-      <div class="quick-actions">
-        <button class="qa-btn" onclick="toast('Mở Chat...')"><div class="qa-ico">💬</div>Chat</button>
-        <button class="qa-btn" onclick="openGift()"><div class="qa-ico">🎁</div>Tặng quà</button>
-        <button class="qa-btn" onclick="toast('Đang mở nông trại...')"><div class="qa-ico">🏡</div>Thăm nông trại</button>
-        <button class="qa-btn" onclick="toast('Đang tải bảng xếp hạng...')"><div class="qa-ico">🏆</div>Xếp hạng</button>
-      </div>
-    </div>
-
-    <!-- Referral Banner -->
-    <div class="referral-card">
-      <div class="referral-ico">🐑</div>
-      <div class="referral-text">
-        <div class="ref-title">Mời bạn mới nuôi cừu</div>
-        <div class="ref-rewards">
+    <!-- REFERRAL -->
+    <div class="ref-card" onclick="toast('Đã sao chép link mời! 🔗')">
+      <div class="ref-ico">🐑</div>
+      <div class="ref-text">
+        <div class="ref-title">Đưa cừu mới vào đàn</div>
+        <div class="ref-chips">
           <span class="ref-chip">+500 XP</span>
           <span class="ref-chip">+10 💎</span>
-          <span class="ref-chip">Skin độc quyền 🌟</span>
+          <span class="ref-chip">🌟 Skin độc quyền</span>
         </div>
       </div>
-      <button class="ref-btn" onclick="toast('Đã sao chép link mời! 🔗')">Mời ngay</button>
+      <button class="ref-btn" onclick="event.stopPropagation();toast('Đã sao chép! 🔗')">Mời ngay</button>
     </div>
 
-    <!-- Gift Section -->
-    <div class="sec-hdr">
-      <div class="sec-title">🎁 Gửi quà cho bạn bè</div>
-      <div class="sec-link">Lịch sử →</div>
-    </div>
-    <div class="gift-card" id="gift-section">
-      <div class="gift-scroll">
-        <div class="gift-item selected" onclick="selectGift(this)">
-          <div class="gift-ico">🌿</div>
-          <div class="gift-name">Cỏ tươi</div>
-          <div class="gift-price">Miễn phí</div>
-        </div>
-        <div class="gift-item" onclick="selectGift(this)">
-          <div class="gift-ico">🎩</div>
-          <div class="gift-name">Mũ dạ</div>
-          <div class="gift-price">50 💎</div>
-        </div>
-        <div class="gift-item" onclick="selectGift(this)">
-          <div class="gift-ico">🧥</div>
-          <div class="gift-name">Áo ấm</div>
-          <div class="gift-price">80 💎</div>
-        </div>
-        <div class="gift-item" onclick="selectGift(this)">
-          <div class="gift-ico">🌸</div>
-          <div class="gift-name">Hoa nhỏ</div>
-          <div class="gift-price">20 💎</div>
-        </div>
-        <div class="gift-item" onclick="selectGift(this)">
-          <div class="gift-ico">⚡</div>
-          <div class="gift-name">XP Boost</div>
-          <div class="gift-price">100 💎</div>
-        </div>
-        <div class="gift-item" onclick="selectGift(this)">
-          <div class="gift-ico">🍎</div>
-          <div class="gift-name">Táo đỏ</div>
-          <div class="gift-price">30 💎</div>
-        </div>
-      </div>
-      <button class="btn-gift" onclick="sendGift()">🎁 Gửi tặng cho Bông Mập</button>
-    </div>
-
+    <div class="spacer"></div>
   </div>
 
   <!-- ── BOTTOM NAV ── -->
   <div class="bnav">
-    <div class="ni active" onclick="setNav(this)">
-      <div class="nico">🏡</div>
-      <div class="nlb">Nông trại</div>
-      <div class="npip"></div>
+    <div class="ni active" onclick="setNav(this)"><div class="nico">🏡</div><div class="nlb">Trang trại</div><div class="npip"></div></div>
+    <div class="ni" onclick="setNav(this)"><div class="nico">👥</div><div class="nlb">Bạn bè</div><div class="npip"></div><div class="nbadge">3</div></div>
+    <div class="ni" onclick="openChat()"><div class="nico">💬</div><div class="nlb">Chat</div><div class="npip"></div><div class="nbadge">1</div></div>
+    <div class="ni" onclick="setNav(this)"><div class="nico">✨</div><div class="nlb">Giấc mơ</div><div class="npip"></div></div>
+    <div class="ni" onclick="setNav(this)"><div class="nico">👤</div><div class="nlb">Cá nhân</div><div class="npip"></div></div>
+  </div>
+
+  <!-- ── CHAT OVERLAY ── -->
+  <div class="overlay" id="chat-overlay">
+    <div class="ov-header">
+      <div class="ov-back" onclick="closeChat()">←</div>
+      <div class="ov-title">💬 Trò chuyện</div>
     </div>
-    <div class="ni" onclick="setNav(this)">
-      <div class="nico">👥</div>
-      <div class="nlb">Bạn bè</div>
-      <div class="npip"></div>
-      <div class="nbadge">3</div>
-    </div>
-    <div class="ni" onclick="setNav(this)">
-      <div class="nico">💬</div>
-      <div class="nlb">Chat</div>
-      <div class="npip"></div>
-      <div class="nbadge">1</div>
-    </div>
-    <div class="ni" onclick="setNav(this)">
-      <div class="nico">✨</div>
-      <div class="nlb">Giấc mơ</div>
-      <div class="npip"></div>
-    </div>
-    <div class="ni" onclick="setNav(this)">
-      <div class="nico">👤</div>
-      <div class="nlb">Cá nhân</div>
-      <div class="npip"></div>
+    <div class="ov-scroll">
+      <div class="ov-sec">Cừu của mình</div>
+      <div class="chat-row" onclick="toast('Đang mở chat với Bông...')">
+        <div class="chat-row-av" style="background:linear-gradient(135deg,#FFE066,#FF9500);">🐑</div>
+        <div>
+          <div class="cr-name">Bông Cần Cù</div>
+          <div class="cr-sub">Đang online · Muốn hỏi bạn điều gì đó...</div>
+        </div>
+        <div class="cr-badge">1</div>
+      </div>
+
+      <div class="ov-sec">Bạn bè</div>
+      <div class="chat-row" onclick="toast('Đang mở chat với Bông Mập...')">
+        <div class="chat-row-av" style="background:#F5ECD8;font-size:24px;text-align:center;line-height:48px;">__F1_SM__</div>
+        <div>
+          <div class="cr-name">Bông Mập</div>
+          <div class="cr-sub">🔥 30-ngày streak · "Tuyệt vời quá!"</div>
+        </div>
+      </div>
+      <div class="chat-row" onclick="toast('Đang mở chat với Mây Tích...')">
+        <div class="chat-row-av" style="background:#F5ECD8;font-size:24px;text-align:center;line-height:48px;">__F2_SM__</div>
+        <div>
+          <div class="cr-name">Mây Tích</div>
+          <div class="cr-sub">😔 Có vẻ cần động viên hôm nay</div>
+        </div>
+      </div>
+      <div class="chat-row" onclick="toast('Đang mở chat với Cậu Nhanh...')">
+        <div class="chat-row-av" style="background:#F5ECD8;font-size:24px;text-align:center;line-height:48px;">__F3_SM__</div>
+        <div>
+          <div class="cr-name">Cậu Nhanh</div>
+          <div class="cr-sub">🏆 Mới đạt Level 12!</div>
+        </div>
+      </div>
+
+      <div class="ov-sec">Cộng đồng Giấc Mơ</div>
+      <div class="community-grid">
+        <div class="comm-card" onclick="toast('Đang vào cộng đồng Du học...')">
+          <div class="comm-ico">🎓</div>
+          <div class="comm-name">Du học</div>
+          <div class="comm-members">2.341 thành viên</div>
+        </div>
+        <div class="comm-card" onclick="toast('Đang vào cộng đồng Mua nhà...')">
+          <div class="comm-ico">🏠</div>
+          <div class="comm-name">Mua nhà đầu tiên</div>
+          <div class="comm-members">5.128 thành viên</div>
+        </div>
+        <div class="comm-card" onclick="toast('Đang vào cộng đồng FIRE...')">
+          <div class="comm-ico">💰</div>
+          <div class="comm-name">FIRE</div>
+          <div class="comm-members">1.892 thành viên</div>
+        </div>
+        <div class="comm-card" onclick="toast('Đang vào cộng đồng Startup...')">
+          <div class="comm-ico">🚀</div>
+          <div class="comm-name">Startup</div>
+          <div class="comm-members">987 thành viên</div>
+        </div>
+        <div class="comm-card" onclick="toast('Đang vào cộng đồng MBA...')">
+          <div class="comm-ico">📚</div>
+          <div class="comm-name">MBA</div>
+          <div class="comm-members">643 thành viên</div>
+        </div>
+        <div class="comm-card" onclick="toast('Đang vào cộng đồng Freelance...')">
+          <div class="comm-ico">💻</div>
+          <div class="comm-name">Freelance</div>
+          <div class="comm-members">3.210 thành viên</div>
+        </div>
+      </div>
+      <div style="height:16px;"></div>
     </div>
   </div>
 
 </div>
 
-<!-- TOAST -->
-<div id="toast" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,30,0.88);color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all 0.3s;z-index:50;pointer-events:none;white-space:nowrap;"></div>
-
-<!-- CONFETTI -->
-<div id="confetti-layer" style="position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden;"></div>
+<div id="toast"></div>
+<div id="confetti"></div>
 
 <script>
-var feedMsgs=[
-  "Ngon quá! Cảm ơn bạn Hoa 😊",
-  "Mình đầy năng lượng rồi! 💪",
-  "Yay! Tiết kiệm thêm rồi 🎉",
-  "Mình sẽ cố gắng hơn cho bạn! 🌟"
+// ── CHAT PROMPTS (AI-initiated) ──
+var prompts = [
+  "Mình đang lo cho giấc mơ của bạn...",
+  "Hoa, bạn có chuyện gì muốn kể không?",
+  "Tuần này có điều gì tốt xảy ra không?",
+  "Bạn ổn không? Mình muốn nghe bạn kể.",
+  "Mình vừa nhớ ra điều gì đó về bạn nè...",
+  "Nói chuyện với mình đi, mình đang đây!"
+];
+var thinkings = [
+  '💭 <strong>"Hoa</strong>, bạn vẫn đang tiết kiệm cho giấc mơ MBA không? Mình đang nghĩ về bạn đó..."',
+  '💭 <strong>"Hoa</strong>, hôm nay bạn có cần mình không? Mình luôn ở đây nha..."',
+  '💭 <strong>"Hoa</strong>, mình nhớ bạn nói muốn mua nhà — bạn đang tiến đến đó rồi đó! 🏠"',
+  '💭 <strong>"Hoa</strong>, 7 ngày rồi đó — bạn đang làm rất tốt, mình tự hào về bạn! ❤️"'
 ];
 
-function feedSheep(){
-  var s=document.getElementById('sheep-hero');
-  if(s){
-    s.style.transition='transform 0.25s cubic-bezier(.34,1.56,.64,1)';
-    s.style.transform='scale(1.18)';
-    setTimeout(function(){s.style.transform='scale(1)';},300);
-  }
-  spawnConfetti(10);
-  var msg=feedMsgs[Math.floor(Math.random()*feedMsgs.length)];
-  document.getElementById('sheep-msg').textContent=msg;
-  toast('+50.000đ tiết kiệm! 🥕');
+var pi = Math.floor(Math.random() * prompts.length);
+var ti = Math.floor(Math.random() * thinkings.length);
+document.getElementById("prompt-text").textContent = prompts[pi];
+document.getElementById("ai-thinking").innerHTML = thinkings[ti];
+
+// Rotate prompt every 6s
+setInterval(function() {
+  pi = (pi + 1) % prompts.length;
+  var el = document.getElementById("prompt-text");
+  el.style.opacity = "0";
+  setTimeout(function() {
+    el.textContent = prompts[pi];
+    el.style.opacity = "1";
+  }, 250);
+}, 6000);
+
+// ── SHEEP FEED ──
+var feedMsgs = [
+  '💭 <strong>"Hoa</strong>, cảm ơn bạn đã cho mình ăn! Mình yêu bạn! ❤️"',
+  '💭 <strong>"Yay!</strong> Mình đầy năng lượng rồi! Cùng cố gắng nhé! 💪"',
+  '💭 <strong>"Ngon</strong> quá Hoa ơi! Mình sẽ tiết kiệm thêm cho bạn! 🎉"',
+  '💭 <strong>"Mình</strong> lớn thêm rồi! Nhờ có bạn đó, cảm ơn! 🌟"'
+];
+function feedSheep() {
+  var s = document.getElementById("sheep");
+  if (!s) return;
+  s.style.animationPlayState = "paused";
+  s.style.transition = "transform 0.25s cubic-bezier(.34,1.56,.64,1)";
+  s.style.transform = "translateY(-14px) scale(1.12)";
+  setTimeout(function() {
+    s.style.transform = "";
+    s.style.transition = "";
+    setTimeout(function() { s.style.animationPlayState = "running"; }, 300);
+  }, 300);
+  spawnConfetti(14);
+  var msg = feedMsgs[Math.floor(Math.random() * feedMsgs.length)];
+  document.getElementById("ai-thinking").innerHTML = msg;
+  toast("Bông lớn thêm 2%! 🥕");
 }
 
-function chatSheep(){toast('Đang mở trò chuyện với Bông... 💬');}
-function openGift(){document.getElementById('gift-section').scrollIntoView({behavior:'smooth'});toast('Chọn quà cho bạn bè! 🎁');}
-function celebrate(el){el.style.background='rgba(255,140,0,0.04)';setTimeout(function(){el.style.background='';},300);spawnConfetti(6);}
-
-function sendGift(){
-  spawnConfetti(15);
-  toast('Đã gửi quà cho Bông Mập! 🎁');
+// ── CHAT OVERLAY ──
+function openChat() {
+  document.getElementById("chat-overlay").classList.add("open");
+  document.querySelectorAll(".ni").forEach(function(n) { n.classList.remove("active"); });
+  document.querySelectorAll(".ni")[2].classList.add("active");
+}
+function closeChat() {
+  document.getElementById("chat-overlay").classList.remove("open");
+  document.querySelectorAll(".ni").forEach(function(n) { n.classList.remove("active"); });
+  document.querySelectorAll(".ni")[0].classList.add("active");
 }
 
-function selectGift(el){
-  document.querySelectorAll('.gift-item').forEach(function(g){g.classList.remove('selected');});
-  el.classList.add('selected');
+// ── CELEBRATE ──
+function celebrate() {
+  spawnConfetti(20);
+  toast("Chúc mừng! 🎉");
 }
 
-function setNav(el){
-  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
-  el.classList.add('active');
+// ── NAV ──
+function setNav(el) {
+  document.querySelectorAll(".ni").forEach(function(n) { n.classList.remove("active"); });
+  el.classList.add("active");
 }
 
-var _toast;
-function toast(msg){
-  var t=document.getElementById('toast');
-  t.textContent=msg;
-  t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
-  clearTimeout(_toast);
-  _toast=setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(8px)';},2200);
-}
-
-function spawnConfetti(n){
-  var layer=document.getElementById('confetti-layer');
-  var cols=["#FF6B6B","#FFD93D","#6BCF6B","#4ECDC4","#FF9500","#C77DFF","#FF85A1"];
-  for(var i=0;i<(n||12);i++){
-    (function(){
-      var el=document.createElement('div');
-      var sz=6+Math.random()*8;
-      el.style.cssText=[
-        'position:absolute',
-        'width:'+sz+'px','height:'+sz+'px',
-        'background:'+cols[Math.floor(Math.random()*cols.length)],
-        'border-radius:'+(Math.random()>.5?'50%':'3px'),
-        'left:'+(Math.random()*860)+'px',
-        'top:'+(Math.random()*200+100)+'px',
-        'animation:confetti-drop '+(0.8+Math.random()*0.9)+'s ease-out forwards',
-        'pointer-events:none'
-      ].join(';');
+// ── CONFETTI ──
+function spawnConfetti(n) {
+  var layer = document.getElementById("confetti");
+  var cols = ["#FF6B6B","#FFD93D","#6BCF6B","#4ECDC4","#FF9500","#C77DFF","#FF85A1","#4FC3F7"];
+  for (var i = 0; i < (n || 12); i++) {
+    (function() {
+      var el = document.createElement("div");
+      var sz = 6 + Math.random() * 8;
+      el.style.cssText = [
+        "position:absolute",
+        "width:" + sz + "px", "height:" + sz + "px",
+        "background:" + cols[Math.floor(Math.random() * cols.length)],
+        "border-radius:" + (Math.random() > 0.5 ? "50%" : "3px"),
+        "left:" + (Math.random() * 860) + "px",
+        "top:" + (100 + Math.random() * 200) + "px",
+        "animation:drop " + (0.8 + Math.random() * 0.9) + "s ease-out forwards",
+        "pointer-events:none"
+      ].join(";");
       layer.appendChild(el);
-      setTimeout(function(){el.remove();},1800);
+      setTimeout(function() { el.remove(); }, 1800);
     })();
   }
+}
+
+// ── TOAST ──
+var _toastT;
+function toast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.opacity = "1"; t.style.transform = "translateX(-50%) translateY(0)";
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function() {
+    t.style.opacity = "0"; t.style.transform = "translateX(-50%) translateY(10px)";
+  }, 2200);
 }
 </script>
 </body>
 </html>
 """
 
-        _HTML = _HTML.replace("__SHEEP_HERO__", _sheep_avatar)
-        _HTML = _HTML.replace("__F1_AVATAR__",  _avatar("f1", 44, "🐑"))
-        _HTML = _HTML.replace("__F2_AVATAR__",  _avatar("f2", 44, "🐑"))
-        _HTML = _HTML.replace("__F3_AVATAR__",  _avatar("f3", 44, "🐑"))
+        _HTML = _HTML.replace("__SHEEP__", _sheep_el)
+        _HTML = _HTML.replace("__F1__",    _av("f1", 44))
+        _HTML = _HTML.replace("__F2__",    _av("f2", 44))
+        _HTML = _HTML.replace("__F3__",    _av("f3", 44))
+        # Small versions in chat overlay
+        _HTML = _HTML.replace("__F1_SM__", "🐑" if not _FA.get("f1") else "")
+        _HTML = _HTML.replace("__F2_SM__", "🐑" if not _FA.get("f2") else "")
+        _HTML = _HTML.replace("__F3_SM__", "🐑" if not _FA.get("f3") else "")
 
         import streamlit.components.v1 as components
         components.html(_HTML, height=820, scrolling=False)
