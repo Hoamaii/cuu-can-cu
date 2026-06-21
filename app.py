@@ -2007,653 +2007,286 @@ with tab4:
 
     # ── TAB 5: Interactive Design Demo ──────────────────────────────────
     with tab5:
-        st.markdown("""<div style='text-align:center; padding:16px 0 4px;'>
-            <span style='font-size:1.8rem;'>🐑</span>
-            <h2 style='color:#C4607F; margin:4px 0 2px; font-size:1.5rem;'>Cừu Cần Cù — Interactive Prototype</h2>
-            <p style='color:#999; font-size:0.85rem; margin:0;'>Click vào từng màn hình trong sidebar để khám phá · Dữ liệu minh hoạ</p>
-        </div>""", unsafe_allow_html=True)
-
         _PROTO_HTML = """
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
-body{background:#f5f0ff;display:flex;height:780px;overflow:hidden;}
-
-/* ── Sidebar ── */
-.sidebar{width:180px;background:linear-gradient(180deg,#fff5f8 0%,#fff 100%);
-  border-right:1px solid #f0d6e0;display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;}
-.profile{text-align:center;padding:12px 8px 16px;}
-.avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#ffb3c6,#c4607f);
-  margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;}
-.profile-name{font-size:.78rem;font-weight:700;color:#c4607f;}
-.profile-sub{font-size:.65rem;color:#aaa;margin-top:2px;}
-.xp-bar{height:5px;background:#f0e0e8;border-radius:3px;margin:6px 12px 0;}
-.xp-fill{height:100%;width:65%;background:linear-gradient(90deg,#ff8fab,#c4607f);border-radius:3px;}
-.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;
-  font-size:.8rem;color:#666;border-radius:0;transition:all .15s;position:relative;}
-.nav-item:hover{background:#fff0f5;color:#c4607f;}
-.nav-item.active{background:linear-gradient(90deg,#ffe0eb,#fff5f8);color:#c4607f;font-weight:700;
-  border-left:3px solid #c4607f;}
-.nav-icon{font-size:1rem;width:20px;text-align:center;}
-.badge{background:#ff4d6d;color:#fff;font-size:.6rem;border-radius:10px;
-  padding:1px 5px;position:absolute;right:12px;}
-
-/* ── Main ── */
-.main{flex:1;overflow-y:auto;background:#f8f0ff;}
-.screen{display:none;padding:0;height:100%;}
-.screen.active{display:block;}
-
-/* ── Top bar ── */
-.topbar{background:linear-gradient(135deg,#c4607f,#a03060);color:#fff;
-  padding:10px 16px;display:flex;align-items:center;justify-content:space-between;}
-.topbar-title{font-size:1rem;font-weight:700;}
-.topbar-coins{display:flex;gap:10px;align-items:center;font-size:.78rem;}
-.coin{background:rgba(255,255,255,.2);border-radius:12px;padding:3px 8px;
-  display:flex;align-items:center;gap:4px;}
-
-/* ── Farm Screen ── */
-.farm-bg{background:linear-gradient(180deg,#87CEEB 0%,#98FB98 60%,#90EE90 100%);
-  height:200px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
-.farm-sheep{font-size:4rem;animation:bounce 2s infinite;}
-@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.farm-grass{position:absolute;bottom:0;left:0;right:0;height:70px;
-  background:linear-gradient(180deg,#7ec850,#5a9e30);border-radius:50% 50% 0 0 / 20px 20px 0 0;}
-.farm-label{position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  background:rgba(255,255,255,.85);border-radius:20px;padding:3px 12px;
-  font-size:.7rem;font-weight:700;color:#c4607f;}
-
-.chat-area{padding:12px;background:#fff;margin:8px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-.chat-bubble{background:#fff5f8;border:1px solid #f0d6e0;border-radius:12px 12px 12px 4px;
-  padding:8px 12px;font-size:.78rem;color:#444;margin-bottom:8px;max-width:85%;}
-.chat-bubble.user{background:linear-gradient(135deg,#c4607f,#a03060);color:#fff;
-  border-radius:12px 12px 4px 12px;margin-left:auto;}
-.chat-input{display:flex;gap:8px;margin-top:8px;}
-.chat-input input{flex:1;border:1px solid #f0d0e0;border-radius:20px;padding:6px 12px;
-  font-size:.75rem;outline:none;}
-.chat-input button{background:#c4607f;color:#fff;border:none;border-radius:20px;
-  padding:6px 14px;cursor:pointer;font-size:.75rem;}
-
-.mood-row{display:flex;gap:8px;padding:8px 8px 0;overflow-x:auto;}
-.mood-btn{background:#fff;border:1.5px solid #f0d0e0;border-radius:20px;
-  padding:5px 10px;font-size:.7rem;cursor:pointer;white-space:nowrap;transition:all .15s;}
-.mood-btn:hover,.mood-btn.active{background:#c4607f;color:#fff;border-color:#c4607f;}
-
-/* ── Stats ── */
-.stats-row{display:flex;gap:8px;padding:8px;overflow-x:auto;}
-.stat-card{background:#fff;border-radius:12px;padding:10px 14px;min-width:100px;
-  box-shadow:0 2px 8px rgba(0,0,0,.06);flex-shrink:0;}
-.stat-val{font-size:1.1rem;font-weight:800;color:#c4607f;}
-.stat-lbl{font-size:.65rem;color:#aaa;margin-top:2px;}
-
-/* ── Friends Screen ── */
-.section-title{padding:12px 12px 6px;font-size:.85rem;font-weight:700;color:#444;}
-.friends-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 8px 8px;}
-.friend-card{background:#fff;border-radius:14px;padding:10px 8px;text-align:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;transition:transform .15s;}
-.friend-card:hover{transform:translateY(-2px);}
-.friend-sheep{font-size:2rem;margin-bottom:4px;}
-.friend-name{font-size:.68rem;font-weight:700;color:#333;}
-.friend-level{font-size:.6rem;color:#888;margin:2px 0;}
-.friend-badge{font-size:.55rem;border-radius:8px;padding:2px 6px;background:#e8f5e9;color:#388e3c;
-  display:inline-block;margin-top:2px;}
-.friend-badge.blue{background:#e3f2fd;color:#1565c0;}
-.progress-sm{height:4px;background:#f0e0e8;border-radius:2px;margin-top:6px;}
-.progress-sm-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#ff8fab,#c4607f);}
-.leaderboard{margin:8px;background:#fff;border-radius:14px;padding:12px;
-  box-shadow:0 2px 8px rgba(0,0,0,.06);}
-.lb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;
-  font-size:.75rem;}
-.lb-row:last-child{border:none;}
-.lb-rank{width:20px;font-weight:700;color:#c4607f;}
-.lb-name{flex:1;color:#333;}
-.lb-amount{color:#888;font-size:.7rem;}
-
-/* ── Missions Screen ── */
-.mission-card{background:#fff;border-radius:14px;padding:12px;margin:8px;
-  box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:10px;cursor:pointer;}
-.mission-card:hover{box-shadow:0 4px 12px rgba(196,96,127,.2);}
-.mission-icon{font-size:1.6rem;width:40px;text-align:center;}
-.mission-info{flex:1;}
-.mission-title{font-size:.8rem;font-weight:700;color:#333;}
-.mission-desc{font-size:.68rem;color:#888;margin-top:2px;}
-.mission-reward{font-size:.7rem;color:#c4607f;font-weight:700;}
-.progress-bar{height:5px;background:#f0e0e8;border-radius:3px;margin-top:6px;}
-.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#ffb3c6,#c4607f);}
-.mission-tag{font-size:.6rem;background:#fff0f5;color:#c4607f;border:1px solid #f0c0d0;
-  border-radius:8px;padding:2px 6px;float:right;}
-
-/* ── Community Screen ── */
-.chat-msg{display:flex;gap:8px;padding:8px 12px;}
-.msg-avatar{font-size:1.4rem;flex-shrink:0;}
-.msg-body{}
-.msg-name{font-size:.68rem;font-weight:700;color:#c4607f;}
-.msg-text{font-size:.76rem;color:#333;margin-top:2px;background:#fff;
-  border-radius:0 12px 12px 12px;padding:6px 10px;display:inline-block;max-width:260px;}
-.msg-time{font-size:.6rem;color:#bbb;margin-top:2px;}
-.community-input{display:flex;gap:8px;padding:10px 12px;background:#fff;
-  border-top:1px solid #f0e0e8;position:sticky;bottom:0;}
-.community-input input{flex:1;border:1px solid #f0d0e0;border-radius:20px;
-  padding:7px 14px;font-size:.75rem;outline:none;}
-.community-input button{background:#c4607f;color:#fff;border:none;border-radius:20px;
-  padding:7px 16px;cursor:pointer;font-size:.75rem;}
-
-/* ── Crowdfund Screen ── */
-.dream-card{background:#fff;border-radius:16px;margin:8px;padding:14px;
-  box-shadow:0 2px 8px rgba(0,0,0,.08);}
-.dream-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.dream-sheep{font-size:1.8rem;}
-.dream-meta{flex:1;}
-.dream-title{font-size:.85rem;font-weight:700;color:#333;}
-.dream-user{font-size:.68rem;color:#888;}
-.dream-amount{font-size:1.1rem;font-weight:800;color:#c4607f;}
-.dream-target{font-size:.68rem;color:#aaa;}
-.dream-bar{height:8px;background:#f0e0e8;border-radius:4px;margin:8px 0;}
-.dream-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#ffb3c6,#c4607f);}
-.dream-actions{display:flex;gap:8px;margin-top:10px;}
-.btn-cheer{flex:1;background:#fff0f5;color:#c4607f;border:1.5px solid #f0c0d0;
-  border-radius:20px;padding:8px;font-size:.75rem;cursor:pointer;text-align:center;}
-.btn-invest{flex:1;background:linear-gradient(135deg,#c4607f,#a03060);color:#fff;
-  border:none;border-radius:20px;padding:8px;font-size:.75rem;cursor:pointer;text-align:center;}
-.btn-invest:hover,.btn-cheer:hover{opacity:.9;transform:translateY(-1px);}
-
-.tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
-.tag{font-size:.6rem;background:#f5f0ff;color:#7c3aed;border-radius:8px;padding:2px 7px;}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  .farm-root { width: 860px; height: 820px; position: relative; overflow: hidden; font-family: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif; background: linear-gradient(180deg, #87CEEB 0%, #B0E0FF 40%, #98FB98 60%, #5DBB63 100%); }
+  .cloud { position: absolute; font-size: 28px; opacity: 0.8; animation: float-cloud 20s linear infinite; }
+  @keyframes float-cloud { 0%{transform:translateX(-80px)} 100%{transform:translateX(920px)} }
+  .hill { position: absolute; border-radius: 50%; }
+  .hill-1 { width: 500px; height: 200px; background: #5DBB63; bottom: 180px; left: -80px; }
+  .hill-2 { width: 400px; height: 160px; background: #4CAF50; bottom: 170px; right: -60px; }
+  .hill-3 { width: 300px; height: 120px; background: #66BB6A; bottom: 200px; left: 200px; }
+  .ground { position: absolute; bottom: 0; left: 0; right: 0; height: 230px; background: linear-gradient(180deg, #5DBB63 0%, #43A047 100%); }
+  .pond { position: absolute; bottom: 100px; right: 130px; width: 120px; height: 60px; background: linear-gradient(135deg, #64B5F6, #42A5F5); border-radius: 50%; border: 3px solid #29B6F6; box-shadow: 0 2px 12px rgba(66,165,245,0.4); }
+  .windmill-wrap { position: absolute; bottom: 232px; right: 252px; }
+  .windmill { font-size: 30px; display: block; animation: spin-slow 8s linear infinite; transform-origin: center; }
+  @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .farmhouse { position: absolute; font-size: 44px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); bottom: 228px; right: 168px; }
+  .tree { position: absolute; }
+  .flower { position: absolute; font-size: 16px; animation: sway 3s ease-in-out infinite; }
+  @keyframes sway { 0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(5deg)} }
+  .sheep-small { position: absolute; font-size: 22px; animation: float-sheep 4s ease-in-out infinite; }
+  @keyframes float-sheep { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .sheep-mascot { position: absolute; font-size: 90px; bottom: 215px; left: 50%; transform: translateX(-50%); animation: bounce-idle 2s ease-in-out infinite; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.25)); z-index: 10; cursor: pointer; user-select: none; transition: font-size 0.2s, filter 0.2s; }
+  @keyframes bounce-idle { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-14px)} }
+  .top-bar { position: absolute; top: 12px; left: 12px; right: 12px; height: 64px; background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 4px 24px rgba(0,0,0,0.12); display: flex; align-items: center; padding: 0 16px; gap: 12px; z-index: 100; }
+  .avatar-circle { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #FFD700, #FF8C00); display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; }
+  .profile-info { flex: 1; min-width: 0; }
+  .profile-name { font-size: 12px; font-weight: 700; color: #2D3748; white-space: nowrap; }
+  .xp-bar-wrap { height: 6px; background: #E2E8F0; border-radius: 3px; width: 130px; overflow: hidden; margin-top: 4px; }
+  .xp-bar-fill { height: 100%; width: 65%; background: linear-gradient(90deg, #48BB78, #38A169); border-radius: 3px; }
+  .top-currencies { display: flex; align-items: center; gap: 8px; }
+  .currency-pill { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.06); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #2D3748; }
+  .plus-btn { width: 26px; height: 26px; background: linear-gradient(135deg, #48BB78, #38A169); border-radius: 50%; color: #fff; font-size: 18px; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .bell-btn { width: 38px; height: 38px; background: rgba(0,0,0,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; border: none; position: relative; }
+  .bell-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #FC8181; border-radius: 50%; border: 1.5px solid #fff; }
+  .left-nav { position: absolute; left: 12px; top: 90px; display: flex; flex-direction: column; gap: 8px; z-index: 90; }
+  .nav-card { width: 66px; background: rgba(255,255,255,0.93); backdrop-filter: blur(12px); border-radius: 18px; padding: 12px 4px 9px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.75); box-shadow: 0 3px 14px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s, background 0.2s; position: relative; }
+  .nav-card:hover { transform: translateY(-2px) scale(1.06); box-shadow: 0 6px 22px rgba(0,0,0,0.16); background: rgba(255,248,230,0.98); }
+  .nav-icon { font-size: 26px; }
+  .nav-label { font-size: 9px; font-weight: 700; color: #4A5568; text-align: center; line-height: 1.2; }
+  .nav-badge { position: absolute; top: 5px; right: 5px; background: #FC8181; color: #fff; font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 5px; border: 1.5px solid #fff; }
+  .right-panel { position: absolute; right: 12px; top: 90px; display: flex; flex-direction: column; gap: 10px; z-index: 90; width: 154px; }
+  .level-card { background: linear-gradient(135deg, #8B5E3C, #A0694A); border-radius: 18px; padding: 14px; border: 2px solid #DAA520; box-shadow: 0 4px 18px rgba(139,94,60,0.4); }
+  .lc-title { font-size: 13px; font-weight: 800; color: #FFE8B0; }
+  .lc-name { font-size: 10px; color: #F6D79B; margin: 3px 0; }
+  .lc-bar-wrap { height: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden; margin: 7px 0 5px; }
+  .lc-bar-fill { height: 100%; width: 65%; background: linear-gradient(90deg, #FFD700, #FFA500); border-radius: 4px; }
+  .friends-card { background: rgba(255,255,255,0.93); backdrop-filter: blur(12px); border-radius: 18px; padding: 12px; border: 1.5px solid rgba(255,255,255,0.75); box-shadow: 0 3px 16px rgba(0,0,0,0.1); }
+  .friends-title { font-size: 10px; font-weight: 700; color: #2D3748; margin-bottom: 9px; }
+  .friends-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .friend-avatar { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+  .friend-circle { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #FFB3D9, #C084FC); display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: transform 0.15s; }
+  .friend-circle:hover { transform: scale(1.12); }
+  .friend-name { font-size: 7px; color: #4A5568; font-weight: 600; text-align: center; max-width: 42px; overflow: hidden; line-height: 1.3; }
+  .speech-bubble { position: absolute; top: 90px; right: 178px; background: rgba(255,255,255,0.96); backdrop-filter: blur(16px); border-radius: 18px; padding: 13px 15px; border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 4px 20px rgba(0,0,0,0.12); max-width: 196px; z-index: 88; }
+  .speech-bubble::after { content: ""; position: absolute; right: -10px; top: 22px; border: 6px solid transparent; border-left: 10px solid rgba(255,255,255,0.96); }
+  .sb-text { font-size: 11px; color: #2D3748; line-height: 1.6; font-weight: 500; }
+  .sb-heart { font-size: 16px; margin-top: 5px; display: block; }
+  .missions-card { position: absolute; bottom: 80px; left: 90px; background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-radius: 20px; padding: 14px 16px; border: 1.5px solid rgba(255,255,255,0.8); box-shadow: 0 4px 22px rgba(0,0,0,0.12); width: 250px; z-index: 90; }
+  .missions-title { font-size: 12px; font-weight: 800; color: #2D3748; margin-bottom: 10px; }
+  .mission-row { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; border-radius: 6px; transition: background 0.1s; }
+  .mission-row:last-child { border-bottom: none; }
+  .mission-row:hover { background: rgba(0,0,0,0.03); }
+  .mission-icon { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; }
+  .mission-info { flex: 1; }
+  .mission-name { font-size: 10px; font-weight: 700; color: #2D3748; }
+  .mission-sub { font-size: 9px; color: #718096; margin-top: 1px; }
+  .mission-prog { height: 4px; background: #E2E8F0; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+  .mission-prog-fill { height: 100%; background: linear-gradient(90deg, #68D391, #38A169); border-radius: 2px; transition: width 0.5s ease; }
+  .mission-check { font-size: 16px; flex-shrink: 0; }
+  .mission-done .mission-name { color: #38A169; text-decoration: line-through; opacity: 0.65; }
+  .feed-btn { position: absolute; bottom: 84px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #FFD700, #FFA500); border: none; border-radius: 40px; padding: 17px 42px; font-size: 16px; font-weight: 800; color: #7B3F00; cursor: pointer; white-space: nowrap; animation: pulse-glow 2s ease-in-out infinite; z-index: 95; text-shadow: 0 1px 2px rgba(255,255,255,0.4); letter-spacing: 0.2px; }
+  @keyframes pulse-glow { 0%,100%{box-shadow:0 4px 22px rgba(255,165,0,0.55),0 0 42px rgba(255,215,0,0.28)} 50%{box-shadow:0 8px 38px rgba(255,165,0,0.88),0 0 72px rgba(255,215,0,0.6)} }
+  .feed-btn:active { transform: translateX(-50%) scale(0.96); }
+  .tab-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: rgba(255,255,255,0.97); backdrop-filter: blur(20px); border-top: 1px solid rgba(0,0,0,0.07); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; z-index: 100; }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 8px 14px; border-radius: 14px; transition: background 0.15s; flex: 1; }
+  .tab-item:hover { background: rgba(0,0,0,0.04); }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 10px; font-weight: 600; color: #A0AEC0; }
+  .tab-item.active .tab-label { color: #ED8936; font-weight: 800; }
+  .tab-dot { width: 6px; height: 6px; border-radius: 3px; background: #ED8936; margin-top: -1px; }
+  .toast { position: absolute; top: 88px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(56,161,105,0.95); color: #fff; padding: 10px 22px; border-radius: 30px; font-size: 13px; font-weight: 700; opacity: 0; pointer-events: none; z-index: 200; transition: opacity 0.3s, transform 0.3s; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .confetti-piece { position: absolute; width: 8px; height: 8px; border-radius: 2px; pointer-events: none; z-index: 200; animation: confetti-fall 1.3s ease-out forwards; }
+  @keyframes confetti-fall { 0%{opacity:1;transform:translateY(0) rotate(0deg)} 100%{opacity:0;transform:translateY(200px) rotate(720deg)} }
 </style>
-</head>
-<body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="profile">
-    <div class="avatar">🐑</div>
-    <div class="profile-name">Bông Cần Cù</div>
-    <div class="profile-sub">Cừu Kiến Tri · Cấp 5</div>
-    <div class="xp-bar"><div class="xp-fill"></div></div>
-    <div style="font-size:.62rem;color:#ccc;margin-top:4px;">65% → Cấp 6</div>
+<div class="farm-root" id="farmRoot">
+  <div class="cloud" style="top:18px;left:-60px;animation-duration:25s">&#x2601;&#xFE0F;</div>
+  <div class="cloud" style="top:34px;left:180px;animation-duration:18s;animation-delay:-9s;font-size:22px">&#x2601;&#xFE0F;</div>
+  <div class="cloud" style="top:12px;left:510px;animation-duration:32s;animation-delay:-15s;font-size:18px">&#x2601;&#xFE0F;</div>
+  <div class="hill hill-1"></div><div class="hill hill-2"></div><div class="hill hill-3"></div>
+  <div class="ground"></div>
+  <div class="pond"></div>
+  <div class="farmhouse">&#x1F3E1;</div>
+  <div class="windmill-wrap"><span class="windmill">&#x1F3A1;</span></div>
+  <div class="tree" style="bottom:222px;left:114px;font-size:34px">&#x1F333;</div>
+  <div class="tree" style="bottom:217px;left:164px;font-size:28px">&#x1F332;</div>
+  <div class="tree" style="bottom:240px;right:308px;font-size:30px">&#x1F333;</div>
+  <div class="tree" style="bottom:226px;left:298px;font-size:22px">&#x1F332;</div>
+  <div class="flower" style="bottom:211px;left:207px">&#x1F338;</div>
+  <div class="flower" style="bottom:206px;left:248px;animation-delay:-1s">&#x1F33C;</div>
+  <div class="flower" style="bottom:201px;left:342px;animation-delay:-2s">&#x1F338;</div>
+  <div class="flower" style="bottom:208px;right:224px;animation-delay:-0.5s">&#x1F337;</div>
+  <div class="flower" style="bottom:203px;right:262px;animation-delay:-1.5s">&#x1F33B;</div>
+  <div class="sheep-small" style="bottom:200px;left:357px">&#x1F411;</div>
+  <div class="sheep-small" style="bottom:214px;left:426px;animation-delay:-1.5s">&#x1F411;</div>
+  <div class="sheep-small" style="bottom:196px;right:285px;animation-delay:-0.8s">&#x1F411;</div>
+  <div class="sheep-small" style="bottom:209px;left:280px;animation-delay:-2.2s">&#x1F411;</div>
+  <div class="sheep-mascot" id="sheepMascot" onclick="feedSheep()">&#x1F411;</div>
+
+  <div class="top-bar">
+    <div class="avatar-circle">&#x1F411;</div>
+    <div class="profile-info">
+      <div class="profile-name">B&#xF4;ng C&#x1EA7;n C&#xF9; &middot; C&#x1EEB;u Ki&#xEA;n Tr&igrave; &middot; C&#x1EA5;p 5</div>
+      <div class="xp-bar-wrap"><div class="xp-bar-fill"></div></div>
+      <div style="font-size:9px;color:#A0AEC0;margin-top:2px">65% &#x2192; C&#x1EA5;p 6</div>
+    </div>
+    <div class="top-currencies">
+      <div class="currency-pill">&#x1FA99; <span id="coinCount">128.450</span></div>
+      <div class="currency-pill">&#x1F48E; <span>320</span></div>
+      <button class="plus-btn">+</button>
+    </div>
+    <button class="bell-btn">&#x1F514;<div class="bell-dot"></div></button>
   </div>
-  <div class="nav-item active" onclick="show('farm')">
-    <span class="nav-icon">🏡</span> Trang trại
+
+  <div class="left-nav">
+    <div class="nav-card" onclick="navClick(this)"><span class="nav-icon">&#x1F4CB;</span><span class="nav-label">Nhi&#x1EC7;m v&#x1EE5;</span><span class="nav-badge">3</span></div>
+    <div class="nav-card" onclick="navClick(this)"><span class="nav-icon">&#x1F6CD;&#xFE0F;</span><span class="nav-label">C&#x1EED;a h&#xE0;ng</span></div>
+    <div class="nav-card" onclick="navClick(this)"><span class="nav-icon">&#x1F3A8;</span><span class="nav-label">Trang tr&iacute;</span></div>
+    <div class="nav-card" onclick="navClick(this)"><span class="nav-icon">&#x1F465;</span><span class="nav-label">B&#x1EA1;n b&#xE8;</span></div>
+    <div class="nav-card" onclick="navClick(this)"><span class="nav-icon">&#x1F3D8;&#xFE0F;</span><span class="nav-label">H&#x1ED9;i nh&#xF3;m</span></div>
   </div>
-  <div class="nav-item" onclick="show('missions')">
-    <span class="nav-icon">📋</span> Nhiệm vụ
-    <span class="badge">3</span>
+
+  <div class="right-panel">
+    <div class="level-card">
+      <div class="lc-title">Lv.5 &middot; C&#x1EEB;u Ki&#xEA;n Tr&igrave;</div>
+      <div class="lc-name">N&#xF4;ng tr&#x1EA1;i c&#x1EE7;a B&#xF4;ng</div>
+      <div class="lc-bar-wrap"><div class="lc-bar-fill"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:9px;color:#F6D79B">65% &#x2192; C&#x1EA5;p 6</span>
+        <span style="font-size:13px">&#x2B50;&#x2B50;&#x2B50;</span>
+      </div>
+    </div>
+    <div class="friends-card">
+      <div class="friends-title">&#x1F7E2; B&#x1EA1;n b&#xE8; online (6)</div>
+      <div class="friends-grid">
+        <div class="friend-avatar"><div class="friend-circle">&#x1F411;</div><span class="friend-name">B&#xF4;ng M&#x1EAD;p</span></div>
+        <div class="friend-avatar"><div class="friend-circle" style="background:linear-gradient(135deg,#81E6D9,#4FD1C5)">&#x1F40F;</div><span class="friend-name">C&#x1EEB;u Nhanh</span></div>
+        <div class="friend-avatar"><div class="friend-circle" style="background:linear-gradient(135deg,#FBD38D,#F6AD55)">&#x1F411;</div><span class="friend-name">M&#xE1;y T&iacute;ch</span></div>
+        <div class="friend-avatar"><div class="friend-circle" style="background:linear-gradient(135deg,#9AE6B4,#68D391)">&#x1F411;</div><span class="friend-name">L&#xFA;a V&#xE0;ng</span></div>
+        <div class="friend-avatar"><div class="friend-circle" style="background:linear-gradient(135deg,#FEB2B2,#FC8181)">&#x1F411;</div><span class="friend-name">B&#xE9; B&#xF4;ng</span></div>
+        <div class="friend-avatar"><div class="friend-circle" style="background:linear-gradient(135deg,#B794F4,#9F7AEA)">&#x1F40F;</div><span class="friend-name">Th&#x1ECB;nh V&#x01B0;&#x1EE3;ng</span></div>
+      </div>
+    </div>
   </div>
-  <div class="nav-item" onclick="show('shop')">
-    <span class="nav-icon">🛍️</span> Cửa hàng
+
+  <div class="speech-bubble">
+    <div class="sb-text">Ch&#xFA;c b&#x1EA1;n m&#x1ED9;t ng&#xE0;y tuy&#x1EC7;t v&#x1EDD;i! &#x2600;&#xFE0F;<br><br>C&#x1EEB;u nh&#x1EDB; b&#x1EA1;n &#x111;ang t&iacute;ch l&#x0169;y &#x111;&#x1EC3; mua xe m&#xE1;y nh&#xE9;!</div>
+    <span class="sb-heart">&#x2764;&#xFE0F;</span>
   </div>
-  <div class="nav-item" onclick="show('decor')">
-    <span class="nav-icon">🎨</span> Trang trí
+
+  <div class="missions-card">
+    <div class="missions-title" id="missionTitle">&#x1F4CB; Nhi&#x1EC7;m v&#x1EE5; h&#xF4;m nay (3/5)</div>
+    <div class="mission-row mission-done" onclick="toggleMission(this)">
+      <span class="mission-icon">&#x1F955;</span>
+      <div class="mission-info"><div class="mission-name">Cho c&#x1EEB;u &#x103;n 100.000&#x111;</div><div class="mission-sub">Ho&#xE0;n th&#xE0;nh 08:30</div></div>
+      <span class="mission-check">&#x2705;</span>
+    </div>
+    <div class="mission-row mission-done" onclick="toggleMission(this)">
+      <span class="mission-icon">&#x1F4D6;</span>
+      <div class="mission-info"><div class="mission-name">&#x110;&#x1ECD;c tin t&#xE0;i ch&iacute;nh</div><div class="mission-sub">Ho&#xE0;n th&#xE0;nh</div></div>
+      <span class="mission-check">&#x2705;</span>
+    </div>
+    <div class="mission-row mission-done" onclick="toggleMission(this)">
+      <span class="mission-icon">&#x1F4B0;</span>
+      <div class="mission-info"><div class="mission-name">T&iacute;ch l&#x0169;y 50.000&#x111;</div><div class="mission-sub">Ho&#xE0;n th&#xE0;nh</div></div>
+      <span class="mission-check">&#x2705;</span>
+    </div>
+    <div class="mission-row" onclick="toggleMission(this)">
+      <span class="mission-icon">&#x1F465;</span>
+      <div class="mission-info">
+        <div class="mission-name">M&#x1EDD;i 1 ng&#x01B0;&#x1EDD;i b&#x1EA1;n</div><div class="mission-sub">0/1</div>
+        <div class="mission-prog"><div class="mission-prog-fill" style="width:0%"></div></div>
+      </div>
+      <span class="mission-check" style="font-size:13px;color:#CBD5E0">&#x2B55;</span>
+    </div>
+    <div class="mission-row" onclick="toggleMission(this)">
+      <span class="mission-icon">&#x1F4AC;</span>
+      <div class="mission-info">
+        <div class="mission-name">Tham gia h&#x1ED9;i nh&#xF3;m</div><div class="mission-sub">0/1</div>
+        <div class="mission-prog"><div class="mission-prog-fill" style="width:0%"></div></div>
+      </div>
+      <span class="mission-check" style="font-size:13px;color:#CBD5E0">&#x2B55;</span>
+    </div>
   </div>
-  <div class="nav-item" onclick="show('friends')">
-    <span class="nav-icon">👯</span> Bạn bè
+
+  <button class="feed-btn" onclick="feedSheep()">&#x1F955; Cho c&#x1EEB;u &#x103;n 100.000&#x111;</button>
+
+  <div class="tab-bar">
+    <div class="tab-item active" id="tab-0" onclick="switchTab(0)"><div class="tab-icon">&#x1F3E0;</div><div class="tab-label">Trang tr&#x1EA1;i</div><div class="tab-dot"></div></div>
+    <div class="tab-item" id="tab-1" onclick="switchTab(1)"><div class="tab-icon">&#x1F4D4;</div><div class="tab-label">Nh&#x1EAD;t k&yacute;</div></div>
+    <div class="tab-item" id="tab-2" onclick="switchTab(2)"><div class="tab-icon">&#x2728;</div><div class="tab-label">Gi&#x1EA5;c m&#x01A1;</div></div>
+    <div class="tab-item" id="tab-3" onclick="switchTab(3)"><div class="tab-icon">&#x1F3C6;</div><div class="tab-label">Th&#xE0;nh t&#x1EF1;u</div></div>
+    <div class="tab-item" id="tab-4" onclick="switchTab(4)"><div class="tab-icon">&#x1F464;</div><div class="tab-label">C&#xE1; nh&#xE2;n</div></div>
   </div>
-  <div class="nav-item" onclick="show('community')">
-    <span class="nav-icon">💬</span> Hội nhóm
-  </div>
-  <div class="nav-item" onclick="show('diary')">
-    <span class="nav-icon">📔</span> Nhật ký
-  </div>
-  <div class="nav-item" onclick="show('crowdfund')">
-    <span class="nav-icon">🚀</span> Ước mơ
-  </div>
+
+  <div class="toast" id="toast">&#x1F389; +100.000&#x111; t&iacute;ch l&#x0169;y!</div>
 </div>
 
-<!-- SCREENS -->
-<div class="main">
-
-  <!-- FARM -->
-  <div class="screen active" id="screen-farm">
-    <div class="topbar">
-      <span class="topbar-title">🏡 Trang Trại Cừu</span>
-      <div class="topbar-coins">
-        <div class="coin">🪙 128.450</div>
-        <div class="coin">💎 320</div>
-      </div>
-    </div>
-    <div class="farm-bg">
-      <div class="farm-label">☀️ Hôm nay: Thứ Bảy</div>
-      <div class="farm-sheep">🐑</div>
-      <div class="farm-grass"></div>
-    </div>
-    <div class="mood-row">
-      <div class="mood-btn active" onclick="selectMood(this,'😊 Vui')">😊 Vui vẻ</div>
-      <div class="mood-btn" onclick="selectMood(this,'😟 Lo')">😟 Lo lắng</div>
-      <div class="mood-btn" onclick="selectMood(this,'💪 Quyết tâm')">💪 Quyết tâm</div>
-      <div class="mood-btn" onclick="selectMood(this,'😮 Bất ngờ')">😮 Bất ngờ</div>
-      <div class="mood-btn" onclick="selectMood(this,'🤔 Phân vân')">🤔 Phân vân</div>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-val">2.450.000đ</div><div class="stat-lbl">💰 Đã tích lũy</div></div>
-      <div class="stat-card"><div class="stat-val">7 ngày</div><div class="stat-lbl">🔥 Streak</div></div>
-      <div class="stat-card"><div class="stat-val">Cấp 5</div><div class="stat-lbl">📈 Cừu Kiến Tri</div></div>
-      <div class="stat-card"><div class="stat-val">85%</div><div class="stat-lbl">🎯 Mục tiêu</div></div>
-    </div>
-    <div class="chat-area">
-      <div class="chat-bubble">🐑 Hôm nay tụi mình mua cà phê hết 45.000đ nha! Nếu tiết kiệm mỗi ngày thì 1 tháng dành được 1.350.000đ đó 💕</div>
-      <div class="chat-bubble user">Ừ nhỉ, cừu ơi hôm nay mình lương rồi nên muốn để dành thêm</div>
-      <div class="chat-bubble">🐑 Yayyy! Bông rất vui! Mình đề xuất để 30% = 3.000.000đ vào quỹ tiết kiệm nhé? Mình giữ hộ bạn 🌱</div>
-      <div class="chat-input">
-        <input type="text" placeholder="Kể cho cừu nghe..." id="chatInput"/>
-        <button onclick="sendChat()">Gửi 💬</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MISSIONS -->
-  <div class="screen" id="screen-missions">
-    <div class="topbar">
-      <span class="topbar-title">📋 Nhiệm Vụ Hôm Nay</span>
-      <div class="topbar-coins"><div class="coin">⚡ 3 nhiệm vụ</div></div>
-    </div>
-    <div class="section-title">🌟 Nhiệm vụ ngày (reset lúc 00:00)</div>
-    <div class="mission-card" onclick="completeTask(this)">
-      <div class="mission-icon">☕</div>
-      <div class="mission-info">
-        <div class="mission-title">Ghi 1 khoản chi hôm nay <span class="mission-tag">Dễ</span></div>
-        <div class="mission-desc">Ghi lại bất kỳ chi tiêu nào trong ngày</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-        <div class="mission-reward">+50 🪙 · +10 XP</div>
-      </div>
-    </div>
-    <div class="mission-card" onclick="completeTask(this)">
-      <div class="mission-icon">💬</div>
-      <div class="mission-info">
-        <div class="mission-title">Chat với cừu 3 lần <span class="mission-tag">Thường</span></div>
-        <div class="mission-desc">Chia sẻ cảm xúc tài chính với Bông</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
-        <div class="mission-reward">+80 🪙 · +15 XP</div>
-      </div>
-    </div>
-    <div class="mission-card" onclick="completeTask(this)">
-      <div class="mission-icon">👯</div>
-      <div class="mission-info">
-        <div class="mission-title">Cheer 1 người bạn <span class="mission-tag">Xã hội</span></div>
-        <div class="mission-desc">Vào màn hình Bạn Bè và gửi cỏ cho ai đó</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-        <div class="mission-reward">+60 🪙 · +20 XP</div>
-      </div>
-    </div>
-    <div class="section-title">🏆 Nhiệm vụ tuần</div>
-    <div class="mission-card">
-      <div class="mission-icon">📈</div>
-      <div class="mission-info">
-        <div class="mission-title">Tích lũy 500.000đ trong tuần <span class="mission-tag">Khó</span></div>
-        <div class="mission-desc">Streak tiết kiệm 7 ngày liên tiếp</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:78%"></div></div>
-        <div class="mission-reward">+500 🪙 · Mũ nhà nông 🎩</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SHOP -->
-  <div class="screen" id="screen-shop">
-    <div class="topbar">
-      <span class="topbar-title">🛍️ Cửa Hàng Cừu</span>
-      <div class="topbar-coins"><div class="coin">🪙 128.450</div></div>
-    </div>
-    <div class="section-title">🎁 Phụ kiện cho Bông</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 8px 8px;">
-      <div style="background:#fff;border-radius:14px;padding:12px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="buyItem(this,'🎩 Mũ nhà nông','2000')">
-        <div style="font-size:2.2rem;margin-bottom:6px;">🎩</div>
-        <div style="font-size:.75rem;font-weight:700;color:#333;">Mũ nhà nông</div>
-        <div style="font-size:.68rem;color:#c4607f;margin-top:4px;">🪙 2.000</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:12px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="buyItem(this,'🏠 Nhà mái lá','5000')">
-        <div style="font-size:2.2rem;margin-bottom:6px;">🏠</div>
-        <div style="font-size:.75rem;font-weight:700;color:#333;">Nhà mái lá</div>
-        <div style="font-size:.68rem;color:#c4607f;margin-top:4px;">🪙 5.000</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:12px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="buyItem(this,'🌳 Cây hiếm','8000')">
-        <div style="font-size:2.2rem;margin-bottom:6px;">🌳</div>
-        <div style="font-size:.75rem;font-weight:700;color:#333;">Cây hiếm</div>
-        <div style="font-size:.68rem;color:#c4607f;margin-top:4px;">🪙 8.000</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:12px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="buyItem(this,'🌸 Hoa anh đào','3500')">
-        <div style="font-size:2.2rem;margin-bottom:6px;">🌸</div>
-        <div style="font-size:.75rem;font-weight:700;color:#333;">Hoa anh đào</div>
-        <div style="font-size:.68rem;color:#c4607f;margin-top:4px;">🪙 3.500</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:12px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="buyItem(this,'🎀 Nơ hồng','1500')">
-        <div style="font-size:2.2rem;margin-bottom:6px;">🎀</div>
-        <div style="font-size:.75rem;font-weight:700;color:#333;">Nơ hồng</div>
-        <div style="font-size:.68rem;color:#c4607f;margin-top:4px;">🪙 1.500</div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:12px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="buyItem(this,'☁️ Đám mây','6000')">
-        <div style="font-size:2.2rem;margin-bottom:6px;">☁️</div>
-        <div style="font-size:.75rem;font-weight:700;color:#333;">Đám mây</div>
-        <div style="font-size:.68rem;color:#c4607f;margin-top:4px;">🪙 6.000</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DECOR -->
-  <div class="screen" id="screen-decor">
-    <div class="topbar">
-      <span class="topbar-title">🎨 Trang Trí Trang Trại</span>
-    </div>
-    <div style="background:linear-gradient(180deg,#87CEEB,#98FB98);height:220px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
-      <div style="font-size:4rem;" id="decorSheep">🐑</div>
-      <div id="decorItems" style="position:absolute;top:10px;right:20px;font-size:1.6rem;display:flex;flex-direction:column;gap:4px;"></div>
-      <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(180deg,#7ec850,#5a9e30);border-radius:50% 50% 0 0/20px 20px 0 0;"></div>
-    </div>
-    <div class="section-title">🎒 Đồ đang mặc — click để gỡ</div>
-    <div id="equippedList" style="padding:0 8px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-      <div style="background:#fff0f5;border:1.5px dashed #c4607f;border-radius:10px;padding:8px 14px;font-size:.75rem;color:#c4607f;">Chưa trang trí gì 🌿</div>
-    </div>
-    <div class="section-title">🎁 Kho đồ của bạn — click để mặc</div>
-    <div style="display:flex;gap:8px;padding:0 8px;flex-wrap:wrap;">
-      <div style="background:#fff;border-radius:12px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.06);font-size:.78rem;" onclick="equipItem('🎩')">🎩 Mũ nhà nông</div>
-      <div style="background:#fff;border-radius:12px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.06);font-size:.78rem;" onclick="equipItem('🎀')">🎀 Nơ hồng</div>
-      <div style="background:#fff;border-radius:12px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.06);font-size:.78rem;" onclick="equipItem('🌸')">🌸 Hoa anh đào</div>
-    </div>
-  </div>
-
-  <!-- FRIENDS -->
-  <div class="screen" id="screen-friends">
-    <div class="topbar">
-      <span class="topbar-title">👯 Bạn Bè Đồng Hành</span>
-      <div class="topbar-coins"><div class="coin">+8 bạn mới</div></div>
-    </div>
-    <div class="section-title">🐑 Bạn bè của tôi (6)</div>
-    <div class="friends-grid">
-      <div class="friend-card" onclick="cheerFriend(this,'Bông Mập')">
-        <div class="friend-sheep">🐑</div>
-        <div class="friend-name">Bông Mập</div>
-        <div class="friend-level">Cấp 8</div>
-        <div class="friend-badge">Cừu Non</div>
-        <div class="progress-sm"><div class="progress-sm-fill" style="width:80%"></div></div>
-      </div>
-      <div class="friend-card" onclick="cheerFriend(this,'Cừu Nhanh Nhẹn')">
-        <div class="friend-sheep">🐑</div>
-        <div class="friend-name">Cừu Nhanh Nhẹn</div>
-        <div class="friend-level">Cấp 12</div>
-        <div class="friend-badge" style="background:#fff3e0;color:#e65100;">Cừu Thiếu Niên</div>
-        <div class="progress-sm"><div class="progress-sm-fill" style="width:60%"></div></div>
-      </div>
-      <div class="friend-card" onclick="cheerFriend(this,'Máy Tích Lũy')">
-        <div class="friend-sheep">🐑</div>
-        <div class="friend-name">Máy Tích Lũy</div>
-        <div class="friend-level">Cấp 7</div>
-        <div class="friend-badge blue">Cừu Trưởng Thành</div>
-        <div class="progress-sm"><div class="progress-sm-fill" style="width:75%"></div></div>
-      </div>
-      <div class="friend-card" onclick="cheerFriend(this,'Lúa Vàng')">
-        <div class="friend-sheep">🐑</div>
-        <div class="friend-name">Lúa Vàng</div>
-        <div class="friend-level">Cấp 20</div>
-        <div class="friend-badge" style="background:#f3e5f5;color:#6a1b9a;">Cừu Lão Luyện</div>
-        <div class="progress-sm"><div class="progress-sm-fill" style="width:90%"></div></div>
-      </div>
-      <div class="friend-card" onclick="cheerFriend(this,'Bé Bông')">
-        <div class="friend-sheep">🐑</div>
-        <div class="friend-name">Bé Bông</div>
-        <div class="friend-level">Cấp 4</div>
-        <div class="friend-badge">Cừu Non</div>
-        <div class="progress-sm"><div class="progress-sm-fill" style="width:45%"></div></div>
-      </div>
-      <div class="friend-card" onclick="cheerFriend(this,'Cừu Thịnh Vượng')">
-        <div class="friend-sheep">🐑</div>
-        <div class="friend-name">Cừu Thịnh Vượng</div>
-        <div class="friend-level">Cấp 18</div>
-        <div class="friend-badge blue">Cừu Trưởng Thành</div>
-        <div class="progress-sm"><div class="progress-sm-fill" style="width:70%"></div></div>
-      </div>
-    </div>
-    <div class="leaderboard">
-      <div style="font-size:.82rem;font-weight:700;color:#333;margin-bottom:8px;">🏆 Top tiết kiệm tuần này</div>
-      <div class="lb-row"><div class="lb-rank">🥇</div><div class="lb-name">Cừu Nhanh Nhẹn</div><div class="lb-amount">2.450.000đ</div></div>
-      <div class="lb-row"><div class="lb-rank">🥈</div><div class="lb-name">Lúa Vàng</div><div class="lb-amount">2.150.000đ</div></div>
-      <div class="lb-row"><div class="lb-rank">🥉</div><div class="lb-name">Máy Tích Lũy</div><div class="lb-amount">1.980.000đ</div></div>
-      <div class="lb-row"><div class="lb-rank" style="color:#888">4</div><div class="lb-name">Cừu Thịnh Vượng</div><div class="lb-amount">1.750.000đ</div></div>
-      <div class="lb-row"><div class="lb-rank" style="color:#888">5</div><div class="lb-name">Bông Mập</div><div class="lb-amount">1.320.000đ</div></div>
-    </div>
-  </div>
-
-  <!-- COMMUNITY -->
-  <div class="screen" id="screen-community">
-    <div class="topbar">
-      <span class="topbar-title">💬 Hội Nhóm Tiết Kiệm</span>
-      <div class="topbar-coins"><div class="coin">👥 1.247</div></div>
-    </div>
-    <div class="section-title">🔥 Nhóm đang hot</div>
-    <div style="display:flex;gap:8px;padding:0 8px 8px;overflow-x:auto;">
-      <div style="background:linear-gradient(135deg,#ff8fab,#c4607f);color:#fff;border-radius:12px;padding:8px 14px;white-space:nowrap;cursor:pointer;font-size:.75rem;font-weight:700;" onclick="joinGroup(this,'🐑 Hội Tiết Kiệm 1tr/tháng')">🐑 Tiết kiệm 1tr/tháng<br><span style="font-weight:400;opacity:.8">892 thành viên</span></div>
-      <div style="background:#fff;border-radius:12px;padding:8px 14px;white-space:nowrap;cursor:pointer;font-size:.75rem;font-weight:700;color:#333;box-shadow:0 2px 6px rgba(0,0,0,.08);" onclick="joinGroup(this,'💼 Nhóm Đầu Tư ETF')">💼 Đầu tư ETF<br><span style="color:#888;font-weight:400">234 thành viên</span></div>
-      <div style="background:#fff;border-radius:12px;padding:8px 14px;white-space:nowrap;cursor:pointer;font-size:.75rem;font-weight:700;color:#333;box-shadow:0 2px 6px rgba(0,0,0,.08);" onclick="joinGroup(this,'🏠 Nhóm Mua Nhà 2026')">🏠 Mua nhà 2026<br><span style="color:#888;font-weight:400">567 thành viên</span></div>
-    </div>
-    <div id="chatMessages" style="padding:4px 0;max-height:350px;overflow-y:auto;">
-      <div class="chat-msg">
-        <div class="msg-avatar">🐑</div>
-        <div class="msg-body">
-          <div class="msg-name">Lúa Vàng</div>
-          <div class="msg-text">Tháng này mình đã để dành được 3.2tr rồi 🎉 ai đang theo dõi mục tiêu cùng không?</div>
-          <div class="msg-time">10:32</div>
-        </div>
-      </div>
-      <div class="chat-msg">
-        <div class="msg-avatar">🐑</div>
-        <div class="msg-body">
-          <div class="msg-name">Máy Tích Lũy</div>
-          <div class="msg-text">Mình cũng vừa tới 2tr! Cùng cố lên nhé mọi người 💪</div>
-          <div class="msg-time">10:35</div>
-        </div>
-      </div>
-      <div class="chat-msg">
-        <div class="msg-avatar">🐑</div>
-        <div class="msg-body">
-          <div class="msg-name">Cừu Nhanh Nhẹn</div>
-          <div class="msg-text">Tip của mình: sáng dậy ghi ngay kế hoạch chi tiêu trước khi xài tiền 📝</div>
-          <div class="msg-time">10:41</div>
-        </div>
-      </div>
-    </div>
-    <div class="community-input">
-      <input type="text" placeholder="Nhắn gì đó cho hội nhóm..." id="groupInput"/>
-      <button onclick="sendGroupMsg()">Gửi</button>
-    </div>
-  </div>
-
-  <!-- DIARY -->
-  <div class="screen" id="screen-diary">
-    <div class="topbar">
-      <span class="topbar-title">📔 Nhật Ký Tâm Sự</span>
-    </div>
-    <div style="padding:12px;">
-      <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="font-size:.7rem;color:#c4607f;font-weight:700;margin-bottom:6px;">📅 21/06/2026 · Thứ Bảy</div>
-        <div style="font-size:.78rem;color:#444;line-height:1.6;">Hôm nay lương về rồi! Quyết định để 3 triệu vào quỹ tiết kiệm ngay. Cừu Bông rất vui và nói "Bạn đang xây tương lai đó!" 🌱</div>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span style="background:#fff0f5;color:#c4607f;border-radius:8px;padding:2px 7px;font-size:.62rem;">😊 Vui vẻ</span>
-          <span style="background:#e8f5e9;color:#388e3c;border-radius:8px;padding:2px 7px;font-size:.62rem;">💰 Tiết kiệm</span>
-        </div>
-      </div>
-      <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="font-size:.7rem;color:#c4607f;font-weight:700;margin-bottom:6px;">📅 20/06/2026 · Thứ Sáu</div>
-        <div style="font-size:.78rem;color:#444;line-height:1.6;">Đi ăn với bạn hết 250k nhưng mình đã plan trước nên không cảm thấy tội 😄 Cừu bảo "Trải nghiệm cũng là đầu tư vào bản thân!"</div>
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <span style="background:#fff0f5;color:#c4607f;border-radius:8px;padding:2px 7px;font-size:.62rem;">😊 Thoải mái</span>
-          <span style="background:#fff3e0;color:#e65100;border-radius:8px;padding:2px 7px;font-size:.62rem;">🍽️ Ăn uống</span>
-        </div>
-      </div>
-      <div style="background:linear-gradient(135deg,#fff0f5,#fce4ec);border:1.5px dashed #f0c0d0;border-radius:14px;padding:14px;text-align:center;cursor:pointer;" onclick="addDiary()">
-        <div style="font-size:1.5rem;margin-bottom:4px;">✏️</div>
-        <div style="font-size:.78rem;color:#c4607f;font-weight:700;">Thêm nhật ký hôm nay</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CROWDFUND -->
-  <div class="screen" id="screen-crowdfund">
-    <div class="topbar">
-      <span class="topbar-title">🚀 Ước Mơ Cộng Đồng</span>
-      <div class="topbar-coins"><div class="coin">+ Đăng ước mơ</div></div>
-    </div>
-    <div class="dream-card">
-      <div class="dream-header">
-        <div class="dream-sheep">🐑</div>
-        <div class="dream-meta">
-          <div class="dream-title">Mua xe máy đi làm không cần Grab 🛵</div>
-          <div class="dream-user">bởi Cừu Nhanh Nhẹn · 23 người ủng hộ</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <div><div class="dream-amount">18.500.000đ</div><div class="dream-target">/ 25.000.000đ mục tiêu</div></div>
-        <div style="font-size:.75rem;color:#c4607f;font-weight:700;">74%</div>
-      </div>
-      <div class="dream-bar"><div class="dream-fill" style="width:74%"></div></div>
-      <div class="tag-row">
-        <div class="tag">🛵 Phương tiện</div>
-        <div class="tag">💼 Đi làm</div>
-        <div class="tag">⏰ 12 ngày còn lại</div>
-      </div>
-      <div class="dream-actions">
-        <div class="btn-cheer" onclick="cheerDream(this)">🌿 Gửi cỏ ủng hộ</div>
-        <div class="btn-invest" onclick="investDream(this)">💰 Góp vốn</div>
-      </div>
-    </div>
-    <div class="dream-card">
-      <div class="dream-header">
-        <div class="dream-sheep">🐑</div>
-        <div class="dream-meta">
-          <div class="dream-title">Học khoá CFA cho sự nghiệp tài chính 📚</div>
-          <div class="dream-user">bởi Lúa Vàng · 41 người ủng hộ</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <div><div class="dream-amount">6.250.000đ</div><div class="dream-target">/ 15.000.000đ mục tiêu</div></div>
-        <div style="font-size:.75rem;color:#c4607f;font-weight:700;">42%</div>
-      </div>
-      <div class="dream-bar"><div class="dream-fill" style="width:42%"></div></div>
-      <div class="tag-row">
-        <div class="tag">📚 Học tập</div>
-        <div class="tag">💼 Tài chính</div>
-        <div class="tag">⏰ 28 ngày còn lại</div>
-      </div>
-      <div class="dream-actions">
-        <div class="btn-cheer" onclick="cheerDream(this)">🌿 Gửi cỏ ủng hộ</div>
-        <div class="btn-invest" onclick="investDream(this)">💰 Góp vốn</div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- end main -->
-
-<!-- TOAST -->
-<div id="toast" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:rgba(50,50,50,.9);color:#fff;border-radius:20px;padding:8px 20px;
-  font-size:.78rem;z-index:999;transition:opacity .3s;"></div>
-
 <script>
-function show(screen) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('screen-' + screen).classList.add('active');
-  event.currentTarget.classList.add('active');
-}
-
-function toast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.style.display = 'block'; t.style.opacity = '1';
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display='none', 300); }, 2000);
-}
-
-function selectMood(el, mood) {
-  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  toast('Cừu Bông ghi nhận: ' + mood + ' 💕');
-}
-
-function sendChat() {
-  var inp = document.getElementById('chatInput');
-  if(!inp.value.trim()) return;
-  var area = inp.closest('.chat-area');
-  var userBubble = document.createElement('div');
-  userBubble.className = 'chat-bubble user';
-  userBubble.textContent = inp.value;
-  area.insertBefore(userBubble, inp.closest('.chat-input'));
-  var sheepBubble = document.createElement('div');
-  sheepBubble.className = 'chat-bubble';
-  sheepBubble.textContent = '🐑 Mình nghe bạn nói rồi! Cảm ơn bạn đã chia sẻ nhé 💕 Bạn đang làm rất tốt!';
-  area.insertBefore(sheepBubble, inp.closest('.chat-input'));
-  inp.value = '';
-}
-
-function completeTask(card) {
-  var fill = card.querySelector('.progress-fill');
-  var current = parseInt(fill.style.width) || 0;
-  if(current >= 100) { toast('✅ Nhiệm vụ đã hoàn thành!'); return; }
-  fill.style.width = Math.min(100, current + 50) + '%';
-  if(current + 50 >= 100) {
-    card.style.opacity = '.6';
-    toast('🎉 Hoàn thành nhiệm vụ! +80 🪙');
-  } else {
-    toast('📈 Tiến độ cập nhật!');
+  function switchTab(idx) {
+    for (var i = 0; i < 5; i++) {
+      var t = document.getElementById("tab-" + i);
+      t.classList.remove("active");
+      var d = t.querySelector(".tab-dot");
+      if (d) d.remove();
+    }
+    var a = document.getElementById("tab-" + idx);
+    a.classList.add("active");
+    var dot = document.createElement("div");
+    dot.className = "tab-dot";
+    a.appendChild(dot);
   }
-}
-
-function buyItem(card, name, price) {
-  card.style.background = 'linear-gradient(135deg,#fff0f5,#fce4ec)';
-  card.style.border = '2px solid #c4607f';
-  toast('🛍️ Đã mua: ' + name + ' (-' + price + ' 🪙)');
-}
-
-function equipItem(emoji) {
-  var list = document.getElementById('equippedList');
-  if(list.textContent.includes('Chưa trang trí')) list.innerHTML = '';
-  var item = document.createElement('div');
-  item.style.cssText = 'background:#fff0f5;border:1.5px solid #c4607f;border-radius:10px;padding:6px 12px;font-size:.75rem;color:#c4607f;cursor:pointer;';
-  item.textContent = emoji + ' Đang mặc';
-  item.onclick = function() { this.remove(); toast('Đã gỡ ' + emoji); };
-  list.appendChild(item);
-  document.getElementById('decorItems').innerHTML += '<div>' + emoji + '</div>';
-  toast(emoji + ' Đã trang trí cho Bông!');
-}
-
-function cheerFriend(card, name) {
-  card.style.boxShadow = '0 0 0 2px #c4607f';
-  toast('🌿 Đã gửi cỏ cho ' + name + '!');
-}
-
-function joinGroup(el, name) {
-  el.style.background = 'linear-gradient(135deg,#c4607f,#a03060)';
-  el.style.color = '#fff';
-  toast('✅ Đã tham gia: ' + name);
-}
-
-function sendGroupMsg() {
-  var inp = document.getElementById('groupInput');
-  if(!inp.value.trim()) return;
-  var msgs = document.getElementById('chatMessages');
-  var msg = document.createElement('div');
-  msg.className = 'chat-msg';
-  msg.innerHTML = '<div class="msg-avatar">🐑</div><div class="msg-body"><div class="msg-name" style="color:#a03060;">Bạn</div><div class="msg-text">' + inp.value + '</div><div class="msg-time">Vừa xong</div></div>';
-  msgs.appendChild(msg);
-  msgs.scrollTop = msgs.scrollHeight;
-  inp.value = '';
-  toast('💬 Đã gửi!');
-}
-
-function cheerDream(btn) {
-  btn.textContent = '✅ Đã gửi cỏ!';
-  btn.style.background = '#e8f5e9'; btn.style.color = '#388e3c'; btn.style.borderColor = '#388e3c';
-  toast('🌿 Gửi cỏ ủng hộ thành công!');
-}
-
-function investDream(btn) {
-  toast('💰 Tính năng Góp Vốn đang trong Phase 3 🚀');
-}
-
-function addDiary() {
-  toast('✏️ Tính năng nhật ký đang mở trong tab Nhật ký!');
-}
+  function feedSheep() {
+    var m = document.getElementById("sheepMascot");
+    m.style.fontSize = "114px";
+    m.style.filter = "drop-shadow(0 10px 32px rgba(255,215,0,0.75))";
+    setTimeout(function() {
+      m.style.fontSize = "90px";
+      m.style.filter = "drop-shadow(0 8px 20px rgba(0,0,0,0.25))";
+    }, 380);
+    showToast();
+    spawnConfetti();
+    var el = document.getElementById("coinCount");
+    var v = parseInt(el.textContent.replace(/\./g, "")) + 100000;
+    el.textContent = v.toLocaleString("vi-VN").replace(/,/g, ".");
+  }
+  function showToast() {
+    var t = document.getElementById("toast");
+    t.classList.add("show");
+    setTimeout(function() { t.classList.remove("show"); }, 2500);
+  }
+  function spawnConfetti() {
+    var root = document.getElementById("farmRoot");
+    var colors = ["#FFD700","#FF6B6B","#4ECDC4","#45B7D1","#96E6A1","#DDA0DD","#FFB347","#FF8C94"];
+    var cx = root.offsetWidth / 2;
+    for (var i = 0; i < 28; i++) {
+      (function() {
+        var c = document.createElement("div");
+        c.className = "confetti-piece";
+        c.style.left = (cx + (Math.random() - 0.5) * 240) + "px";
+        c.style.top = (root.offsetHeight * 0.3) + "px";
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animationDelay = (Math.random() * 0.5) + "s";
+        c.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+        root.appendChild(c);
+        setTimeout(function() { if (c.parentNode) c.parentNode.removeChild(c); }, 1800);
+      })();
+    }
+  }
+  function toggleMission(row) {
+    if (row.classList.contains("mission-done")) return;
+    row.classList.add("mission-done");
+    var check = row.querySelector(".mission-check");
+    check.textContent = "✅"; check.style.fontSize = "16px"; check.style.color = "";
+    var prog = row.querySelector(".mission-prog-fill");
+    if (prog) prog.style.width = "100%";
+    var sub = row.querySelector(".mission-sub");
+    if (sub) sub.textContent = "Hoàn thành!";
+    var done = document.querySelectorAll(".mission-done").length;
+    var total = document.querySelectorAll(".mission-row").length;
+    document.getElementById("missionTitle").textContent =
+      "📋 Nhiệm vụ hôm nay (" + done + "/" + total + ")";
+  }
+  function navClick(card) {
+    card.style.background = "rgba(255,240,180,0.98)"; card.style.borderColor = "#FFD700";
+    setTimeout(function() { card.style.background = ""; card.style.borderColor = ""; }, 700);
+  }
 </script>
-</body>
-</html>
 """
         import streamlit.components.v1 as components
-        components.html(_PROTO_HTML, height=800, scrolling=False)
+        components.html(_PROTO_HTML, height=830, scrolling=False)
 
