@@ -2074,34 +2074,47 @@ with tab3:
     # Load friend avatars
     _GH3 = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
 
-    def _dl_asset(local_rel, gh_url):
-        """Download asset from GitHub to local cache if missing."""
-        import urllib.request as _ur
-        full = _os3.path.join(_os3.path.dirname(__file__), local_rel)
-        if not _os3.path.exists(full):
-            try:
-                _os3.makedirs(_os3.path.dirname(full), exist_ok=True)
-                _ur.urlretrieve(gh_url, full)
-            except Exception:
-                pass
-        return full
-
     def _lca3(local_path, gh_url=""):
-        """Load local asset as base64; auto-download from GitHub if missing."""
-        full = _dl_asset(local_path, gh_url) if gh_url else _os3.path.join(_os3.path.dirname(__file__), local_path)
-        if _os3.path.exists(full):
-            import base64 as _b3
-            with open(full, "rb") as _f:
-                _d = _b3.b64encode(_f.read()).decode()
-            ext = local_path.rsplit(".", 1)[-1].lower()
-            mime = {"png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp"}.get(ext,"image/png")
-            return "data:" + mime + ";base64," + _d
-        return ""
+        """Load as base64: local file first, then GitHub URL into memory.
+        Cached in st.session_state to avoid re-fetching on every rerun.
+        """
+        import base64 as _b3
+        import urllib.request as _ur
 
-    _f1s3 = _lca3("assets/friends/friend_sheep_1.png", _GH3 + "/friend_sheep_1.png")
-    _f2s3 = _lca3("assets/friends/friend_sheep_2.png", _GH3 + "/friend_sheep_2.png")
-    _f3s3 = _lca3("assets/friends/friend_sheep_3.png", _GH3 + "/friend_sheep_3.png")
-    _inv3 = _lca3("assets/invite_friend.png",           _GH3 + "/invite_friend.png")
+        _ck = "__asset__" + local_path.replace("/", "_").replace(".", "_")
+        if _ck in st.session_state:
+            return st.session_state[_ck]
+
+        data = None
+        # 1. Try local file
+        full = _os3.path.join(_os3.path.dirname(__file__), local_path)
+        if _os3.path.exists(full):
+            with open(full, "rb") as _f:
+                data = _f.read()
+        # 2. Fetch from GitHub directly into memory (no disk write)
+        elif gh_url:
+            try:
+                req = _ur.Request(gh_url, headers={"User-Agent": "Mozilla/5.0"})
+                with _ur.urlopen(req, timeout=8) as _r:
+                    data = _r.read()
+            except Exception:
+                data = None
+
+        if not data:
+            st.session_state[_ck] = ""
+            return ""
+
+        ext  = local_path.rsplit(".", 1)[-1].lower()
+        mime = {"png": "image/png", "jpg": "image/jpeg",
+                "jpeg": "image/jpeg", "webp": "image/webp"}.get(ext, "image/png")
+        result = "data:" + mime + ";base64," + _b3.b64encode(data).decode()
+        st.session_state[_ck] = result
+        return result
+
+    _f1s3 = _lca3("assets/friend_sheep_1.png", _GH3 + "/friend_sheep_1.png")
+    _f2s3 = _lca3("assets/friend_sheep_2.png", _GH3 + "/friend_sheep_2.png")
+    _f3s3 = _lca3("assets/friend_sheep_3.png", _GH3 + "/friend_sheep_3.png")
+    _inv3 = _lca3("assets/invite_friend.png",  _GH3 + "/invite_friend.png")
 
     def _av3(src, fb="🐑"):
         s = "width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"
@@ -2518,66 +2531,7 @@ body {
   </div>
 </div>
 
-<!-- ══ SECTION 5: CÓ BẠN ĐỒNG HÀNH VUI HƠN ══ -->
-<div>
-  <div class="sh">🐑 Có bạn đồng hành vui hơn</div>
-
-  <!-- Hero card (light) -->
-  <div class="inv-hero">
-    __INVITE_IMG__
-    <div class="inv-body">
-      <div class="inv-title">Bạn không cần theo đuổi<br>giấc mơ một mình.</div>
-      <div class="inv-sub">
-        Rủ một người bạn cùng nuôi cừu — cả hai cùng lớn lên.<br>
-        <em>12.847 cừu đang đồng hành cùng nhau mỗi ngày.</em>
-      </div>
-      <div class="inv-proof">
-        <span class="inv-chip">🔥 247 cừu mới tuần này</span>
-        <span class="inv-chip">🐑 12.847 thành viên</span>
-        <span class="inv-chip">🎉 892 giấc mơ hoàn thành</span>
-      </div>
-      <div class="inv-benefits">
-        <div class="inv-benefit">
-          <div class="inv-b-ico">❤️</div>
-          <div><div class="inv-b-name">Kết bạn với cừu khác</div><div class="inv-b-desc">Theo dõi hành trình của nhau</div></div>
-        </div>
-        <div class="inv-benefit">
-          <div class="inv-b-ico">🎁</div>
-          <div><div class="inv-b-name">Gửi quà cho nhau</div><div class="inv-b-desc">Quà tặng tăng động lực tiết kiệm</div></div>
-        </div>
-        <div class="inv-benefit">
-          <div class="inv-b-ico">💬</div>
-          <div><div class="inv-b-name">Động viên mỗi ngày</div><div class="inv-b-desc">Không ai bỏ cuộc một mình</div></div>
-        </div>
-        <div class="inv-benefit">
-          <div class="inv-b-ico">🏆</div>
-          <div><div class="inv-b-name">Thi đua chuỗi tiết kiệm</div><div class="inv-b-desc">Ai dài hơn? Vui hơn!</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Dark reward + invite card -->
-  <div class="ref-card">
-    <div class="ref-inner">
-      <div class="ref-rew-lbl">Thêm phần thưởng khi bạn mời</div>
-      <div class="ref-tiers">
-        <div class="ref-tier"><div class="ref-t-lbl">Mời 1 bạn</div><div class="ref-t-num">+100</div><div class="ref-t-rew">XP cho cả hai</div></div>
-        <div class="ref-tier"><div class="ref-t-lbl">Mời 5 bạn</div><div class="ref-t-num">🎨</div><div class="ref-t-rew">Skin độc quyền</div></div>
-        <div class="ref-tier"><div class="ref-t-lbl">Mời 10 bạn</div><div class="ref-t-num">👑</div><div class="ref-t-rew">Huy hiệu Trưởng Đàn</div></div>
-      </div>
-      <div class="ref-code-box">
-        <span class="ref-c-lbl">Mã của bạn</span>
-        <span class="ref-c-val" id="rc">__REFCODE__</span>
-        <button class="ref-copy" onclick="copyCode()">📋 Sao chép</button>
-      </div>
-      <div class="ref-ctas">
-        <button class="ref-invite" onclick="toast('🐑 Đã sao chép link! Rủ bạn cùng nuôi cừu nhé.')">🐑 Rủ bạn cùng nuôi cừu</button>
-        <button class="ref-invite" style="flex:0 0 auto;padding:13px 16px;background:rgba(255,255,255,0.1);box-shadow:none;border:1.5px solid rgba(255,255,255,0.14);" onclick="toast('🎁 Đã tạo quà tặng một chú cừu!')">🎁 Tặng cừu</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- SECTION 5 rendered natively below -->
 
 <script>
 function toast(msg) {
@@ -2621,26 +2575,160 @@ function copyCode() {
 """
 
     # Substitute dynamic values
-    # Build invite image tag — only use <img> when local base64 exists
-    if _inv3 and not _inv3.startswith('http'):
-        # Local file found — embed as base64, always works
-        _inv_img_tag = '<img src="' + _inv3 + '" style="width:100%;max-height:220px;object-fit:cover;display:block;">'
-    else:
-        # No local asset yet — show warm fallback, never a broken image
-        _inv_img_tag = (
-            '<div class="inv-img-fallback">'
-            '<div class="sheep-duo">🐑🐑</div>'
-            '<div style="font-size:0.78rem;color:#7B5EA7;font-weight:700;margin-top:6px;">Đặt ảnh vào assets/invite_friend.png</div>'
-            '</div>'
-        )
     _HTML3 = (
         _HTML3
-        .replace("__AV1__",        _av1s)
-        .replace("__AV2__",        _av2s)
-        .replace("__AV3__",        _av3s)
-        .replace("__LV__",         str(_lv3))
-        .replace("__REFCODE__",    _ref3)
-        .replace("__INVITE_IMG__", _inv_img_tag)
+        .replace("__AV1__",     _av1s)
+        .replace("__AV2__",     _av2s)
+        .replace("__AV3__",     _av3s)
+        .replace("__LV__",      str(_lv3))
     )
 
-    _comp3.html(_HTML3, height=1780, scrolling=True)
+    _comp3.html(_HTML3, height=1300, scrolling=True)
+
+    # ══ SECTION 5: CÓ BẠN ĐỒNG HÀNH VUI HƠN (native Streamlit) ══════════════
+    st.markdown(
+        """<div style="margin-top:8px;font-size:0.95rem;font-weight:800;
+            color:#1a1a2e;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            🐑 Có bạn đồng hành vui hơn
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # ── Invite image — st.image works in Codespaces + local + cloud ───────────
+    st.markdown(
+        """<style>
+        div[data-testid="stImage"] img {
+            border-radius: 16px !important;
+            max-height: 220px;
+            object-fit: cover;
+            width: 100%;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        </style>""",
+        unsafe_allow_html=True,
+    )
+    _inv_local3 = _os3.path.join(_os3.path.dirname(__file__), "assets", "invite_friend.png")
+    _inv_gh3    = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets/invite_friend.png"
+    if _os3.path.exists(_inv_local3):
+        st.image(_inv_local3, use_container_width=True)
+    else:
+        try:
+            st.image(_inv_gh3, use_container_width=True)
+        except Exception:
+            st.markdown(
+                '<div style="background:linear-gradient(135deg,#f8f4ff,#f0f8ff);'
+                'border-radius:16px;padding:40px;text-align:center;font-size:3rem;">🐑🐑</div>',
+                unsafe_allow_html=True,
+            )
+
+    # ── Body card: title + subtitle + social proof + benefits ─────────────────
+    st.markdown(
+        """<div style="background:#fff;border:1.5px solid #f0f0f5;border-radius:18px;
+                padding:20px;margin:10px 0 12px;">
+            <div style="font-size:1.05rem;font-weight:800;color:#1a1a2e;
+                    margin-bottom:6px;line-height:1.3;">
+                Bạn không cần theo đuổi giấc mơ một mình.
+            </div>
+            <div style="font-size:0.82rem;color:#666;line-height:1.6;margin-bottom:14px;">
+                Rủ một người bạn cùng nuôi cừu — cả hai cùng lớn lên.<br>
+                <span style="color:#7B5EA7;font-weight:700;">
+                    12.847 cừu đang đồng hành cùng nhau mỗi ngày.
+                </span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;">
+                <span style="background:#f4eeff;border-radius:20px;padding:5px 12px;
+                    font-size:0.72rem;font-weight:700;color:#7B5EA7;">🔥 247 cừu mới tuần này</span>
+                <span style="background:#f4eeff;border-radius:20px;padding:5px 12px;
+                    font-size:0.72rem;font-weight:700;color:#7B5EA7;">🐑 12.847 thành viên</span>
+                <span style="background:#f4eeff;border-radius:20px;padding:5px 12px;
+                    font-size:0.72rem;font-weight:700;color:#7B5EA7;">🎉 892 giấc mơ hoàn thành</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+                <div style="background:#f8f7fc;border-radius:14px;padding:12px;
+                    display:flex;gap:9px;align-items:flex-start;">
+                    <span style="font-size:1.2rem;">❤️</span>
+                    <div><div style="font-size:0.77rem;font-weight:700;color:#1a1a2e;">
+                        Kết bạn với cừu khác</div>
+                    <div style="font-size:0.63rem;color:#888;margin-top:2px;">
+                        Theo dõi hành trình của nhau</div></div>
+                </div>
+                <div style="background:#f8f7fc;border-radius:14px;padding:12px;
+                    display:flex;gap:9px;align-items:flex-start;">
+                    <span style="font-size:1.2rem;">🎁</span>
+                    <div><div style="font-size:0.77rem;font-weight:700;color:#1a1a2e;">
+                        Gửi quà cho nhau</div>
+                    <div style="font-size:0.63rem;color:#888;margin-top:2px;">
+                        Quà tặng tăng động lực tiết kiệm</div></div>
+                </div>
+                <div style="background:#f8f7fc;border-radius:14px;padding:12px;
+                    display:flex;gap:9px;align-items:flex-start;">
+                    <span style="font-size:1.2rem;">💬</span>
+                    <div><div style="font-size:0.77rem;font-weight:700;color:#1a1a2e;">
+                        Động viên mỗi ngày</div>
+                    <div style="font-size:0.63rem;color:#888;margin-top:2px;">
+                        Không ai bỏ cuộc một mình</div></div>
+                </div>
+                <div style="background:#f8f7fc;border-radius:14px;padding:12px;
+                    display:flex;gap:9px;align-items:flex-start;">
+                    <span style="font-size:1.2rem;">🏆</span>
+                    <div><div style="font-size:0.77rem;font-weight:700;color:#1a1a2e;">
+                        Thi đua chuỗi tiết kiệm</div>
+                    <div style="font-size:0.63rem;color:#888;margin-top:2px;">
+                        Ai dài hơn? Vui hơn!</div></div>
+                </div>
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # ── Dark ref card ─────────────────────────────────────────────────────────
+    _ref5_html = """
+<div style="background:#1A1A2E;border-radius:20px;padding:20px 18px;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;
+    background:radial-gradient(circle,rgba(123,94,167,0.28) 0%,transparent 70%);pointer-events:none;"></div>
+  <div style="position:relative;z-index:1;">
+    <div style="font-size:0.62rem;color:rgba(255,255,255,0.38);text-transform:uppercase;
+        letter-spacing:.05em;margin-bottom:9px;font-weight:600;">
+        Thêm phần thưởng khi bạn mời
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px;">
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);
+          border-radius:12px;padding:10px 6px;text-align:center;">
+        <div style="font-size:0.55rem;color:rgba(255,255,255,0.38);text-transform:uppercase;
+            letter-spacing:.04em;margin-bottom:4px;">Mời 1 bạn</div>
+        <div style="font-size:1.05rem;font-weight:800;color:#fff;">+100</div>
+        <div style="font-size:0.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;">XP cho cả hai</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);
+          border-radius:12px;padding:10px 6px;text-align:center;">
+        <div style="font-size:0.55rem;color:rgba(255,255,255,0.38);text-transform:uppercase;
+            letter-spacing:.04em;margin-bottom:4px;">Mời 5 bạn</div>
+        <div style="font-size:1.05rem;font-weight:800;color:#fff;">🎨</div>
+        <div style="font-size:0.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;">Skin độc quyền</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);
+          border-radius:12px;padding:10px 6px;text-align:center;">
+        <div style="font-size:0.55rem;color:rgba(255,255,255,0.38);text-transform:uppercase;
+            letter-spacing:.04em;margin-bottom:4px;">Mời 10 bạn</div>
+        <div style="font-size:1.05rem;font-weight:800;color:#fff;">👑</div>
+        <div style="font-size:0.62rem;color:#d4b8ff;font-weight:600;margin-top:4px;">Huy hiệu Trưởng Đàn</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.07);
+        border:1.5px solid rgba(255,255,255,0.12);border-radius:12px;
+        padding:10px 13px;margin-bottom:12px;">
+      <span style="font-size:0.63rem;color:rgba(255,255,255,0.4);flex-shrink:0;">Mã của bạn</span>
+      <span style="font-size:0.95rem;font-weight:800;color:#fff;letter-spacing:.12em;flex:1;">__REFCODE5__</span>
+    </div>
+  </div>
+</div>"""
+    _ref5_html = _ref5_html.replace("__REFCODE5__", _ref3)
+    st.markdown(_ref5_html, unsafe_allow_html=True)
+
+    _ci5a, _ci5b = st.columns(2)
+    with _ci5a:
+        if st.button("🐑 Rủ bạn cùng nuôi cừu", use_container_width=True, type="primary", key="inv_cta1"):
+            st.toast("🐑 Đã sao chép link mời!")
+    with _ci5b:
+        if st.button("🎁 Tặng bạn một chú cừu", use_container_width=True, key="inv_cta2"):
+            st.toast("🎁 Đã tạo quà tặng!")
