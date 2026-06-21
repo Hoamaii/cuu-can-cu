@@ -2005,614 +2005,391 @@ with tab4:
             "Hãy tự nghiên cứu và/hoặc tham khảo chuyên gia trước khi ra quyết định đầu tư."
         )
 
-    # ── TAB 5: Asset-Driven Game UI ──────────────────────────────────────
+    # ══ TAB 5: Farm Game UI ═════════════════════════════════════════════════════
     with tab5:
         import os as _os
 
-        # ── Asset loader ──
-        _GH_RAW = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
-        _GH_MAP = {
-            "farm_bg"   : f"{_GH_RAW}/farm_bg_day.png",
-            "sheep_main": f"{_GH_RAW}/sheep_adult.png",
-            "sheep_f"   : f"{_GH_RAW}/friend_sheep_1.png",
-            "sheep_m"   : f"{_GH_RAW}/friend_sheep_2.png",
-            "house"     : f"{_GH_RAW}/house_lv1.png",
-            "windmill"  : f"{_GH_RAW}/windmill.png",
-            "pond"      : f"{_GH_RAW}/lake.png",
-            "carrot"    : f"{_GH_RAW}/carrot.png",
-            "gift"      : f"{_GH_RAW}/gift_box.png",
-            "f1"        : f"{_GH_RAW}/friend_sheep_1.png",
-            "f2"        : f"{_GH_RAW}/friend_sheep_2.png",
-            "f3"        : f"{_GH_RAW}/friend_sheep_3.png",
-        }
+        _GH = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
 
-        def _load_asset(rel_path: str, gh_key: str = "") -> str:
-            """Return base64 data-URI if local file exists, else GitHub raw URL."""
-            full = _os.path.join(_os.path.dirname(__file__), rel_path)
+        def _load_farm_asset(local_path, gh_url=""):
+            full = _os.path.join(_os.path.dirname(__file__), local_path)
             if _os.path.exists(full):
                 with open(full, "rb") as _f:
-                    _data = base64.b64encode(_f.read()).decode()
-                ext = rel_path.rsplit(".", 1)[-1].lower()
-                mime = "image/png" if ext == "png" else f"image/{ext}"
-                return f"data:{mime};base64,{_data}"
-            # Fallback: use GitHub raw URL directly
-            return _GH_MAP.get(gh_key, "")
+                    _d = base64.b64encode(_f.read()).decode()
+                return "data:image/png;base64," + _d
+            return gh_url
 
-        _A = {
-            "farm_bg"   : _load_asset("assets/farm/farm_bg.png",        "farm_bg"),
-            "sheep_main": _load_asset("assets/sheep/sheep_main.png",     "sheep_main"),
-            "sheep_f"   : _load_asset("assets/sheep/sheep_female.png",   "sheep_f"),
-            "sheep_m"   : _load_asset("assets/sheep/sheep_male.png",     "sheep_m"),
-            "house"     : _load_asset("assets/buildings/house.png",      "house"),
-            "windmill"  : _load_asset("assets/buildings/windmill.png",   "windmill"),
-            "pond"      : _load_asset("assets/buildings/pond.png",       "pond"),
-            "carrot"    : _load_asset("assets/items/carrot.png",         "carrot"),
-            "gift"      : _load_asset("assets/items/gift_box.png",       "gift"),
-            "f1"        : _load_asset("assets/friends/friend1.png",      "f1"),
-            "f2"        : _load_asset("assets/friends/friend2.png",      "f2"),
-            "f3"        : _load_asset("assets/friends/friend3.png",      "f3"),
+        _FA = {
+            "sheep"   : _load_farm_asset("assets/sheep/sheep_main.png",    _GH+"/sheep_adult.png"),
+            "house"   : _load_farm_asset("assets/buildings/house.png",     _GH+"/house_lv1.png"),
+            "windmill": _load_farm_asset("assets/buildings/windmill.png",  _GH+"/windmill.png"),
+            "pond"    : _load_farm_asset("assets/buildings/pond.png",      _GH+"/lake.png"),
+            "carrot"  : _load_farm_asset("assets/items/carrot.png",        _GH+"/carrot.png"),
+            "f1"      : _load_farm_asset("assets/friends/friend1.png",     _GH+"/friend_sheep_1.png"),
+            "f2"      : _load_farm_asset("assets/friends/friend2.png",     _GH+"/friend_sheep_2.png"),
+            "f3"      : _load_farm_asset("assets/friends/friend3.png",     _GH+"/friend_sheep_3.png"),
         }
 
-        # ── Missing-asset notice ──
-        _missing = [k for k, v in _A.items() if not v]
-        if _missing:
-            st.info(
-                f"💡 **Thiếu {len(_missing)} asset(s):** `{', '.join(_missing)}`  \n"
-                "Lưu ảnh vào thư mục đúng (xem hướng dẫn bên dưới) rồi reload.",
-                icon="🗂️"
-            )
-
-        # ── Fallback colors when image missing ──
-        _FB = {
-            "farm_bg"   : "linear-gradient(180deg,#87CEEB 0%,#B0E0FF 38%,#98FB98 55%,#5DBB36 100%)",
-            "sheep_main": "",
-            "sheep_f"   : "",
-            "sheep_m"   : "",
-            "house"     : "",
-            "windmill"  : "",
-            "pond"      : "",
-            "carrot"    : "",
-            "gift"      : "",
-        }
-
-        def _img(key, style="", cls=""):
-            src = _A.get(key, "")
+        def _fi(key, style=""):
+            src = _FA.get(key, "")
             if not src:
-                return f"<div class='asset-missing' style='{style}' title='{key} missing'></div>"
-            return f"<img src='{src}' class='{cls}' style='{style}' alt='{key}'/>"
+                return ""
+            return '<img src="' + src + '" style="' + style + '" alt="' + key + '" onerror="this.style.display=\'none\'">'
 
-        _PROTO_HTML = f"""
-<style>
-*{{margin:0;padding:0;box-sizing:border-box;}}
-html,body{{width:100%;height:100%;overflow:hidden;font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif;}}
+        _HTML_TEMPLATE = (
+            '<!DOCTYPE html>\n'
+            '<html lang="vi"><head><meta charset="utf-8">\n'
+            '<style>\n'
+            '*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}\n'
+            'html,body{width:100%;height:100%;overflow:hidden;background:#87C8F0;}\n'
+            '#game{width:860px;height:820px;position:relative;overflow:hidden;font-family:-apple-system,\'Helvetica Neue\',sans-serif;}\n'
+            '\n'
+            '/* TOP BAR */\n'
+            '.topbar{position:absolute;top:0;left:0;right:0;height:66px;background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:100;display:flex;align-items:center;padding:0 14px;gap:10px;box-shadow:0 1px 0 rgba(0,0,0,0.07),0 2px 12px rgba(0,0,0,0.06);}\n'
+            '.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#FFE066,#FF9500);border:2.5px solid #FFD700;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 8px rgba(255,150,0,0.35);}\n'
+            '.ui{flex:1;min-width:0;}\n'
+            '.un{font-size:14px;font-weight:700;color:#1a1a1a;}\n'
+            '.xt{height:5px;background:rgba(0,0,0,0.08);border-radius:10px;overflow:hidden;margin-top:4px;}\n'
+            '.xf{height:100%;border-radius:10px;background:linear-gradient(90deg,#FFB800,#FF6B00);width:65%;position:relative;overflow:hidden;}\n'
+            '.xf::after{content:\'\';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,0.45);animation:shimmer 2s infinite;}\n'
+            '.xl{font-size:10px;color:#999;margin-top:2px;}\n'
+            '.lv{background:linear-gradient(145deg,#7A4A00,#C47A0A);color:#FFE566;border-radius:12px;padding:6px 12px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.2);flex-shrink:0;}\n'
+            '.cur{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);border-radius:20px;padding:5px 10px;font-weight:700;font-size:13px;flex-shrink:0;}\n'
+            '.bell{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0;position:relative;}\n'
+            '.bd{position:absolute;top:3px;right:3px;width:8px;height:8px;background:#FF3B30;border-radius:50%;border:1.5px solid white;}\n'
+            '\n'
+            '/* SCENE */\n'
+            '.scene{position:absolute;top:66px;left:0;right:0;bottom:80px;overflow:hidden;}\n'
+            '\n'
+            '/* SKY */\n'
+            '.sky{position:absolute;inset:0;background:linear-gradient(180deg,#3D9ED8 0%,#5CAEDF 25%,#87C8EE 50%,#B2DCF0 68%,#C8ECBA 80%,#70C032 100%);z-index:0;}\n'
+            '\n'
+            '/* SUN */\n'
+            '.sun{position:absolute;top:22px;right:100px;width:62px;height:62px;background:radial-gradient(circle,#FFFFD0 0%,#FFE040 45%,rgba(255,200,0,0) 100%);border-radius:50%;box-shadow:0 0 60px 24px rgba(255,220,0,0.22);z-index:1;}\n'
+            '.sun-halo{position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(255,240,100,0.28) 0%,transparent 70%);animation:sun-pulse 3s ease-in-out infinite;}\n'
+            '\n'
+            '/* CLOUDS */\n'
+            '.cloud{position:absolute;z-index:2;}\n'
+            '.cb{position:relative;background:rgba(255,255,255,0.9);border-radius:50px;box-shadow:0 4px 14px rgba(0,0,0,0.05);}\n'
+            '.cp{position:absolute;background:rgba(255,255,255,0.9);border-radius:50%;}\n'
+            '\n'
+            '/* HILLS */\n'
+            '.hill{position:absolute;border-radius:50%;z-index:3;}\n'
+            '\n'
+            '/* FAR TREES */\n'
+            '.tree{position:absolute;z-index:4;display:flex;flex-direction:column;align-items:center;}\n'
+            '.tt{border-radius:50% 50% 40% 40%;box-shadow:inset 0 -5px 0 rgba(0,0,0,0.12);}\n'
+            '.tr{background:#7A5230;border-radius:3px;margin-top:-2px;}\n'
+            '\n'
+            '/* GROUND */\n'
+            '.ground{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#74D038 0%,#5CBE22 40%,#4CAE16 100%);z-index:5;border-radius:55% 55% 0 0/22px 22px 0 0;}\n'
+            '\n'
+            '/* PATHS */\n'
+            '.path{position:absolute;z-index:6;background:linear-gradient(90deg,#C8924C,#B87A38,#C8924C);border-radius:8px;}\n'
+            '\n'
+            '/* FLOWERS */\n'
+            '.fl{position:absolute;z-index:7;pointer-events:none;}\n'
+            '\n'
+            '/* BUILDING SHADOW */\n'
+            '.bsh{position:absolute;z-index:7;background:rgba(0,0,0,0.13);border-radius:50%;filter:blur(8px);}\n'
+            '\n'
+            '/* BUILDINGS */\n'
+            '.building{position:absolute;mix-blend-mode:multiply;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22));z-index:8;}\n'
+            '\n'
+            '/* SHEEP HERO */\n'
+            '.sheep-glow{position:absolute;z-index:9;border-radius:50%;background:radial-gradient(circle,rgba(255,255,180,0.38) 0%,rgba(255,240,100,0.14) 55%,transparent 100%);pointer-events:none;animation:glow-pulse 2.5s ease-in-out infinite;}\n'
+            '.sheep-pad{position:absolute;z-index:10;border-radius:50%;background:radial-gradient(ellipse,#84DC48 0%,#64C028 55%,transparent 100%);}\n'
+            '.sheep-sh{position:absolute;z-index:10;border-radius:50%;background:rgba(0,0,0,0.17);filter:blur(12px);}\n'
+            '#sheep{position:absolute;mix-blend-mode:multiply;filter:drop-shadow(0 14px 30px rgba(0,0,0,0.26));cursor:pointer;transition:transform 0.18s cubic-bezier(.34,1.56,.64,1);z-index:11;width:185px;height:185px;object-fit:contain;bottom:158px;left:50%;transform:translateX(-50%);}\n'
+            '#sheep:hover{transform:translateX(-50%) scale(1.07) translateY(-6px);}\n'
+            '#sheep:active{transform:translateX(-50%) scale(0.95);}\n'
+            '\n'
+            '/* SPEECH BUBBLE */\n'
+            '.bubble{position:absolute;z-index:20;background:white;border-radius:20px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.13);max-width:205px;animation:float 3.5s ease-in-out infinite;}\n'
+            '.bubble::after{content:\'\';position:absolute;bottom:-13px;left:28px;border-left:8px solid transparent;border-right:8px solid transparent;border-top:14px solid white;}\n'
+            '.bn{font-size:13px;font-weight:700;color:#FF6B00;margin-bottom:4px;}\n'
+            '.bt{font-size:12px;color:#555;line-height:1.6;}\n'
+            '\n'
+            '/* DREAM CARD */\n'
+            '.dc{position:absolute;z-index:20;background:rgba(255,255,255,0.96);border-radius:20px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.11);}\n'
+            '.dt{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.6px;}\n'
+            '.dn{font-size:14px;font-weight:800;color:#1a1a1a;margin-top:2px;}\n'
+            '.da{font-size:20px;font-weight:800;color:#FF6B00;margin-top:1px;}\n'
+            '.ds{font-size:10px;color:#bbb;margin-top:1px;}\n'
+            '.pt{height:8px;background:rgba(0,0,0,0.07);border-radius:10px;overflow:hidden;margin-top:8px;}\n'
+            '.pf{height:100%;border-radius:10px;background:linear-gradient(90deg,#FFB800,#FF6B00);position:relative;overflow:hidden;}\n'
+            '.pf::after{content:\'\';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,0.38);animation:shimmer 2s infinite;}\n'
+            '\n'
+            '/* FEED BUTTON */\n'
+            '.feed-btn{position:absolute;z-index:21;background:linear-gradient(160deg,#FFD840 0%,#FF8C00 100%);border:none;border-radius:40px;padding:15px 38px;font-size:17px;font-weight:800;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.18);box-shadow:0 6px 24px rgba(255,140,0,0.52),inset 0 1px 0 rgba(255,255,255,0.32);cursor:pointer;transition:all 0.18s cubic-bezier(.34,1.56,.64,1);letter-spacing:0.2px;display:flex;align-items:center;gap:9px;bottom:96px;left:50%;transform:translateX(-50%);}\n'
+            '.feed-btn:hover{transform:translateX(-50%) translateY(-3px) scale(1.04);box-shadow:0 12px 36px rgba(255,140,0,0.62);}\n'
+            '.feed-btn:active{transform:translateX(-50%) scale(0.97);}\n'
+            '.feed-btn img{width:22px;height:22px;mix-blend-mode:multiply;}\n'
+            '\n'
+            '/* FRIENDS */\n'
+            '.fc{position:absolute;z-index:20;background:rgba(255,255,255,0.95);border-radius:20px;padding:11px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.1);}\n'
+            '.ft{font-size:10px;font-weight:700;color:#aaa;margin-bottom:8px;display:flex;align-items:center;gap:5px;}\n'
+            '.od{width:7px;height:7px;background:#34C759;border-radius:50%;display:inline-block;}\n'
+            '.frow{display:flex;gap:10px;}\n'
+            '.fri{text-align:center;cursor:pointer;}\n'
+            '.fri img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);mix-blend-mode:multiply;background:#f0f5f0;display:block;}\n'
+            '.fri-n{font-size:9px;color:#777;margin-top:3px;font-weight:600;}\n'
+            '\n'
+            '/* BOTTOM NAV */\n'
+            '.bnav{position:absolute;bottom:0;left:0;right:0;height:80px;background:rgba(255,255,255,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;display:flex;align-items:flex-start;justify-content:space-around;padding-top:10px;box-shadow:0 -1px 0 rgba(0,0,0,0.07),0 -4px 20px rgba(0,0,0,0.05);}\n'
+            '.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:7px 12px 4px;border-radius:14px;transition:background 0.2s;flex:1;max-width:90px;}\n'
+            '.ni:hover{background:rgba(0,0,0,0.03);}\n'
+            '.nico{font-size:22px;transition:transform 0.2s;}\n'
+            '.ni.active .nico{transform:scale(1.12);}\n'
+            '.nlb{font-size:10px;font-weight:600;color:#C8C8C8;transition:color 0.2s;}\n'
+            '.ni.active .nlb{color:#FF8C00;}\n'
+            '.npip{width:5px;height:5px;background:#FF8C00;border-radius:50%;margin-top:1px;opacity:0;transition:opacity 0.2s;}\n'
+            '.ni.active .npip{opacity:1;}\n'
+            '#overlay{position:absolute;inset:0;z-index:30;pointer-events:none;}\n'
+            '\n'
+            '/* KEYFRAMES */\n'
+            '@keyframes shimmer{0%{left:-100%}100%{left:200%}}\n'
+            '@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}\n'
+            '@keyframes glow-pulse{0%,100%{opacity:0.7;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}\n'
+            '@keyframes sun-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}\n'
+            '@keyframes drop{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(190px) rotate(600deg)}}\n'
+            '@keyframes rise{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-80px)}}\n'
+            '</style>\n'
+            '</head>\n'
+            '<body>\n'
+            '<div id="game">\n'
+            '\n'
+            '  <!-- TOP BAR -->\n'
+            '  <div class="topbar">\n'
+            '    <div class="av">\U0001f411</div>\n'
+            '    <div class="ui">\n'
+            '      <div class="un">Bông Cần Cù</div>\n'
+            '      <div class="xt"><div class="xf"></div></div>\n'
+            '      <div class="xl">Cừu Kiên Trì · Cấp 5 · 65% ⭐</div>\n'
+            '    </div>\n'
+            '    <div class="lv">Lv.5 ⭐</div>\n'
+            '    <div class="cur">\U0001fa99 128.450</div>\n'
+            '    <div class="cur">\U0001f48e 320</div>\n'
+            '    <div class="bell">\U0001f514<div class="bd"></div></div>\n'
+            '  </div>\n'
+            '\n'
+            '  <!-- FARM SCENE -->\n'
+            '  <div class="scene">\n'
+            '    <div class="sky"></div>\n'
+            '    <div class="sun"><div class="sun-halo"></div></div>\n'
+            '\n'
+            '    <!-- Clouds -->\n'
+            '    <div class="cloud" style="top:26px;left:55px;">\n'
+            '      <div class="cb" style="width:92px;height:26px;">\n'
+            '        <div class="cp" style="width:46px;height:46px;top:-22px;left:12px;"></div>\n'
+            '        <div class="cp" style="width:32px;height:32px;top:-15px;left:48px;"></div>\n'
+            '        <div class="cp" style="width:24px;height:24px;top:-10px;left:4px;"></div>\n'
+            '      </div>\n'
+            '    </div>\n'
+            '    <div class="cloud" style="top:52px;left:250px;opacity:0.72;">\n'
+            '      <div class="cb" style="width:70px;height:20px;">\n'
+            '        <div class="cp" style="width:34px;height:34px;top:-16px;left:10px;"></div>\n'
+            '        <div class="cp" style="width:24px;height:24px;top:-10px;left:36px;"></div>\n'
+            '      </div>\n'
+            '    </div>\n'
+            '    <div class="cloud" style="top:18px;right:160px;opacity:0.88;">\n'
+            '      <div class="cb" style="width:108px;height:28px;">\n'
+            '        <div class="cp" style="width:54px;height:54px;top:-26px;left:16px;"></div>\n'
+            '        <div class="cp" style="width:38px;height:38px;top:-18px;left:60px;"></div>\n'
+            '        <div class="cp" style="width:28px;height:28px;top:-12px;left:4px;"></div>\n'
+            '      </div>\n'
+            '    </div>\n'
+            '\n'
+            '    <!-- Far hills -->\n'
+            '    <div class="hill" style="bottom:320px;left:-70px;width:290px;height:165px;background:#8ACE50;opacity:0.78;"></div>\n'
+            '    <div class="hill" style="bottom:310px;right:-50px;width:250px;height:145px;background:#7EC445;opacity:0.72;"></div>\n'
+            '    <div class="hill" style="bottom:330px;left:320px;width:210px;height:125px;background:#9AD860;opacity:0.62;"></div>\n'
+            '\n'
+            '    <!-- Far trees -->\n'
+            '    <div class="tree" style="bottom:342px;left:22px;"><div class="tt" style="width:34px;height:38px;background:#4A9C28;"></div><div class="tr" style="width:8px;height:18px;"></div></div>\n'
+            '    <div class="tree" style="bottom:352px;left:80px;"><div class="tt" style="width:44px;height:48px;background:#3E8C20;"></div><div class="tr" style="width:10px;height:21px;"></div></div>\n'
+            '    <div class="tree" style="bottom:338px;left:152px;"><div class="tt" style="width:32px;height:36px;background:#52A030;"></div><div class="tr" style="width:7px;height:15px;"></div></div>\n'
+            '    <div class="tree" style="bottom:345px;right:28px;"><div class="tt" style="width:40px;height:44px;background:#489824;"></div><div class="tr" style="width:9px;height:19px;"></div></div>\n'
+            '    <div class="tree" style="bottom:356px;right:94px;"><div class="tt" style="width:50px;height:54px;background:#3C8818;"></div><div class="tr" style="width:11px;height:23px;"></div></div>\n'
+            '\n'
+            '    <!-- Ground -->\n'
+            '    <div class="ground" style="height:348px;"></div>\n'
+            '\n'
+            '    <!-- Dirt paths -->\n'
+            '    <div class="path" style="bottom:178px;left:196px;width:155px;height:16px;transform:rotate(-4deg);opacity:0.75;"></div>\n'
+            '    <div class="path" style="bottom:180px;right:186px;width:148px;height:16px;transform:rotate(4deg);opacity:0.75;"></div>\n'
+            '\n'
+            '    <!-- Flowers -->\n'
+            '    <div class="fl" style="bottom:196px;left:262px;font-size:15px;">\U0001f33c</div>\n'
+            '    <div class="fl" style="bottom:206px;left:294px;font-size:13px;">\U0001f338</div>\n'
+            '    <div class="fl" style="bottom:220px;left:234px;font-size:14px;">\U0001f33b</div>\n'
+            '    <div class="fl" style="bottom:193px;right:255px;font-size:15px;">\U0001f33c</div>\n'
+            '    <div class="fl" style="bottom:204px;right:282px;font-size:13px;">\U0001f337</div>\n'
+            '    <div class="fl" style="bottom:218px;right:228px;font-size:14px;">\U0001f33a</div>\n'
+            '    <div class="fl" style="bottom:163px;left:315px;font-size:11px;">\U0001f33f</div>\n'
+            '    <div class="fl" style="bottom:162px;right:308px;font-size:11px;">\U0001f33f</div>\n'
+            '\n'
+            '    <!-- LEFT: House -->\n'
+            '    <div class="bsh" style="width:150px;height:28px;bottom:184px;left:26px;"></div>\n'
+            '    __HOUSE__\n'
+            '\n'
+            '    <!-- LEFT: Mailbox -->\n'
+            '    <div style="position:absolute;bottom:178px;left:200px;z-index:9;text-align:center;">\n'
+            '      <div style="font-size:24px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.2));">\U0001f4ec</div>\n'
+            '      <div style="width:5px;height:22px;background:#8B6340;margin:0 auto;border-radius:2px;margin-top:-2px;"></div>\n'
+            '    </div>\n'
+            '\n'
+            '    <!-- RIGHT: Windmill -->\n'
+            '    <div class="bsh" style="width:115px;height:22px;bottom:198px;right:46px;"></div>\n'
+            '    __WINDMILL__\n'
+            '\n'
+            '    <!-- RIGHT: Pond -->\n'
+            '    <div class="bsh" style="width:130px;height:18px;bottom:163px;right:148px;"></div>\n'
+            '    __POND__\n'
+            '\n'
+            '    <!-- RIGHT: Farm storage -->\n'
+            '    <div style="position:absolute;bottom:164px;right:58px;z-index:9;text-align:center;">\n'
+            '      <div style="background:linear-gradient(145deg,#A0682A,#8A5018);border-radius:8px;padding:8px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.22);">\n'
+            '        <div style="font-size:20px;">\U0001f33e</div>\n'
+            '        <div style="font-size:10px;color:#FFE08A;font-weight:700;margin-top:2px;">Kho: 12</div>\n'
+            '      </div>\n'
+            '    </div>\n'
+            '\n'
+            '    <!-- SHEEP HERO -->\n'
+            '    <div class="sheep-glow" style="width:270px;height:270px;bottom:118px;left:50%;margin-left:-135px;"></div>\n'
+            '    <div class="sheep-pad" style="width:210px;height:56px;bottom:155px;left:50%;margin-left:-105px;"></div>\n'
+            '    <div class="sheep-sh" style="width:140px;height:22px;bottom:160px;left:50%;margin-left:-70px;"></div>\n'
+            '    __SHEEP__\n'
+            '\n'
+            '    <!-- SPEECH BUBBLE -->\n'
+            '    <div class="bubble" id="bubble" style="top:18px;left:248px;">\n'
+            '      <div class="bn">Chào Hoa ☀️</div>\n'
+            '      <div class="bt">Hôm qua bạn giúp mình<br>lớn thêm 2% rồi \U0001f60a<br>Hôm nay mình nhớ bạn ❤️</div>\n'
+            '    </div>\n'
+            '\n'
+            '    <!-- DREAM CARD -->\n'
+            '    <div class="dc" style="top:14px;right:14px;min-width:175px;">\n'
+            '      <div class="dt">\U0001f3af Giấc mơ</div>\n'
+            '      <div class="dn">Quỹ du học</div>\n'
+            '      <div class="da">128.450đ</div>\n'
+            '      <div class="ds">/ 500.000đ mục tiêu</div>\n'
+            '      <div class="pt"><div class="pf" style="width:26%"></div></div>\n'
+            '      <div style="display:flex;justify-content:space-between;margin-top:5px;">\n'
+            '        <span style="font-size:10px;color:#bbb;">26% hoàn thành</span>\n'
+            '        <span style="font-size:10px;color:#FF8C00;font-weight:700;">⭐ +250 XP</span>\n'
+            '      </div>\n'
+            '    </div>\n'
+            '\n'
+            '    <!-- FRIENDS -->\n'
+            '    <div class="fc" style="bottom:96px;left:14px;">\n'
+            '      <div class="ft"><span class="od"></span> Bạn bè online (3)</div>\n'
+            '      <div class="frow">\n'
+            '        <div class="fri">__F1__<div class="fri-n">Bông Mập</div></div>\n'
+            '        <div class="fri">__F2__<div class="fri-n">Cậu Nhanh</div></div>\n'
+            '        <div class="fri">__F3__<div class="fri-n">Mây Tích</div></div>\n'
+            '      </div>\n'
+            '    </div>\n'
+            '\n'
+            '    <!-- FEED BUTTON -->\n'
+            '    <button class="feed-btn" onclick="feedSheep()">\n'
+            '      __CARROT__ Cho cỪu ăn 50.000đ\n'
+            '    </button>\n'
+            '\n'
+            '    <div id="overlay"></div>\n'
+            '  </div>\n'
+            '\n'
+            '  <!-- BOTTOM NAV -->\n'
+            '  <div class="bnav">\n'
+            '    <div class="ni active" onclick="setNav(this)"><div class="nico">\U0001f3e1</div><div class="nlb">Trang trại</div><div class="npip"></div></div>\n'
+            '    <div class="ni" onclick="setNav(this)"><div class="nico">\U0001f4d6</div><div class="nlb">Nhật ký</div><div class="npip"></div></div>\n'
+            '    <div class="ni" onclick="setNav(this)"><div class="nico">✨</div><div class="nlb">Giấc mơ</div><div class="npip"></div></div>\n'
+            '    <div class="ni" onclick="setNav(this)"><div class="nico">\U0001f3c6</div><div class="nlb">Thành tựu</div><div class="npip"></div></div>\n'
+            '    <div class="ni" onclick="setNav(this)"><div class="nico">\U0001f464</div><div class="nlb">Cá nhân</div><div class="npip"></div></div>\n'
+            '  </div>\n'
+            '\n'
+            '</div>\n'
+            '<script>\n'
+            'var msgs=[\n'
+            '  ["Chào Hoa ☀️","Hôm qua bạn giúp mình<br>lớn thêm 2% rồi \U0001f60a<br>Hôm nay mình nhớ bạn ❤️"],\n'
+            '  ["Ngon quá! \U0001f60b","Mình sẽ tiết kiệm<br>thêm cho bạn! \U0001f4aa"],\n'
+            '  ["Yay! \U0001f389","Bạn thật tuyệt vời<br>Hoa ơi! \U0001f49a"],\n'
+            '  ["Mình đầy năng lượng! \U0001f31f","Cảm ơn bạn đã nuôi mình ❤️"]\n'
+            '];\n'
+            'function feedSheep(){\n'
+            '  var s=document.getElementById("sheep");\n'
+            '  if(!s)return;\n'
+            '  s.style.transition="transform 0.25s cubic-bezier(.34,1.56,.64,1)";\n'
+            '  s.style.transform="translateX(-50%) scale(1.14) translateY(-10px)";\n'
+            '  setTimeout(function(){s.style.transform="translateX(-50%) scale(1)";},300);\n'
+            '  spawnConfetti();\n'
+            '  showCoin();\n'
+            '  var m=msgs[Math.floor(Math.random()*msgs.length)];\n'
+            '  var b=document.getElementById("bubble");\n'
+            '  if(b){b.innerHTML=\'<div class="bn">\'+m[0]+\'</div><div class="bt">\'+m[1]+\'</div>\';}\n'
+            '}\n'
+            'function spawnConfetti(){\n'
+            '  var ov=document.getElementById("overlay");\n'
+            '  if(!ov)return;\n'
+            '  var cols=["#FF6B6B","#FFD93D","#6BCF6B","#4ECDC4","#FF9500","#C77DFF","#FF85A1"];\n'
+            '  for(var i=0;i<20;i++){\n'
+            '    (function(){\n'
+            '      var el=document.createElement("div");\n'
+            '      var sz=6+Math.random()*8;\n'
+            '      el.style.cssText=[\n'
+            '        "position:absolute","width:"+sz+"px","height:"+sz+"px",\n'
+            '        "background:"+cols[Math.floor(Math.random()*cols.length)],\n'
+            '        "border-radius:"+(Math.random()>.5?"50%":"3px"),\n'
+            '        "left:"+(340+(Math.random()-.5)*220)+"px",\n'
+            '        "top:"+(260+(Math.random()-.5)*100)+"px",\n'
+            '        "animation:drop "+(0.8+Math.random()*0.8)+"s ease-out forwards",\n'
+            '        "pointer-events:none"\n'
+            '      ].join(";");\n'
+            '      ov.appendChild(el);\n'
+            '      setTimeout(function(){el.remove();},1700);\n'
+            '    })();\n'
+            '  }\n'
+            '}\n'
+            'function showCoin(){\n'
+            '  var sc=document.querySelector(".scene");\n'
+            '  if(!sc)return;\n'
+            '  var el=document.createElement("div");\n'
+            '  el.textContent="+50.000đ \U0001f33e";\n'
+            '  el.style.cssText=[\n'
+            '    "position:absolute","left:50%","bottom:290px",\n'
+            '    "font-size:16px","font-weight:800","color:#FF8C00",\n'
+            '    "text-shadow:0 2px 8px rgba(255,140,0,0.38)",\n'
+            '    "animation:rise 1.2s ease-out forwards",\n'
+            '    "pointer-events:none","white-space:nowrap"\n'
+            '  ].join(";");\n'
+            '  sc.appendChild(el);\n'
+            '  setTimeout(function(){el.remove();},1300);\n'
+            '}\n'
+            'function setNav(el){\n'
+            '  document.querySelectorAll(".ni").forEach(function(n){n.classList.remove("active");});\n'
+            '  el.classList.add("active");\n'
+            '}\n'
+            '</script>\n'
+            '</body>\n'
+            '</html>\n'
+        )
 
-/* ── ROOT CANVAS ── */
-.root{{
-  width:860px;height:820px;position:relative;overflow:hidden;
-  {"background:" + _FB["farm_bg"] + ";" if not _A["farm_bg"] else ""}
-}}
+        _HTML = _HTML_TEMPLATE
+        _s_style = "position:absolute;width:185px;height:185px;object-fit:contain;bottom:158px;left:50%;transform:translateX(-50%);mix-blend-mode:multiply;filter:drop-shadow(0 14px 30px rgba(0,0,0,0.26));cursor:pointer;transition:transform 0.18s cubic-bezier(.34,1.56,.64,1);z-index:11;"
+        _sheep_html = _fi("sheep", _s_style)
+        if not _sheep_html:
+            _sheep_html = '<div id="sheep" style="' + _s_style + 'font-size:90px;display:flex;align-items:center;justify-content:center;" onclick="feedSheep()">\U0001f411</div>'
+        else:
+            _sheep_html = _sheep_html.replace('<img ', '<img id="sheep" onclick="feedSheep()" ', 1)
+        _HTML = _HTML.replace("__SHEEP__", _sheep_html)
+        _HTML = _HTML.replace("__HOUSE__", _fi("house", "position:absolute;width:168px;height:168px;object-fit:contain;bottom:182px;left:14px;mix-blend-mode:multiply;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22));z-index:8;"))
+        _HTML = _HTML.replace("__WINDMILL__", _fi("windmill", "position:absolute;width:135px;height:152px;object-fit:contain;bottom:194px;right:28px;mix-blend-mode:multiply;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22));z-index:8;"))
+        _HTML = _HTML.replace("__POND__", _fi("pond", "position:absolute;width:138px;height:104px;object-fit:contain;bottom:160px;right:140px;mix-blend-mode:multiply;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.2));z-index:8;"))
+        _f_style = "width:44px;height:44px;border-radius:50%;object-fit:cover;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);mix-blend-mode:multiply;background:#f0f5f0;display:block;"
+        _HTML = _HTML.replace("__F1__", _fi("f1", _f_style))
+        _HTML = _HTML.replace("__F2__", _fi("f2", _f_style))
+        _HTML = _HTML.replace("__F3__", _fi("f3", _f_style))
+        _carrot = _fi("carrot", "width:22px;height:22px;object-fit:contain;mix-blend-mode:multiply;")
+        _HTML = _HTML.replace("__CARROT__", _carrot if _carrot else "\U0001f955")
 
-/* ── FARM BACKGROUND ── */
-.farm-bg{{
-  position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;object-position:center bottom;
-  z-index:0;
-}}
-
-/* ── LAYER SYSTEM ── */
-.layer-bg    {{position:absolute;z-index:1;}}   /* buildings behind sheep */
-.layer-mid   {{position:absolute;z-index:2;}}   /* decorative items */
-.layer-hero  {{position:absolute;z-index:3;}}   /* main sheep mascot */
-.layer-fg    {{position:absolute;z-index:4;}}   /* foreground items */
-.layer-ui    {{position:absolute;z-index:10;}}  /* all UI chrome */
-
-/* ── ASSET MISSING PLACEHOLDER ── */
-.asset-missing{{
-  background:rgba(0,0,0,0.08);border:2px dashed rgba(0,0,0,0.2);
-  border-radius:8px;display:flex;align-items:center;justify-content:center;
-}}
-
-/* ── MASCOT ── */
-.mascot{{
-  width:160px;
-  animation:mascot-float 3s ease-in-out infinite;
-  cursor:pointer;
-  filter:drop-shadow(0 16px 32px rgba(0,0,0,0.28));
-  transition:filter 0.3s,transform 0.3s;
-}}
-.mascot:hover{{filter:drop-shadow(0 20px 40px rgba(255,215,0,0.6));}}
-@keyframes mascot-float{{
-  0%,100%{{transform:translateY(0) rotate(-1deg)}}
-  33%{{transform:translateY(-10px) rotate(0deg)}}
-  66%{{transform:translateY(-6px) rotate(1deg)}}
-}}
-
-/* ── BUILDING ASSETS ── */
-.asset-house{{width:130px;filter:drop-shadow(0 8px 16px rgba(0,0,0,0.25));}}
-.asset-windmill{{
-  width:110px;
-  filter:drop-shadow(0 8px 16px rgba(0,0,0,0.22));
-  animation:windmill-sway 6s ease-in-out infinite;
-}}
-@keyframes windmill-sway{{0%,100%{{transform:scale(1)}}50%{{transform:scale(1.02)}}}}
-.asset-pond{{width:140px;filter:drop-shadow(0 4px 12px rgba(64,164,216,0.4));}}
-
-/* ── ITEM ASSETS ── */
-.asset-carrot{{
-  width:46px;
-  animation:item-bounce 2.2s ease-in-out infinite;
-  filter:drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-  cursor:pointer;
-}}
-.asset-gift{{
-  width:64px;
-  animation:gift-pulse 1.8s ease-in-out infinite;
-  filter:drop-shadow(0 6px 14px rgba(255,165,0,0.4));
-  cursor:pointer;
-}}
-@keyframes item-bounce{{0%,100%{{transform:translateY(0)}}50%{{transform:translateY(-8px)}}}}
-@keyframes gift-pulse{{0%,100%{{transform:scale(1) rotate(-2deg)}}50%{{transform:scale(1.08) rotate(2deg)}}}}
-
-/* ── ZZZ SLEEPING SHEEP ── */
-.sheep-sleep{{
-  position:absolute;bottom:175px;left:340px;font-size:30px;z-index:2;
-  animation:sleep-rock 3s ease-in-out infinite;
-}}
-.zzz{{
-  position:absolute;top:-22px;right:-8px;font-size:10px;font-weight:800;
-  color:#8888BB;animation:zzz-float 2s ease-in-out infinite;
-  background:rgba(255,255,255,0.8);border-radius:8px;padding:2px 5px;
-}}
-@keyframes sleep-rock{{0%,100%{{transform:rotate(0deg)}}50%{{transform:rotate(-5deg)}}}}
-@keyframes zzz-float{{0%,100%{{opacity:0.5;transform:translateY(0) scale(0.9)}}50%{{opacity:1;transform:translateY(-6px) scale(1)}}}}
-
-/* ── TOP BAR ── */
-.top-bar{{
-  position:absolute;top:10px;left:10px;right:10px;height:62px;
-  background:rgba(255,255,255,0.9);backdrop-filter:blur(24px);
-  border-radius:22px;border:1.5px solid rgba(255,255,255,0.85);
-  box-shadow:0 4px 28px rgba(0,0,0,0.13);
-  display:flex;align-items:center;padding:0 14px;gap:10px;z-index:10;
-}}
-.tb-avatar{{
-  width:42px;height:42px;border-radius:50%;
-  border:2.5px solid #FFD700;box-shadow:0 0 0 2px rgba(255,215,0,0.35);
-  overflow:hidden;flex-shrink:0;background:#FFE0A0;
-  display:flex;align-items:center;justify-content:center;font-size:22px;
-}}
-.tb-avatar img{{width:100%;height:100%;object-fit:cover;}}
-.tb-info{{flex:1;min-width:0;}}
-.tb-name{{font-size:12px;font-weight:800;color:#1A1A2E;}}
-.tb-sub{{font-size:9px;color:#888;margin:1px 0;}}
-.tb-xp-row{{display:flex;align-items:center;gap:5px;margin-top:2px;}}
-.tb-xp-track{{height:7px;background:#EEE;border-radius:4px;width:120px;overflow:hidden;}}
-.tb-xp-fill{{height:100%;width:65%;background:linear-gradient(90deg,#FFD700,#FFA500);border-radius:4px;}}
-.tb-xp-text{{font-size:8px;color:#AAA;}}
-.tb-currencies{{display:flex;align-items:center;gap:6px;}}
-.tb-coin{{
-  display:flex;align-items:center;gap:4px;
-  background:#FFFBEB;border:1.5px solid #FFD700;border-radius:18px;
-  padding:4px 11px;font-size:11px;font-weight:800;color:#92400E;
-}}
-.tb-gem{{
-  display:flex;align-items:center;gap:4px;
-  background:#EFF6FF;border:1.5px solid #60A5FA;border-radius:18px;
-  padding:4px 11px;font-size:11px;font-weight:800;color:#1D4ED8;
-}}
-.tb-plus{{
-  width:24px;height:24px;background:linear-gradient(135deg,#34D399,#059669);
-  border-radius:50%;border:none;color:#fff;font-size:18px;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;
-}}
-.tb-bell{{
-  width:36px;height:36px;background:rgba(0,0,0,0.05);border-radius:50%;
-  border:none;font-size:18px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;position:relative;
-}}
-.tb-dot{{
-  position:absolute;top:5px;right:5px;width:8px;height:8px;
-  background:#EF4444;border-radius:50%;border:1.5px solid #fff;
-}}
-
-/* ── SPEECH BUBBLE ── */
-.speech-bubble{{
-  position:absolute;z-index:10;
-  background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);
-  border-radius:18px;padding:12px 14px;max-width:192px;
-  border:1.5px solid rgba(255,255,255,0.9);
-  box-shadow:0 4px 22px rgba(0,0,0,0.12);
-}}
-.speech-bubble.right::after{{
-  content:"";position:absolute;right:-10px;top:22px;
-  border:6px solid transparent;border-left:10px solid rgba(255,255,255,0.97);
-}}
-.sb-greeting{{font-size:11.5px;font-weight:800;color:#C4607F;margin-bottom:3px;}}
-.sb-msg{{font-size:10.5px;color:#2D3748;line-height:1.55;}}
-.sb-react{{font-size:13px;margin-top:5px;}}
-
-/* ── LEFT NAV ── */
-.left-nav{{
-  position:absolute;left:10px;top:85px;
-  display:flex;flex-direction:column;gap:7px;z-index:10;
-}}
-.nav-btn{{
-  width:64px;background:rgba(255,255,255,0.95);
-  border-radius:16px;padding:10px 4px 8px;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  cursor:pointer;border:1.5px solid rgba(255,255,255,0.8);
-  box-shadow:0 3px 14px rgba(0,0,0,0.12);
-  transition:transform 0.15s,box-shadow 0.15s;position:relative;
-}}
-.nav-btn:hover{{transform:scale(1.07) translateY(-2px);box-shadow:0 7px 22px rgba(0,0,0,0.18);}}
-.nav-btn:active{{transform:scale(0.96);}}
-.nav-icon{{font-size:24px;}}
-.nav-label{{font-size:8.5px;font-weight:700;color:#4A5568;text-align:center;line-height:1.2;}}
-.nav-badge{{
-  position:absolute;top:4px;right:4px;
-  background:#EF4444;color:#fff;font-size:9px;font-weight:800;
-  border-radius:10px;padding:1px 5px;border:1.5px solid #fff;
-}}
-
-/* ── SIGNBOARD ── */
-.signboard{{
-  position:absolute;z-index:10;
-  background:linear-gradient(135deg,#C8922A,#A07020);
-  border:3px solid #7A5010;border-radius:14px;
-  padding:13px;width:150px;
-  box-shadow:4px 4px 0 #5A3A08,0 6px 20px rgba(0,0,0,0.25);
-}}
-.sign-lv{{font-size:22px;font-weight:900;color:#FFF5C0;text-align:center;text-shadow:0 2px 4px rgba(0,0,0,0.3);}}
-.sign-name{{font-size:10px;font-weight:700;color:#FFE090;text-align:center;margin:3px 0;}}
-.sign-bar-track{{height:8px;background:rgba(0,0,0,0.28);border-radius:4px;overflow:hidden;margin:6px 0 4px;}}
-.sign-bar-fill{{height:100%;width:65%;background:linear-gradient(90deg,#FFD700,#FF8C00);border-radius:4px;}}
-.sign-pct{{font-size:8px;color:#FFD090;text-align:center;}}
-.sign-post{{width:12px;height:20px;background:#A07020;border:2px solid #7A5010;margin:0 auto;}}
-
-/* ── FRIENDS CARD ── */
-.friends-card{{
-  position:absolute;z-index:10;width:150px;
-  background:rgba(255,255,255,0.95);backdrop-filter:blur(14px);
-  border-radius:16px;padding:12px;
-  border:1.5px solid rgba(255,255,255,0.85);
-  box-shadow:0 4px 18px rgba(0,0,0,0.11);
-}}
-.fc-title{{font-size:10px;font-weight:700;color:#1A1A2E;margin-bottom:9px;}}
-.fc-grid{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}}
-.fc-item{{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;}}
-.fc-avatar{{
-  width:36px;height:36px;border-radius:50%;
-  border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);
-  overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:18px;
-  transition:transform 0.15s;
-}}
-.fc-avatar:hover{{transform:scale(1.12);}}
-.fc-avatar img{{width:100%;height:100%;object-fit:cover;}}
-.fc-name{{font-size:7px;font-weight:600;color:#4A5568;text-align:center;max-width:42px;}}
-.fc-activity{{font-size:6px;color:#68D391;font-weight:700;}}
-
-/* ── MISSIONS CARD ── */
-.missions-card{{
-  position:absolute;z-index:10;width:244px;
-  background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);
-  border-radius:20px;padding:13px 15px;
-  border:1.5px solid rgba(255,255,255,0.88);
-  box-shadow:0 4px 24px rgba(0,0,0,0.13);
-}}
-.mc-title{{font-size:12px;font-weight:800;color:#1A1A2E;}}
-.mc-sub{{font-size:9px;color:#9CA3AF;font-weight:600;margin:3px 0 9px;}}
-.mc-row{{
-  display:flex;align-items:center;gap:8px;
-  padding:5px 3px;border-bottom:1px solid rgba(0,0,0,0.05);
-  cursor:pointer;border-radius:7px;transition:background 0.1s;
-}}
-.mc-row:last-child{{border-bottom:none;}}
-.mc-row:hover{{background:rgba(0,0,0,0.03);}}
-.mc-icon{{font-size:15px;width:20px;text-align:center;flex-shrink:0;}}
-.mc-info{{flex:1;}}
-.mc-name{{font-size:10px;font-weight:700;color:#1F2937;}}
-.mc-prog{{height:3.5px;background:#E5E7EB;border-radius:2px;margin-top:2.5px;overflow:hidden;}}
-.mc-prog-fill{{height:100%;background:linear-gradient(90deg,#6EE7B7,#059669);border-radius:2px;transition:width 0.5s;}}
-.mc-check{{font-size:16px;flex-shrink:0;}}
-.mc-row.done .mc-name{{color:#059669;text-decoration:line-through;opacity:0.6;}}
-
-/* ── KHO THOC ── */
-.kho-thoc{{
-  position:absolute;z-index:10;
-  background:linear-gradient(135deg,#C8922A,#A07020);
-  border:3px solid #7A5010;border-radius:12px;
-  padding:8px 12px;text-align:center;
-  box-shadow:3px 3px 0 #5A3A08,0 4px 14px rgba(0,0,0,0.22);
-}}
-.kho-label{{font-size:8.5px;font-weight:700;color:#FFE090;}}
-.kho-count{{font-size:18px;font-weight:900;color:#FFF0A0;}}
-
-/* ── FEED BUTTON ── */
-.feed-btn{{
-  position:absolute;z-index:10;
-  background:linear-gradient(135deg,#FF9500 0%,#FF6000 100%);
-  border:none;border-radius:38px;padding:16px 42px;
-  font-size:15px;font-weight:900;color:#fff;
-  letter-spacing:0.2px;cursor:pointer;white-space:nowrap;
-  text-shadow:0 1px 3px rgba(0,0,0,0.25);
-  box-shadow:0 5px 0 #C04000,0 8px 24px rgba(255,100,0,0.55);
-  animation:btn-glow 2.2s ease-in-out infinite;
-  display:flex;align-items:center;gap:8px;
-}}
-.feed-btn:active{{transform:translateY(4px);box-shadow:0 1px 0 #C04000;}}
-.feed-btn img{{width:28px;height:28px;object-fit:contain;}}
-@keyframes btn-glow{{
-  0%,100%{{box-shadow:0 5px 0 #C04000,0 8px 24px rgba(255,100,0,0.55)}}
-  50%{{box-shadow:0 5px 0 #C04000,0 12px 40px rgba(255,149,0,0.9),0 0 70px rgba(255,200,0,0.4)}}
-}}
-
-/* ── BOTTOM TAB BAR ── */
-.tab-bar{{
-  position:absolute;bottom:0;left:0;right:0;height:70px;
-  background:rgba(255,255,255,0.97);backdrop-filter:blur(24px);
-  border-top:1.5px solid rgba(0,0,0,0.07);
-  display:flex;align-items:center;justify-content:space-around;
-  padding:0 8px;z-index:10;
-}}
-.tab-item{{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-  cursor:pointer;padding:8px 4px;border-radius:12px;transition:background 0.15s;
-}}
-.tab-item:hover{{background:rgba(0,0,0,0.04);}}
-.tab-icon{{font-size:20px;}}
-.tab-label{{font-size:9.5px;font-weight:600;color:#9CA3AF;}}
-.tab-item.active .tab-label{{color:#FF8C00;font-weight:800;}}
-.tab-dot{{width:5px;height:5px;background:#FF8C00;border-radius:3px;margin-top:-1px;}}
-
-/* ── TOAST ── */
-.toast{{
-  position:absolute;top:80px;left:50%;
-  transform:translateX(-50%) translateY(-16px);
-  background:linear-gradient(135deg,#059669,#047857);
-  color:#fff;padding:10px 22px;border-radius:30px;
-  font-size:12px;font-weight:700;opacity:0;pointer-events:none;z-index:100;
-  transition:opacity 0.3s,transform 0.3s;white-space:nowrap;
-  box-shadow:0 4px 20px rgba(0,0,0,0.2);
-}}
-.toast.show{{opacity:1;transform:translateX(-50%) translateY(0);}}
-.confetti-p{{position:absolute;pointer-events:none;z-index:100;animation:cfetti 1.4s ease-out forwards;}}
-@keyframes cfetti{{0%{{opacity:1;transform:translateY(0) rotate(0)}}100%{{opacity:0;transform:translateY(220px) rotate(800deg)}}}}
-</style>
-
-<div class="root" id="root">
-
-  <!-- ── BG: FARM ILLUSTRATION ── -->
-  {"<img class='farm-bg' src='" + _A['farm_bg'] + "' alt='farm'/>" if _A['farm_bg'] else "<div class='farm-bg' style='background:linear-gradient(180deg,#87CEEB 0%,#B0E0FF 38%,#98FB98 55%,#5DBB36 100%);position:absolute;inset:0;'></div>"}
-
-  <!-- ── LAYER BG: BUILDINGS ── -->
-  {"<img class='layer-bg asset-house' src='" + _A['house'] + "' style='bottom:215px;left:88px;' alt='house'/>" if _A['house'] else ""}
-  {"<img class='layer-bg asset-windmill' src='" + _A['windmill'] + "' style='bottom:210px;right:144px;width:120px;' alt='windmill'/>" if _A['windmill'] else ""}
-  {"<img class='layer-bg asset-pond' src='" + _A['pond'] + "' style='bottom:145px;right:90px;' alt='pond'/>" if _A['pond'] else ""}
-
-  <!-- ── LAYER MID: ITEMS ── -->
-  {"<img class='layer-mid asset-gift' src='" + _A['gift'] + "' style='bottom:185px;left:245px;' alt='gift' onclick='openGift()'/>" if _A['gift'] else ""}
-
-  <!-- ── SLEEPING SHEEP ── -->
-  <div class="sheep-sleep">🐑<span class="zzz">z z</span></div>
-
-  <!-- ── HERO MASCOT ── -->
-  {"<img class='layer-hero mascot' id='mascot' src='" + _A['sheep_main'] + "' style='bottom:190px;left:50%;transform:translateX(-50%);' onclick='feedSheep()'/>" if _A['sheep_main'] else "<div class='layer-hero' style='bottom:190px;left:50%;transform:translateX(-50%);font-size:100px;z-index:3;cursor:pointer;animation:mascot-float 3s ease-in-out infinite;' onclick='feedSheep()'>🐑</div>"}
-
-  <!-- ── FG: CARROT ── -->
-  {"<img class='layer-fg asset-carrot' src='" + _A['carrot'] + "' style='bottom:175px;left:195px;' alt='carrot'/>" if _A['carrot'] else ""}
-
-  <!-- ── KHO THOC ── -->
-  <div class="kho-thoc" style="bottom:82px;right:14px;">
-    <div class="kho-label">Kho thóc</div>
-    <div class="kho-count">🌾 12</div>
-  </div>
-
-  <!-- ── TOP BAR ── -->
-  <div class="top-bar layer-ui">
-    <div class="tb-avatar">
-      {"<img src='" + _A['sheep_main'] + "' alt='avatar'/>" if _A['sheep_main'] else "🐑"}
-    </div>
-    <div class="tb-info">
-      <div class="tb-name">Bông Cần Cù</div>
-      <div class="tb-sub">Cừu Kiên Trì · Cấp 5</div>
-      <div class="tb-xp-row">
-        <div class="tb-xp-track"><div class="tb-xp-fill"></div></div>
-        <div class="tb-xp-text">65% ⭐</div>
-      </div>
-    </div>
-    <div class="tb-currencies">
-      <div class="tb-coin">🪙 <span id="coinCount">128.450</span></div>
-      <div class="tb-gem">💎 <span>320</span></div>
-      <button class="tb-plus">+</button>
-    </div>
-    <button class="tb-bell">🔔<div class="tb-dot"></div></button>
-  </div>
-
-  <!-- ── SPEECH BUBBLE ── -->
-  <div class="speech-bubble right layer-ui" style="top:82px;right:174px;">
-    <div class="sb-greeting">Chào Hoa ☀️</div>
-    <div class="sb-msg">Hôm qua bạn giúp mình lớn thêm 2% rồi 🥹<br>Hôm nay mình nhớ bạn đó.</div>
-    <div class="sb-react">❤️</div>
-  </div>
-
-  <!-- ── LEFT NAV ── -->
-  <div class="left-nav layer-ui">
-    <div class="nav-btn" onclick="navClick(this)">
-      <span class="nav-icon">📋</span><span class="nav-label">Nhiệm vụ</span>
-      <span class="nav-badge">3</span>
-    </div>
-    <div class="nav-btn" onclick="navClick(this)"><span class="nav-icon">🛍️</span><span class="nav-label">Cửa hàng</span></div>
-    <div class="nav-btn" onclick="navClick(this)"><span class="nav-icon">🎨</span><span class="nav-label">Trang trí</span></div>
-    <div class="nav-btn" onclick="navClick(this)"><span class="nav-icon">👥</span><span class="nav-label">Bạn bè</span></div>
-    <div class="nav-btn" onclick="navClick(this)"><span class="nav-icon">🏘️</span><span class="nav-label">Hội nhóm</span></div>
-  </div>
-
-  <!-- ── SIGNBOARD + FRIENDS ── -->
-  <div class="signboard layer-ui" style="top:82px;right:10px;">
-    <div class="sign-lv">Lv.5 ⭐</div>
-    <div class="sign-name">Cừu Kiên Trì</div>
-    <div class="sign-bar-track"><div class="sign-bar-fill"></div></div>
-    <div class="sign-pct">65% → Cấp 6</div>
-  </div>
-  <div class="sign-post layer-ui" style="top:235px;right:69px;"></div>
-
-  <div class="friends-card layer-ui" style="top:258px;right:10px;">
-    <div class="fc-title">🟢 Bạn bè online (6)</div>
-    <div class="fc-grid">
-      {"".join([
-        f"<div class='fc-item'><div class='fc-avatar' style='background:linear-gradient(135deg,{g},{g2})'>"
-        + (f"<img src='{_A[k]}' alt='f'/>" if _A.get(k) else e)
-        + f"</div><span class='fc-name'>{name}</span><span class='fc-activity'>{act}</span></div>"
-        for k,e,g,g2,name,act in [
-          ("f1","🐑","#FFB3D9","#FF88BB","Bông Mập","🥕 Cho ăn"),
-          ("f2","🐑","#81E6D9","#38B2AC","Cừu Nhanh","💰 Tích lũy"),
-          ("f3","🐑","#FBD38D","#F6AD55","Máy Tích","📖 Đọc báo"),
-          ("","🐑","#9AE6B4","#68D391","Lúa Vàng","😴 Ngủ"),
-          ("","🐑","#FEB2B2","#FC8181","Bé Bông","🌱 Trồng cây"),
-          ("","🐑","#B794F4","#9F7AEA","Thịnh Vượng","🏆 Quest"),
-        ]
-      ])}
-    </div>
-  </div>
-
-  <!-- ── MISSIONS CARD ── -->
-  <div class="missions-card layer-ui" style="bottom:82px;left:86px;">
-    <div class="mc-title">📋 Nhiệm vụ hôm nay</div>
-    <div class="mc-sub" id="mcSub">3/5 hoàn thành · +250 XP khi xong</div>
-    <div class="mc-row done" onclick="toggleTask(this)">
-      <span class="mc-icon">🥕</span>
-      <div class="mc-info"><div class="mc-name">Cho cừu ăn 100.000đ</div></div>
-      <span class="mc-check">✅</span>
-    </div>
-    <div class="mc-row done" onclick="toggleTask(this)">
-      <span class="mc-icon">📖</span>
-      <div class="mc-info"><div class="mc-name">Đọc tin tài chính</div></div>
-      <span class="mc-check">✅</span>
-    </div>
-    <div class="mc-row done" onclick="toggleTask(this)">
-      <span class="mc-icon">💰</span>
-      <div class="mc-info"><div class="mc-name">Tích lũy 50.000đ</div></div>
-      <span class="mc-check">✅</span>
-    </div>
-    <div class="mc-row" onclick="toggleTask(this)">
-      <span class="mc-icon">👥</span>
-      <div class="mc-info">
-        <div class="mc-name">Mời 1 người bạn</div>
-        <div class="mc-prog"><div class="mc-prog-fill" style="width:0%"></div></div>
-      </div>
-      <span class="mc-check" style="color:#D1D5DB;font-size:14px">⭕</span>
-    </div>
-    <div class="mc-row" onclick="toggleTask(this)">
-      <span class="mc-icon">💬</span>
-      <div class="mc-info">
-        <div class="mc-name">Tham gia hội nhóm</div>
-        <div class="mc-prog"><div class="mc-prog-fill" style="width:0%"></div></div>
-      </div>
-      <span class="mc-check" style="color:#D1D5DB;font-size:14px">⭕</span>
-    </div>
-  </div>
-
-  <!-- ── FEED BUTTON ── -->
-  <div class="feed-btn layer-ui" style="bottom:84px;left:50%;transform:translateX(-50%);" onclick="feedSheep()">
-    {"<img src='" + _A['carrot'] + "' alt='🥕'/>" if _A['carrot'] else "🥕"}
-    Cho cừu ăn 100.000đ
-  </div>
-
-  <!-- ── BOTTOM TAB BAR ── -->
-  <div class="tab-bar">
-    <div class="tab-item active" id="tab-0" onclick="switchTab(0)">
-      <div class="tab-icon">🏠</div><div class="tab-label">Trang trại</div><div class="tab-dot"></div>
-    </div>
-    <div class="tab-item" id="tab-1" onclick="switchTab(1)"><div class="tab-icon">📔</div><div class="tab-label">Nhật ký</div></div>
-    <div class="tab-item" id="tab-2" onclick="switchTab(2)"><div class="tab-icon">✨</div><div class="tab-label">Giấc mơ</div></div>
-    <div class="tab-item" id="tab-3" onclick="switchTab(3)"><div class="tab-icon">🏆</div><div class="tab-label">Thành tựu</div></div>
-    <div class="tab-item" id="tab-4" onclick="switchTab(4)"><div class="tab-icon">👤</div><div class="tab-label">Cá nhân</div></div>
-  </div>
-
-  <div class="toast" id="toast">🎉 +100.000đ · Cừu vui lắm!</div>
-</div>
-
-<script>
-function switchTab(i){{
-  for(var j=0;j<5;j++){{
-    var t=document.getElementById("tab-"+j);
-    t.classList.remove("active");
-    var d=t.querySelector(".tab-dot");if(d)d.remove();
-  }}
-  var a=document.getElementById("tab-"+i);a.classList.add("active");
-  var dot=document.createElement("div");dot.className="tab-dot";a.appendChild(dot);
-}}
-function feedSheep(){{
-  var m=document.getElementById("mascot");
-  if(m){{
-    m.style.transform="translateX(-50%) scale(1.15) translateY(-18px)";
-    m.style.filter="drop-shadow(0 20px 40px rgba(255,215,0,0.85))";
-    setTimeout(function(){{m.style.transform="translateX(-50%)";m.style.filter="";}},500);
-  }}
-  showToast();spawnConfetti();
-  var el=document.getElementById("coinCount");
-  var v=parseInt(el.textContent.replace(/\./g,""))+100000;
-  el.textContent=v.toLocaleString("vi-VN").replace(/,/g,".");
-}}
-function openGift(){{showToast();spawnConfetti();document.getElementById("toast").textContent="🎁 Mở hộp quà · +50 💎!";showToast();}}
-function showToast(){{
-  var t=document.getElementById("toast");
-  t.classList.add("show");
-  setTimeout(function(){{t.classList.remove("show");}},2600);
-}}
-function spawnConfetti(){{
-  var r=document.getElementById("root");
-  var colors=["#FFD700","#FF6B6B","#4ECDC4","#96E6A1","#DDA0DD","#FFB347","#FF8C94"];
-  var cx=r.offsetWidth/2;
-  for(var i=0;i<32;i++){{
-    (function(){{
-      var c=document.createElement("div");c.className="confetti-p";
-      c.style.width=(6+Math.random()*8)+"px";c.style.height=(6+Math.random()*8)+"px";
-      c.style.left=(cx+(Math.random()-0.5)*280)+"px";
-      c.style.top=(r.offsetHeight*0.28)+"px";
-      c.style.background=colors[Math.floor(Math.random()*colors.length)];
-      c.style.animationDelay=(Math.random()*0.6)+"s";
-      c.style.borderRadius=Math.random()>0.5?"50%":"3px";
-      r.appendChild(c);
-      setTimeout(function(){{if(c.parentNode)c.parentNode.removeChild(c);}},2000);
-    }})();
-  }}
-}}
-function toggleTask(row){{
-  if(row.classList.contains("done"))return;
-  row.classList.add("done");
-  var ch=row.querySelector(".mc-check");ch.textContent="✅";ch.style.fontSize="16px";ch.style.color="";
-  var p=row.querySelector(".mc-prog-fill");if(p)p.style.width="100%";
-  var done=document.querySelectorAll(".mc-row.done").length;
-  var total=document.querySelectorAll(".mc-row").length;
-  document.getElementById("mcSub").textContent=done+"/"+total+" hoàn thành · +"+(done*50)+" XP";
-}}
-function navClick(btn){{
-  btn.style.background="rgba(255,240,180,0.98)";btn.style.borderColor="#FFD700";
-  setTimeout(function(){{btn.style.background="";btn.style.borderColor="";}},700);
-}}
-</script>
-"""
         import streamlit.components.v1 as components
-        components.html(_PROTO_HTML, height=830, scrolling=False)
-
-        with st.expander("📁 Hướng dẫn thêm asset để UI đẹp hơn"):
-            st.code("""assets/
-├── farm/
-│   └── farm_bg.png        ← ảnh nền trang trại (16:9, rộng)
-├── sheep/
-│   ├── sheep_main.png     ← cừu chính (đứng giữa)
-│   ├── sheep_female.png   ← cừu nữ (áo cardigan xanh)
-│   └── sheep_male.png     ← cừu nam (kính, áo xanh)
-├── buildings/
-│   ├── house.png          ← ngôi nhà
-│   ├── windmill.png       ← cối xay gió
-│   └── pond.png           ← hồ sen
-├── items/
-│   ├── carrot.png         ← cà rốt
-│   └── gift_box.png       ← hộp quà
-└── friends/
-    ├── friend1.png
-    ├── friend2.png
-    └── friend3.png
-""", language="text")
-            st.info("💡 Tất cả ảnh PNG nền trong suốt. Sau khi lưu đúng tên, reload Streamlit là hiển thị ngay.")
+        components.html(_HTML, height=820, scrolling=False)
