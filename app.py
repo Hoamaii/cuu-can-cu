@@ -947,12 +947,12 @@ with st.sidebar:
 # ═══════════════════════════════════════════════════════
 # 3 TABS NAVIGATION
 # Vision: Finch × Duolingo × Character AI × TCBS
-# 💬 Tâm sự · 🐑 Cừu của tôi · 🌾 Trang trại
+# 💬 Tâm sự · 🐑 Cừu của tôi · 👥 Cộng đồng
 # ═══════════════════════════════════════════════════════
 tab1, tab2, tab3 = st.tabs([
     "💬 Tâm sự",
     "🐑 Cừu của tôi",
-    "🌾 Trang trại",
+    "👥 Cộng đồng",
 ])
 
 # ═══════════════════════════════════════════════════════
@@ -1981,831 +1981,776 @@ with tab2:
         st.caption("⚠️ Thông tin chỉ mang tính tham khảo, không phải tư vấn đầu tư chuyên nghiệp.")
 
 
-# ══ TAB 3: AI Sheep Companion ════════════════════════════════════════════════
+# ══ TAB 3: 👥 CỘNG ĐỒNG ════════════════════════════════════════════════════
 with tab3:
-    import os as _os
+    import os as _os3
+    import streamlit.components.v1 as _comp3
 
-    _GH = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
+    _GH3 = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
 
-    def _load_farm_asset(local_path, gh_url=""):
-        full = _os.path.join(_os.path.dirname(__file__), local_path)
-        if _os.path.exists(full):
+    def _load_comm_asset(local_path, gh_url=""):
+        full = _os3.path.join(_os3.path.dirname(__file__), local_path)
+        if _os3.path.exists(full):
+            import base64 as _b64m
             with open(full, "rb") as _f:
-                _d = base64.b64encode(_f.read()).decode()
-            return "data:image/png;base64," + _d
+                _d = _b64m.b64encode(_f.read()).decode()
+            ext = local_path.rsplit(".", 1)[-1].lower()
+            mime = {"png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp"}.get(ext,"image/png")
+            return f"data:{mime};base64,{_d}"
         return gh_url
 
-    _FA = {
-        "sheep": _load_farm_asset("assets/sheep/sheep_main.png", _GH + "/sheep_adult.png"),
-        "f1":    _load_farm_asset("assets/friends/friend1.png",  _GH + "/friend_sheep_1.png"),
-        "f2":    _load_farm_asset("assets/friends/friend2.png",  _GH + "/friend_sheep_2.png"),
-        "f3":    _load_farm_asset("assets/friends/friend3.png",  _GH + "/friend_sheep_3.png"),
-    }
+    # ── load assets ──────────────────────────────────────────────────────────
+    _hero_src    = _load_comm_asset("assets/community/community_hero.png",   _GH3 + "/community_hero.png")
+    _sheep_src3  = _load_comm_asset("assets/sheep/sheep_main.png",           _GH3 + "/sheep_adult.png")
+    _f1_src3     = _load_comm_asset("assets/friends/friend1.png",            _GH3 + "/friend_sheep_1.png")
+    _f2_src3     = _load_comm_asset("assets/friends/friend2.png",            _GH3 + "/friend_sheep_2.png")
+    _f3_src3     = _load_comm_asset("assets/friends/friend3.png",            _GH3 + "/friend_sheep_3.png")
 
-    def _av(key, size=44, fb="🐑"):
-        s = _FA.get(key, "")
-        base = (
-            "width:" + str(size) + "px;height:" + str(size) + "px;"
-            "border-radius:50%;object-fit:cover;flex-shrink:0;"
-            "mix-blend-mode:multiply;background:#EDE8DC;"
-        )
-        if s:
-            return '<img src="' + s + '" style="' + base + '" onerror="this.style.display=\'none\'">'
-        return (
-            '<div style="' + base + 'display:flex;align-items:center;'
-            'justify-content:center;font-size:' + str(size // 2) + 'px;">' + fb + '</div>'
-        )
+    # ── user data ─────────────────────────────────────────────────────────────
+    _uname3  = mem.get("name", "") or "Bạn"
+    _streak3 = mem.get("streak", 0)
+    _saved3  = mem.get("total_saved", 0)
+    _dreams3 = mem.get("dreams", [])
+    _dream3_name = _dreams3[0]["name"].title() if _dreams3 else "Giấc mơ của tôi"
+    _key3, _sname3, _lv3, _ldesc3, _ = (
+        get_growth_stage(_saved3) if _saved3 >= 0 else ("baby","Cừu Sơ Sinh",1,"","")
+    )
 
-    _sheep_src = _FA.get("sheep", "")
-    if _sheep_src:
-        _sheep_el = (
-            '<img id="sheep" src="' + _sheep_src + '" '
-            'style="width:200px;height:200px;object-fit:contain;'
-            'mix-blend-mode:multiply;cursor:pointer;display:block;'
-            'animation:sheep-bob 3.5s ease-in-out infinite,sheep-tilt 7s ease-in-out infinite;"'
-            ' onclick="feedSheep()" onerror="this.style.display=\'none\'">'
-        )
-    else:
-        _sheep_el = (
-            '<div id="sheep" style="font-size:110px;line-height:1;cursor:pointer;'
-            'animation:sheep-bob 3.5s ease-in-out infinite;" onclick="feedSheep()">🐑</div>'
-        )
+    # ── avatar helper (inline, no function call overhead) ─────────────────────
+    def _av3(src, size=48, fallback="🐑"):
+        base_s = f"width:{size}px;height:{size}px;border-radius:50%;object-fit:cover;flex-shrink:0;"
+        if src and not src.startswith("http"):
+            return f'<img src="{src}" style="{base_s}" onerror="this.parentNode.innerHTML=\'<div style=&quot;{base_s}display:flex;align-items:center;justify-content:center;font-size:{size//2}px;&quot;>{fallback}</div>\'">'
+        if src:
+            return f'<img src="{src}" style="{base_s}">'
+        return f'<div style="{base_s}display:flex;align-items:center;justify-content:center;font-size:{size//2}px;">{fallback}</div>'
 
-    _HTML = """\
+    _av1 = _av3(_f1_src3, 48, "🐑")
+    _av2 = _av3(_f2_src3, 48, "🐑")
+    _av3_ = _av3(_f3_src3, 48, "🐑")
+    _hero_img = (
+        f'<img src="{_hero_src}" style="width:100%;max-height:320px;object-fit:cover;border-radius:20px;display:block;" '
+        f'onerror="this.style.display=\'none\'">'
+        if _hero_src else ""
+    )
+    _sheep_img3 = (
+        f'<img src="{_sheep_src3}" style="width:120px;height:120px;object-fit:contain;border-radius:50%;'
+        f'border:3px solid rgba(255,255,255,0.3);" onerror="this.style.display=\'none\'">'
+        if _sheep_src3 else '<div style="font-size:72px;">🐑</div>'
+    )
+
+    _HTML_COMM = """
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-html,body{width:100%;height:100%;overflow:hidden;
-  background:linear-gradient(180deg,#EEF5FF 0%,#FFF8F0 45%,#F5F0E8 80%,#E8F5D8 100%);
-  font-family:-apple-system,'Helvetica Neue',sans-serif;}
-#app{width:860px;height:820px;position:relative;display:flex;flex-direction:column;}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── TOPBAR ── */
-.tb{
-  flex-shrink:0;height:58px;display:flex;align-items:center;
-  padding:0 18px;gap:10px;
-  background:rgba(255,255,255,0.85);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  box-shadow:0 1px 0 rgba(0,0,0,0.06);z-index:20;
-}
-.tb-streak{
-  display:flex;align-items:center;gap:5px;
-  background:linear-gradient(135deg,#FF6B00,#FF3500);
-  color:#fff;border-radius:20px;padding:5px 12px;
-  font-size:13px;font-weight:800;
-  box-shadow:0 2px 10px rgba(255,80,0,0.3);
-}
-.tb-name{flex:1;text-align:center;font-size:16px;font-weight:800;color:#1a1a1a;letter-spacing:-0.3px;}
-.tb-mood{font-size:13px;color:#FF8C00;font-weight:600;}
-.tb-pill{
-  display:flex;align-items:center;gap:4px;
-  background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);
-  border-radius:20px;padding:5px 10px;
-  font-size:12px;font-weight:700;color:#1a1a1a;
-}
-.tb-bell{font-size:20px;cursor:pointer;position:relative;flex-shrink:0;}
-.tb-dot{
-  position:absolute;top:0;right:0;
-  width:8px;height:8px;background:#FF3B30;
-  border-radius:50%;border:1.5px solid rgba(255,255,255,0.9);
-}
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: transparent;
+    color: #1a1a2e;
+    padding: 0 0 40px 0;
+  }
 
-/* ── SCROLL AREA ── */
-.scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
-.scroll::-webkit-scrollbar{width:0;}
+  /* ── SECTION WRAPPER ── */
+  .section { margin-bottom: 28px; }
 
-/* ── SHEEP SCENE ── */
-.scene{
-  position:relative;height:268px;overflow:hidden;
-  background:linear-gradient(180deg,
-#C8E8FF 0%,#D8EEFF 20%,
-#FFF5E8 55%,#F0EDDE 75%,
-#C8E898 88%,#A8D878 100%);
-}
+  /* ── SECTION HEADER ── */
+  .sec-header {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sec-header span {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #8b94a8;
+    margin-left: auto;
+    cursor: pointer;
+  }
 
-/* Ambient light orb */
-.scene-sun{
-  position:absolute;top:20px;right:130px;
-  width:56px;height:56px;
-  background:radial-gradient(circle,#FFF8C0 0%,#FFE040 40%,transparent 100%);
-  border-radius:50%;
-  box-shadow:0 0 60px 30px rgba(255,220,0,0.18);
-  z-index:1;
-}
+  /* ══ SECTION 1 — COMMUNITY HERO ══ */
+  .hero-wrapper {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1A1A2E 0%, #2D1B69 50%, #1a2a4a 100%);
+    margin-bottom: 16px;
+  }
+  .hero-img-box { width: 100%; }
+  .hero-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(10,10,30,0.88) 0%, rgba(10,10,30,0.3) 60%, transparent 100%);
+    padding: 28px 24px 22px;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .hero-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .hero-sub {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.72);
+    line-height: 1.5;
+  }
+  .hero-placeholder {
+    width: 100%;
+    height: 220px;
+    background: linear-gradient(135deg, #1A1A2E 0%, #2D1B69 50%, #1a2a4a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 20px;
+    margin-bottom: 0;
+  }
+  .hero-placeholder .emoji { font-size: 3.5rem; }
+  .hero-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .h-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 10px 20px;
+    flex: 1;
+    min-width: 80px;
+  }
+  .h-stat-num { font-size: 1.25rem; font-weight: 800; color: #fff; }
+  .h-stat-lbl { font-size: 0.65rem; color: rgba(255,255,255,0.55); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
 
-/* Background tree silhouettes */
-.bg-tree{position:absolute;z-index:2;opacity:0.55;}
-.bt-top{background:#5A9C30;border-radius:50% 50% 40% 40%;}
-.bt-trunk{background:#7A5228;border-radius:2px;margin:0 auto;}
+  /* ══ SECTION 2 — FRIEND FEED ══ */
+  .feed-card {
+    background: #fff;
+    border: 1.5px solid #f0f0f5;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .feed-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.07); transform: translateY(-1px); }
+  .feed-top {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 10px;
+  }
+  .feed-av {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f5f0ff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .feed-av img { width: 100%; height: 100%; object-fit: cover; }
+  .feed-name { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; }
+  .feed-time { font-size: 0.68rem; color: #aaa; margin-top: 1px; }
+  .feed-badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, #f0e6ff, #e6f0ff);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #7B5EA7;
+    white-space: nowrap;
+  }
+  .feed-msg {
+    font-size: 0.85rem;
+    color: #444;
+    line-height: 1.5;
+    padding: 10px 12px;
+    background: #f8f8fc;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .feed-msg strong { color: #1a1a2e; }
+  .feed-actions { display: flex; gap: 8px; }
+  .feed-btn {
+    flex: 1;
+    padding: 7px 0;
+    border: 1.5px solid #ede8f8;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #5a4a9a;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .feed-btn:hover { background: #f0e6ff; border-color: #c4a8f8; }
+  .feed-btn.primary { background: linear-gradient(135deg, #7B5EA7, #5a3d9a); color: #fff; border-color: transparent; }
+  .feed-btn.primary:hover { opacity: 0.9; }
 
-/* Soft ground */
-.ground{
-  position:absolute;bottom:0;left:0;right:0;
-  height:88px;
-  background:linear-gradient(180deg,#82CC44 0%,#68B82C 50%,#58A01C 100%);
-  border-radius:55% 55% 0 0/20px 20px 0 0;
-  z-index:3;
-}
-/* Ground texture dots */
-.ground::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at 20% 60%,rgba(255,255,255,0.08) 0%,transparent 40%),
-         radial-gradient(circle at 80% 40%,rgba(0,0,0,0.05) 0%,transparent 40%);
-  border-radius:inherit;
-}
+  /* ══ SECTION 3 — DREAM GUILDS ══ */
+  .guild-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .guild-card {
+    background: #fff;
+    border: 1.5px solid #f0f0f5;
+    border-radius: 16px;
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .guild-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); border-color: #d4b8ff; }
+  .guild-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .guild-name { font-size: 0.78rem; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  .guild-members { font-size: 0.68rem; color: #8b94a8; margin-bottom: 8px; }
+  .guild-activity { font-size: 0.65rem; color: #b8a8d8; background: #f8f4ff; border-radius: 6px; padding: 3px 7px; margin-bottom: 8px; }
+  .guild-join {
+    width: 100%;
+    padding: 6px 0;
+    border: 1.5px solid #d4b8ff;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #7B5EA7;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .guild-join:hover { background: #f0e6ff; }
+  .guild-join.joined { background: linear-gradient(135deg, #7B5EA7, #5a3d9a); color: #fff; border-color: transparent; }
 
-/* Small flowers on ground */
-.gflower{position:absolute;z-index:5;font-size:13px;pointer-events:none;}
+  /* ══ SECTION 4 — COMMUNITY PROJECTS ══ */
+  .proj-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .proj-card {
+    background: #fff;
+    border: 1.5px solid #f0f0f5;
+    border-radius: 16px;
+    padding: 16px;
+    transition: all 0.2s;
+  }
+  .proj-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.07); transform: translateY(-2px); }
+  .proj-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .proj-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+  .proj-name { font-size: 0.85rem; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+  .proj-members { font-size: 0.68rem; color: #8b94a8; margin-top: 2px; }
+  .proj-prog-wrap {
+    background: #f0f0f7;
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .proj-prog-bar {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .proj-prog-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.68rem;
+    color: #8b94a8;
+    margin-bottom: 10px;
+  }
+  .proj-pct { font-weight: 700; }
+  .proj-join {
+    width: 100%;
+    padding: 8px 0;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #fff;
+  }
 
-/* Sheep zone */
-.sheep-zone{
-  position:absolute;bottom:60px;left:50%;
-  transform:translateX(-50%);
-  z-index:6;
-  display:flex;flex-direction:column;align-items:center;
-}
-.sheep-glow{
-  position:absolute;
-  width:220px;height:220px;
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(255,240,180,0.45) 0%,rgba(255,200,80,0.12) 55%,transparent 100%);
-  bottom:-20px;left:50%;transform:translateX(-50%);
-  z-index:-1;
-  animation:glow-breathe 3.5s ease-in-out infinite;
-}
-.sheep-shadow{
-  width:130px;height:18px;
-  background:rgba(0,0,0,0.15);
-  border-radius:50%;
-  filter:blur(8px);
-  margin-top:-6px;
-  animation:shadow-bob 3.5s ease-in-out infinite;
-}
+  /* ══ SECTION 5 — REFERRAL ══ */
+  .ref-card {
+    background: linear-gradient(135deg, #1A1A2E 0%, #2D1B69 60%, #0d2040 100%);
+    border-radius: 20px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ref-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(123,94,167,0.4) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .ref-card::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(90,61,154,0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .ref-inner { position: relative; z-index: 1; }
+  .ref-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .ref-sheep { font-size: 3rem; }
+  .ref-title { font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+  .ref-sub { font-size: 0.78rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
+  .ref-tiers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .ref-tier {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+  .ref-tier-num { font-size: 1.1rem; font-weight: 800; color: #fff; }
+  .ref-tier-lbl { font-size: 0.6rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .ref-tier-reward {
+    font-size: 0.7rem;
+    color: #d4b8ff;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .ref-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .ref-chip {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.72rem;
+    color: #fff;
+    font-weight: 600;
+  }
+  .ref-code-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .ref-code-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.5); flex-shrink: 0; }
+  .ref-code-val { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: 0.12em; flex: 1; }
+  .ref-copy-btn {
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .ref-copy-btn:hover { background: rgba(255,255,255,0.25); }
+  .ref-invite-btn {
+    width: 100%;
+    padding: 14px 0;
+    background: linear-gradient(135deg, #7B5EA7 0%, #5a3d9a 100%);
+    border: none;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(123,94,167,0.5);
+  }
+  .ref-invite-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(123,94,167,0.6); }
 
-/* Sheep mood floating badge */
-.mood-badge{
-  background:rgba(255,255,255,0.95);
-  border-radius:20px;padding:5px 12px;
-  font-size:12px;font-weight:700;color:#1a1a1a;
-  box-shadow:0 4px 16px rgba(0,0,0,0.1);
-  margin-bottom:10px;
-  animation:float-mood 4s ease-in-out infinite;
-  white-space:nowrap;
-}
-
-/* Sheep animations */
-@keyframes sheep-bob{
-  0%,100%{transform:translateY(0) scale(1,1);}
-  30%{transform:translateY(-7px) scale(1.01,0.99);}
-  60%{transform:translateY(-4px) scale(1,1);}
-}
-@keyframes sheep-tilt{
-  0%,100%{transform:rotate(0deg);}
-  25%{transform:rotate(-1.2deg);}
-  75%{transform:rotate(1.2deg);}
-}
-@keyframes shadow-bob{
-  0%,100%{transform:scaleX(1);opacity:0.15;}
-  30%{transform:scaleX(0.8);opacity:0.08;}
-}
-@keyframes glow-breathe{
-  0%,100%{opacity:0.6;transform:translateX(-50%) scale(1);}
-  50%{opacity:1;transform:translateX(-50%) scale(1.1);}
-}
-@keyframes float-mood{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-4px);}
-}
-
-/* ── COMPANION CARD ── */
-.comp-card{
-  margin:0 14px;
-  background:rgba(255,255,255,0.95);
-  border-radius:24px;
-  padding:18px 20px 14px;
-  box-shadow:0 2px 20px rgba(0,0,0,0.07);
-}
-.comp-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:10px;
-}
-.comp-name{font-size:17px;font-weight:800;color:#1a1a1a;}
-.comp-mood-tag{
-  background:rgba(52,199,89,0.1);color:#1A8C3A;
-  border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;
-}
-.comp-thinking{
-  font-size:13px;color:#555;line-height:1.6;
-  background:#F8F5EE;border-radius:16px;padding:12px 14px;
-  margin-bottom:12px;
-  border-left:3px solid #FF9500;
-  font-style:italic;
-}
-.comp-thinking strong{font-style:normal;color:#FF8C00;}
-.comp-memory{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
-.mem-tag{
-  background:#F0EDE8;color:#666;
-  border-radius:20px;padding:4px 11px;font-size:11px;font-weight:600;
-}
-.comp-footer{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:14px;
-}
-.streak-badge{
-  display:flex;align-items:center;gap:5px;
-  font-size:12px;font-weight:700;color:#FF5500;
-}
-.days-together{font-size:11px;color:#aaa;}
-
-/* Dynamic chat prompt */
-.chat-prompt{
-  background:linear-gradient(145deg,#1A1A2E,#16213E);
-  border-radius:18px;padding:13px 16px;
-  display:flex;align-items:center;gap:12px;cursor:pointer;
-  transition:all 0.18s;
-  box-shadow:0 4px 16px rgba(0,0,0,0.15);
-}
-.chat-prompt:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2);}
-.chat-prompt:active{transform:scale(0.98);}
-.cp-text{flex:1;font-size:13px;color:rgba(255,255,255,0.92);font-weight:600;line-height:1.4;}
-.cp-ico{font-size:20px;flex-shrink:0;}
-.cp-arrow{
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(255,255,255,0.12);
-  display:flex;align-items:center;justify-content:center;
-  color:white;font-size:14px;flex-shrink:0;
-}
-
-/* ── SECTION HEADER ── */
-.sec{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 10px;}
-.sec-t{font-size:15px;font-weight:800;color:#1a1a1a;}
-.sec-a{font-size:12px;font-weight:600;color:#FF8C00;cursor:pointer;}
-
-/* ── FRIENDS FEED ── */
-.feed{margin:0 14px;background:rgba(255,255,255,0.95);border-radius:22px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);}
-.fi{
-  display:flex;align-items:flex-start;gap:12px;
-  padding:14px 16px;
-  border-bottom:1px solid rgba(0,0,0,0.05);
-  cursor:pointer;transition:background 0.15s;
-}
-.fi:last-child{border-bottom:none;}
-.fi:hover{background:rgba(0,0,0,0.015);}
-.fi-av{position:relative;flex-shrink:0;}
-.fi-badge{
-  position:absolute;bottom:-3px;right:-3px;
-  width:20px;height:20px;border-radius:50%;
-  background:white;display:flex;align-items:center;justify-content:center;
-  font-size:11px;box-shadow:0 1px 6px rgba(0,0,0,0.15);
-}
-.fi-body{flex:1;min-width:0;}
-.fi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
-.fi-name{font-size:13px;font-weight:700;color:#1a1a1a;}
-.fi-state{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;}
-.fi-state.fire{background:rgba(255,100,0,0.1);color:#FF5500;}
-.fi-state.sad{background:rgba(100,100,255,0.1);color:#5555DD;}
-.fi-state.win{background:rgba(255,200,0,0.12);color:#B88A00;}
-.fi-desc{font-size:12px;color:#777;margin-bottom:9px;line-height:1.45;}
-.fi-actions{display:flex;gap:7px;flex-wrap:wrap;}
-.fa-btn{
-  border:none;border-radius:12px;padding:6px 13px;
-  font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;
-}
-.fa-btn.orange{background:rgba(255,140,0,0.12);color:#D97700;}
-.fa-btn.orange:hover{background:rgba(255,140,0,0.22);}
-.fa-btn.green{background:rgba(52,199,89,0.12);color:#1A8C3A;}
-.fa-btn.green:hover{background:rgba(52,199,89,0.22);}
-.fa-btn.blue{background:rgba(0,122,255,0.1);color:#0062CC;}
-.fa-btn.blue:hover{background:rgba(0,122,255,0.18);}
-.fa-btn.pink{background:rgba(255,45,85,0.1);color:#CC1140;}
-.fa-btn.pink:hover{background:rgba(255,45,85,0.18);}
-.fa-btn.purple{background:rgba(175,82,222,0.1);color:#8B00CC;}
-.fa-btn.purple:hover{background:rgba(175,82,222,0.18);}
-
-/* ── REFERRAL ── */
-.ref-card{
-  margin:12px 14px;
-  background:linear-gradient(135deg,#4C3699 0%,#6B4FBB 50%,#8966D6 100%);
-  border-radius:22px;padding:18px 20px;
-  display:flex;align-items:center;gap:14px;
-  box-shadow:0 6px 24px rgba(76,54,153,0.4);
-  position:relative;overflow:hidden;cursor:pointer;
-  transition:all 0.18s;
-}
-.ref-card:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(76,54,153,0.5);}
-.ref-card::before{
-  content:'';position:absolute;
-  top:-50px;right:-50px;
-  width:160px;height:160px;border-radius:50%;
-  background:rgba(255,255,255,0.07);
-}
-.ref-card::after{
-  content:'';position:absolute;
-  bottom:-40px;left:50%;
-  width:100px;height:100px;border-radius:50%;
-  background:rgba(255,255,255,0.04);
-}
-.ref-ico{font-size:38px;z-index:1;flex-shrink:0;}
-.ref-text{flex:1;z-index:1;}
-.ref-title{font-size:15px;font-weight:800;color:white;margin-bottom:6px;}
-.ref-chips{display:flex;gap:6px;flex-wrap:wrap;}
-.ref-chip{
-  background:rgba(255,255,255,0.18);
-  color:rgba(255,255,255,0.95);
-  border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;
-}
-.ref-btn{
-  z-index:1;flex-shrink:0;
-  background:white;color:#4C3699;
-  border:none;border-radius:14px;padding:10px 16px;
-  font-size:13px;font-weight:800;cursor:pointer;
-  box-shadow:0 2px 12px rgba(0,0,0,0.15);
-  transition:all 0.15s;
-}
-.ref-btn:hover{transform:scale(1.05);}
-
-/* spacer */
-.spacer{height:16px;}
-
-/* ── BOTTOM NAV ── */
-.bnav{
-  flex-shrink:0;height:80px;
-  background:rgba(255,255,255,0.97);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  display:flex;align-items:flex-start;justify-content:space-around;
-  padding-top:10px;
-  box-shadow:0 -1px 0 rgba(0,0,0,0.07);
-  z-index:20;
-}
-.ni{
-  flex:1;max-width:80px;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  cursor:pointer;padding:6px 8px 4px;border-radius:14px;
-  transition:background 0.2s;position:relative;
-}
-.ni:hover{background:rgba(0,0,0,0.03);}
-.nico{font-size:22px;transition:transform 0.2s;}
-.ni.active .nico{transform:scale(1.12);}
-.nlb{font-size:10px;font-weight:600;color:#C0C0C0;transition:color 0.2s;}
-.ni.active .nlb{color:#FF8C00;}
-.npip{width:5px;height:5px;background:#FF8C00;border-radius:50%;margin-top:2px;opacity:0;transition:opacity 0.2s;}
-.ni.active .npip{opacity:1;}
-.nbadge{
-  position:absolute;top:2px;right:4px;
-  background:#FF3B30;color:white;border-radius:10px;
-  font-size:9px;font-weight:800;padding:1px 5px;
-}
-
-/* ── CHAT OVERLAY ── */
-.overlay{
-  position:absolute;inset:0;z-index:50;
-  background:rgba(255,255,255,0.98);
-  backdrop-filter:blur(16px);
-  display:flex;flex-direction:column;
-  transform:translateY(100%);
-  transition:transform 0.35s cubic-bezier(.4,0,.2,1);
-}
-.overlay.open{transform:translateY(0);}
-.ov-header{
-  height:58px;display:flex;align-items:center;padding:0 18px;gap:14px;
-  border-bottom:1px solid rgba(0,0,0,0.07);flex-shrink:0;
-}
-.ov-back{font-size:22px;cursor:pointer;color:#FF8C00;}
-.ov-title{font-size:17px;font-weight:800;color:#1a1a1a;flex:1;}
-.ov-scroll{flex:1;overflow-y:auto;padding:12px 0;}
-.ov-scroll::-webkit-scrollbar{width:0;}
-.ov-sec{padding:10px 18px 4px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.7px;}
-.chat-row{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 18px;cursor:pointer;transition:background 0.15s;
-}
-.chat-row:hover{background:rgba(0,0,0,0.025);}
-.chat-row-av{
-  width:48px;height:48px;border-radius:50%;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:24px;
-}
-.cr-name{font-size:14px;font-weight:700;color:#1a1a1a;}
-.cr-sub{font-size:12px;color:#aaa;margin-top:2px;}
-.cr-badge{background:#FF3B30;color:white;border-radius:10px;font-size:10px;font-weight:800;padding:2px 6px;margin-left:auto;}
-.community-grid{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:10px;padding:10px 18px;
-}
-.comm-card{
-  background:#F8F5EE;border-radius:18px;padding:14px 16px;
-  cursor:pointer;transition:all 0.15s;
-}
-.comm-card:hover{background:#EDE8DC;transform:translateY(-1px);}
-.comm-ico{font-size:26px;margin-bottom:6px;}
-.comm-name{font-size:13px;font-weight:700;color:#1a1a1a;}
-.comm-members{font-size:11px;color:#aaa;margin-top:2px;}
-
-/* ── FEED ANIMATION ── */
-@keyframes shimmer{0%{left:-100%}100%{left:200%}}
-@keyframes drop{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(180px) rotate(560deg)}}
-@keyframes rise{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-240%)}}
-@keyframes pop{0%{transform:scale(0.7);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
-
-/* Toast */
-#toast{
-  position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(12px);
-  background:rgba(20,20,20,0.88);color:white;
-  padding:10px 20px;border-radius:22px;
-  font-size:13px;font-weight:600;
-  opacity:0;transition:all 0.28s;z-index:60;
-  pointer-events:none;white-space:nowrap;
-}
-#confetti{position:fixed;inset:0;pointer-events:none;z-index:55;overflow:hidden;}
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e;
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+    z-index: 9999;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- ── TOP BAR ── -->
-  <div class="tb">
-<div class="tb-streak">🔥 7 ngày</div>
-<div class="tb-name">Bông Cần Cù <span class="tb-mood">😊</span></div>
-<div class="tb-pill">🪙 128.450</div>
-<div class="tb-pill">💎 320</div>
-<div class="tb-bell">🔔<div class="tb-dot"></div></div>
-  </div>
+<div id="toast" class="toast"></div>
 
-  <!-- ── SCROLL CONTENT ── -->
-  <div class="scroll">
-
-<!-- SHEEP SCENE -->
-<div class="scene">
-  <div class="scene-sun"></div>
-
-  <!-- Background trees -->
-  <div class="bg-tree" style="bottom:78px;left:30px;display:flex;flex-direction:column;align-items:center;">
-    <div class="bt-top" style="width:42px;height:46px;"></div>
-    <div class="bt-trunk" style="width:9px;height:20px;"></div>
-  </div>
-  <div class="bg-tree" style="bottom:82px;left:78px;display:flex;flex-direction:column;align-items:center;">
-    <div class="bt-top" style="width:52px;height:56px;background:#4A8C28;border-radius:50% 50% 40% 40%;"></div>
-    <div class="bt-trunk" style="width:11px;height:24px;background:#7A5228;border-radius:2px;margin:0 auto;"></div>
-  </div>
-  <div class="bg-tree" style="bottom:80px;right:34px;display:flex;flex-direction:column;align-items:center;">
-    <div class="bt-top" style="width:46px;height:50px;background:#528C30;border-radius:50% 50% 40% 40%;"></div>
-    <div class="bt-trunk" style="width:10px;height:22px;background:#7A5228;border-radius:2px;margin:0 auto;"></div>
-  </div>
-  <div class="bg-tree" style="bottom:84px;right:90px;display:flex;flex-direction:column;align-items:center;">
-    <div class="bt-top" style="width:38px;height:42px;background:#3A8020;border-radius:50% 50% 40% 40%;"></div>
-    <div class="bt-trunk" style="width:8px;height:18px;background:#7A5228;border-radius:2px;margin:0 auto;"></div>
-  </div>
-
-  <!-- Ground -->
-  <div class="ground"></div>
-
-  <!-- Ground flowers -->
-  <div class="gflower" style="bottom:22px;left:200px;">🌼</div>
-  <div class="gflower" style="bottom:28px;left:236px;">🌸</div>
-  <div class="gflower" style="bottom:18px;right:198px;">🌷</div>
-  <div class="gflower" style="bottom:26px;right:238px;">🌼</div>
-  <div class="gflower" style="bottom:14px;left:310px;font-size:10px;">🌿</div>
-  <div class="gflower" style="bottom:13px;right:305px;font-size:10px;">🌿</div>
-
-  <!-- Sheep zone -->
-  <div class="sheep-zone">
-    <div class="mood-badge">😊 Bông đang vui hôm nay</div>
-    <div class="sheep-glow"></div>
-    __SHEEP__
-    <div class="sheep-shadow"></div>
-  </div>
-</div>
-
-<!-- AI COMPANION CARD -->
-<div class="comp-card" style="margin-top:-4px;border-radius:0 0 24px 24px;position:relative;z-index:2;">
-  <div class="comp-header">
-    <div class="comp-name">🐑 Bông Cần Cù</div>
-    <div class="comp-mood-tag">😊 Đang vui</div>
-  </div>
-  <div class="comp-thinking" id="ai-thinking">
-    💭 <strong>"Hoa</strong>, bạn vẫn đang tiết kiệm cho giấc mơ MBA không? Mình đang nghĩ về bạn đó..."
-  </div>
-  <div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📌 Mình nhớ</div>
-  <div class="comp-memory">
-    <div class="mem-tag">🏠 Muốn mua nhà</div>
-    <div class="mem-tag">🎓 Giấc mơ MBA</div>
-    <div class="mem-tag">💰 Tự do tài chính</div>
-    <div class="mem-tag">💭 Hay lo về dòng tiền</div>
-  </div>
-  <div class="comp-footer">
-    <div class="streak-badge">🔥 <span>7 ngày cùng nhau</span></div>
-    <div class="days-together">Quen nhau từ 01/01/2026</div>
-  </div>
-  <div class="chat-prompt" id="chat-btn" onclick="openChat()">
-    <div class="cp-ico">💬</div>
-    <div class="cp-text" id="prompt-text">Mình đang lo cho giấc mơ của bạn...</div>
-    <div class="cp-arrow">→</div>
-  </div>
-</div>
-
-<!-- FRIENDS FEED -->
-<div class="sec">
-  <div class="sec-t">🐑 Đàn cừu hôm nay</div>
-  <div class="sec-a" onclick="setNav(document.querySelectorAll('.ni')[1])">Xem thêm →</div>
-</div>
-<div class="feed">
-  <div class="fi" onclick="">
-    <div class="fi-av">
-      __F1__
-      <div class="fi-badge">🔥</div>
+<!-- ══ 1. COMMUNITY HERO ══ -->
+<div class="section">
+  __HERO_BLOCK__
+  <div class="hero-stats">
+    <div class="h-stat" style="background:linear-gradient(135deg,#f0e6ff,#e6f0ff);border:none;">
+      <div class="h-stat-num" style="color:#7B5EA7;">12.847</div>
+      <div class="h-stat-lbl" style="color:#9b8cbf;">Cừu thành viên</div>
     </div>
-    <div class="fi-body">
-      <div class="fi-top">
-        <div class="fi-name">Bông Mập</div>
-        <div class="fi-state fire">🔥 30 ngày</div>
+    <div class="h-stat" style="background:linear-gradient(135deg,#e6fff4,#e6f9ff);border:none;">
+      <div class="h-stat-num" style="color:#2a9d5c;">4.230</div>
+      <div class="h-stat-lbl" style="color:#5ab888;">Hoạt động hôm nay</div>
+    </div>
+    <div class="h-stat" style="background:linear-gradient(135deg,#fff8e6,#ffe6f0);border:none;">
+      <div class="h-stat-num" style="color:#e6820a;">892</div>
+      <div class="h-stat-lbl" style="color:#c8922a;">Giấc mơ hoàn thành</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 2. BẠN CỪU HÔM NAY ══ -->
+<div class="section">
+  <div class="sec-header">🐑 Bạn cừu hôm nay <span onclick="showToast('Đang tải thêm...')">Xem tất cả →</span></div>
+
+  <!-- Friend 1 -->
+  <div class="feed-card">
+    <div class="feed-top">
+      <div class="feed-av">__AV1__</div>
+      <div>
+        <div class="feed-name">Bông Mập</div>
+        <div class="feed-time">2 phút trước</div>
       </div>
-      <div class="fi-desc">Hoàn thành chuỗi tiết kiệm 30 ngày liên tiếp — không bỏ ngày nào! 💪</div>
-      <div class="fi-actions">
-        <button class="fa-btn orange" onclick="event.stopPropagation();celebrate()">❤️ Chúc mừng</button>
-        <button class="fa-btn green" onclick="event.stopPropagation();toast('Đã gửi quà cho Bông Mập! 🎁')">🎁 Gửi quà</button>
-        <button class="fa-btn blue" onclick="event.stopPropagation();toast('Đang mở chat...')">💬 Nhắn tin</button>
-      </div>
+      <div class="feed-badge">🔥 Streak 30</div>
+    </div>
+    <div class="feed-msg">
+      Hoàn thành <strong>30 ngày tiết kiệm liên tục</strong> — không bỏ lỡ một ngày nào! 🎉
+    </div>
+    <div class="feed-actions">
+      <button class="feed-btn" onclick="showToast('❤️ Đã chúc mừng Bông Mập!')">❤️ Chúc mừng</button>
+      <button class="feed-btn primary" onclick="showToast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
     </div>
   </div>
-  <div class="fi" onclick="">
-    <div class="fi-av">
-      __F2__
-      <div class="fi-badge">😔</div>
+
+  <!-- Friend 2 -->
+  <div class="feed-card">
+    <div class="feed-top">
+      <div class="feed-av">__AV2__</div>
+      <div>
+        <div class="feed-name">Mây Tích</div>
+        <div class="feed-time">15 phút trước</div>
+      </div>
+      <div class="feed-badge">🎯 Mục tiêu</div>
     </div>
-    <div class="fi-body">
-      <div class="fi-top">
-        <div class="fi-name">Mây Tích</div>
-        <div class="fi-state sad">😔 Buồn</div>
-      </div>
-      <div class="fi-desc">Hôm nay Mây Tích có vẻ không được vui... Mình có thể gửi gì cho bạn ấy không?</div>
-      <div class="fi-actions">
-        <button class="fa-btn pink" onclick="event.stopPropagation();toast('Đã gửi hoa cho Mây Tích! 🌸')">🌸 Gửi hoa</button>
-        <button class="fa-btn blue" onclick="event.stopPropagation();toast('Đang mở chat...')">💬 Nhắn tin</button>
-        <button class="fa-btn orange" onclick="event.stopPropagation();toast('Đã gửi XP Boost! ⚡')">⚡ Boost</button>
-      </div>
+    <div class="feed-msg">
+      Vừa hoàn thành giấc mơ <strong>học MBA</strong>! Cần cù ắt có ngày thành công 🐑✨
+    </div>
+    <div class="feed-actions">
+      <button class="feed-btn" onclick="showToast('🎉 Đã ăn mừng cùng Mây Tích!')">🎉 Ăn mừng</button>
+      <button class="feed-btn primary" onclick="showToast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
     </div>
   </div>
-  <div class="fi" onclick="">
-    <div class="fi-av">
-      __F3__
-      <div class="fi-badge">🏆</div>
+
+  <!-- Friend 3 -->
+  <div class="feed-card">
+    <div class="feed-top">
+      <div class="feed-av">__AV3__</div>
+      <div>
+        <div class="feed-name">Cậu Nhanh</div>
+        <div class="feed-time">1 giờ trước</div>
+      </div>
+      <div class="feed-badge">🌟 Lv.__USER_LV__</div>
     </div>
-    <div class="fi-body">
-      <div class="fi-top">
-        <div class="fi-name">Cậu Nhanh</div>
-        <div class="fi-state win">🏆 Lv.12</div>
-      </div>
-      <div class="fi-desc">Vừa đạt Level 12 — Cừu Trí Tuệ! Cùng chúc mừng Cậu Nhanh nha! 🎉</div>
-      <div class="fi-actions">
-        <button class="fa-btn purple" onclick="event.stopPropagation();celebrate()">🎉 Ăn mừng</button>
-        <button class="fa-btn orange" onclick="event.stopPropagation();toast('Đã khen ngợi! 👏')">👏 Khen ngợi</button>
-        <button class="fa-btn green" onclick="event.stopPropagation();toast('Đang thăm nông trại...')">🏡 Thăm trại</button>
-      </div>
+    <div class="feed-msg">
+      Cừu vừa lên <strong>cấp độ mới</strong>! Nhờ tích cóp đều đặn mỗi ngày 💪
+    </div>
+    <div class="feed-actions">
+      <button class="feed-btn" onclick="showToast('👏 Đã khen ngợi Cậu Nhanh!')">👏 Khen ngợi</button>
+      <button class="feed-btn primary" onclick="showToast('🎁 Đã tặng quà!')">🎁 Tặng quà</button>
     </div>
   </div>
 </div>
 
-<!-- REFERRAL -->
-<div class="ref-card" onclick="toast('Đã sao chép link mời! 🔗')">
-  <div class="ref-ico">🐑</div>
-  <div class="ref-text">
-    <div class="ref-title">Đưa cừu mới vào đàn</div>
-    <div class="ref-chips">
-      <span class="ref-chip">+500 XP</span>
-      <span class="ref-chip">+10 💎</span>
-      <span class="ref-chip">🌟 Skin độc quyền</span>
+<!-- ══ 3. HỘI QUÁN GIẤC MƠ ══ -->
+<div class="section">
+  <div class="sec-header">🏡 Hội quán giấc mơ <span onclick="showToast('Đang tải thêm hội quán...')">Xem tất cả →</span></div>
+  <div class="guild-grid">
+
+    <div class="guild-card" onclick="">
+      <div class="guild-icon">🎓</div>
+      <div class="guild-name">Du học &amp; MBA</div>
+      <div class="guild-members">👥 3.241 thành viên</div>
+      <div class="guild-activity">Mới: Mây Tích hoàn thành</div>
+      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán MBA!':'Rời hội quán')">Tham gia</button>
     </div>
+
+    <div class="guild-card">
+      <div class="guild-icon">🏠</div>
+      <div class="guild-name">Mua nhà</div>
+      <div class="guild-members">👥 5.018 thành viên</div>
+      <div class="guild-activity">Mới: An Khang đặt cọc</div>
+      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán Nhà!':'Rời hội quán')">Tham gia</button>
+    </div>
+
+    <div class="guild-card">
+      <div class="guild-icon">🚗</div>
+      <div class="guild-name">Mua xe</div>
+      <div class="guild-members">👥 2.876 thành viên</div>
+      <div class="guild-activity">Mới: Hùng Mập đặt mục tiêu</div>
+      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán Xe!':'Rời hội quán')">Tham gia</button>
+    </div>
+
+    <div class="guild-card">
+      <div class="guild-icon">✈️</div>
+      <div class="guild-name">Du lịch Nhật</div>
+      <div class="guild-members">👥 4.112 thành viên</div>
+      <div class="guild-activity">Mới: Lan Anh đặt vé</div>
+      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán Du lịch!':'Rời hội quán')">Tham gia</button>
+    </div>
+
+    <div class="guild-card">
+      <div class="guild-icon">💰</div>
+      <div class="guild-name">Tự do tài chính</div>
+      <div class="guild-members">👥 7.654 thành viên</div>
+      <div class="guild-activity">Mới: Quang Minh đạt FIRE</div>
+      <button class="guild-join" onclick="this.classList.toggle('joined');this.textContent=this.classList.contains('joined')?'✓ Đã tham gia':'Tham gia';showToast(this.classList.contains('joined')?'✅ Đã vào hội quán FIRE!':'Rời hội quán')">Tham gia</button>
+    </div>
+
   </div>
-  <button class="ref-btn" onclick="event.stopPropagation();toast('Đã sao chép! 🔗')">Mời ngay</button>
 </div>
 
-<div class="spacer"></div>
-  </div>
+<!-- ══ 4. DỰ ÁN CỘNG ĐỒNG ══ -->
+<div class="section">
+  <div class="sec-header">🌱 Dự án cộng đồng</div>
+  <div class="proj-grid">
 
-  <!-- ── BOTTOM NAV ── -->
-  <div class="bnav">
-<div class="ni active" onclick="setNav(this)"><div class="nico">🏡</div><div class="nlb">Trang trại</div><div class="npip"></div></div>
-<div class="ni" onclick="setNav(this)"><div class="nico">👥</div><div class="nlb">Bạn bè</div><div class="npip"></div><div class="nbadge">3</div></div>
-<div class="ni" onclick="openChat()"><div class="nico">💬</div><div class="nlb">Chat</div><div class="npip"></div><div class="nbadge">1</div></div>
-<div class="ni" onclick="setNav(this)"><div class="nico">✨</div><div class="nlb">Giấc mơ</div><div class="npip"></div></div>
-<div class="ni" onclick="setNav(this)"><div class="nico">👤</div><div class="nlb">Cá nhân</div><div class="npip"></div></div>
-  </div>
+    <div class="proj-card">
+      <div class="proj-top">
+        <div class="proj-icon" style="background:#e8f8ef;">🌳</div>
+        <div>
+          <div class="proj-name">Dự án cây xanh</div>
+          <div class="proj-members">👥 1.200 cừu tham gia</div>
+        </div>
+      </div>
+      <div class="proj-prog-wrap">
+        <div class="proj-prog-bar" style="width:65%;background:linear-gradient(90deg,#34C759,#2eaa4b);"></div>
+      </div>
+      <div class="proj-prog-label">
+        <span>Tiến độ</span><span class="proj-pct" style="color:#34C759;">65%</span>
+      </div>
+      <button class="proj-join" style="background:linear-gradient(135deg,#34C759,#2eaa4b);" onclick="showToast('🌳 Đã tham gia Dự án cây xanh!')">Tham gia</button>
+    </div>
 
-  <!-- ── CHAT OVERLAY ── -->
-  <div class="overlay" id="chat-overlay">
-<div class="ov-header">
-  <div class="ov-back" onclick="closeChat()">←</div>
-  <div class="ov-title">💬 Trò chuyện</div>
-</div>
-<div class="ov-scroll">
-  <div class="ov-sec">Cừu của mình</div>
-  <div class="chat-row" onclick="toast('Đang mở chat với Bông...')">
-    <div class="chat-row-av" style="background:linear-gradient(135deg,#FFE066,#FF9500);">🐑</div>
-    <div>
-      <div class="cr-name">Bông Cần Cù</div>
-      <div class="cr-sub">Đang online · Muốn hỏi bạn điều gì đó...</div>
+    <div class="proj-card">
+      <div class="proj-top">
+        <div class="proj-icon" style="background:#e8f0ff;">📚</div>
+        <div>
+          <div class="proj-name">Quỹ học tập</div>
+          <div class="proj-members">👥 600 cừu tham gia</div>
+        </div>
+      </div>
+      <div class="proj-prog-wrap">
+        <div class="proj-prog-bar" style="width:40%;background:linear-gradient(90deg,#007AFF,#0056cc);"></div>
+      </div>
+      <div class="proj-prog-label">
+        <span>Tiến độ</span><span class="proj-pct" style="color:#007AFF;">40%</span>
+      </div>
+      <button class="proj-join" style="background:linear-gradient(135deg,#007AFF,#0056cc);" onclick="showToast('📚 Đã tham gia Quỹ học tập!')">Tham gia</button>
     </div>
-    <div class="cr-badge">1</div>
-  </div>
 
-  <div class="ov-sec">Bạn bè</div>
-  <div class="chat-row" onclick="toast('Đang mở chat với Bông Mập...')">
-    <div class="chat-row-av" style="background:#F5ECD8;font-size:24px;text-align:center;line-height:48px;">__F1_SM__</div>
-    <div>
-      <div class="cr-name">Bông Mập</div>
-      <div class="cr-sub">🔥 30-ngày streak · "Tuyệt vời quá!"</div>
+    <div class="proj-card">
+      <div class="proj-top">
+        <div class="proj-icon" style="background:#f4e8ff;">🏠</div>
+        <div>
+          <div class="proj-name">Nhà ở xã hội</div>
+          <div class="proj-members">👥 340 cừu tham gia</div>
+        </div>
+      </div>
+      <div class="proj-prog-wrap">
+        <div class="proj-prog-bar" style="width:28%;background:linear-gradient(90deg,#AF52DE,#8a3ebc);"></div>
+      </div>
+      <div class="proj-prog-label">
+        <span>Tiến độ</span><span class="proj-pct" style="color:#AF52DE;">28%</span>
+      </div>
+      <button class="proj-join" style="background:linear-gradient(135deg,#AF52DE,#8a3ebc);" onclick="showToast('🏠 Đã tham gia Dự án nhà ở!')">Tham gia</button>
     </div>
-  </div>
-  <div class="chat-row" onclick="toast('Đang mở chat với Mây Tích...')">
-    <div class="chat-row-av" style="background:#F5ECD8;font-size:24px;text-align:center;line-height:48px;">__F2_SM__</div>
-    <div>
-      <div class="cr-name">Mây Tích</div>
-      <div class="cr-sub">😔 Có vẻ cần động viên hôm nay</div>
-    </div>
-  </div>
-  <div class="chat-row" onclick="toast('Đang mở chat với Cậu Nhanh...')">
-    <div class="chat-row-av" style="background:#F5ECD8;font-size:24px;text-align:center;line-height:48px;">__F3_SM__</div>
-    <div>
-      <div class="cr-name">Cậu Nhanh</div>
-      <div class="cr-sub">🏆 Mới đạt Level 12!</div>
-    </div>
-  </div>
 
-  <div class="ov-sec">Cộng đồng Giấc Mơ</div>
-  <div class="community-grid">
-    <div class="comm-card" onclick="toast('Đang vào cộng đồng Du học...')">
-      <div class="comm-ico">🎓</div>
-      <div class="comm-name">Du học</div>
-      <div class="comm-members">2.341 thành viên</div>
-    </div>
-    <div class="comm-card" onclick="toast('Đang vào cộng đồng Mua nhà...')">
-      <div class="comm-ico">🏠</div>
-      <div class="comm-name">Mua nhà đầu tiên</div>
-      <div class="comm-members">5.128 thành viên</div>
-    </div>
-    <div class="comm-card" onclick="toast('Đang vào cộng đồng FIRE...')">
-      <div class="comm-ico">💰</div>
-      <div class="comm-name">FIRE</div>
-      <div class="comm-members">1.892 thành viên</div>
-    </div>
-    <div class="comm-card" onclick="toast('Đang vào cộng đồng Startup...')">
-      <div class="comm-ico">🚀</div>
-      <div class="comm-name">Startup</div>
-      <div class="comm-members">987 thành viên</div>
-    </div>
-    <div class="comm-card" onclick="toast('Đang vào cộng đồng MBA...')">
-      <div class="comm-ico">📚</div>
-      <div class="comm-name">MBA</div>
-      <div class="comm-members">643 thành viên</div>
-    </div>
-    <div class="comm-card" onclick="toast('Đang vào cộng đồng Freelance...')">
-      <div class="comm-ico">💻</div>
-      <div class="comm-name">Freelance</div>
-      <div class="comm-members">3.210 thành viên</div>
-    </div>
   </div>
-  <div style="height:16px;"></div>
-</div>
-  </div>
-
 </div>
 
-<div id="toast"></div>
-<div id="confetti"></div>
+<!-- ══ 5. ĐƯA CỪU MỚI VÀO ĐÀN ══ -->
+<div class="section">
+  <div class="sec-header">🐑 Đưa cừu mới vào đàn</div>
+  <div class="ref-card">
+    <div class="ref-inner">
+      <div class="ref-header">
+        <div class="ref-sheep">🐑</div>
+        <div>
+          <div class="ref-title">Rủ bạn cùng tiết kiệm</div>
+          <div class="ref-sub">Mỗi người bạn tham gia — cả hai cùng nhận thưởng.<br>Đàn cừu lớn mạnh hơn khi có nhau.</div>
+        </div>
+      </div>
+
+      <div class="ref-tiers">
+        <div class="ref-tier">
+          <div class="ref-tier-lbl">Mời 1 người</div>
+          <div class="ref-tier-num">+100</div>
+          <div class="ref-tier-reward">XP cho cả hai</div>
+        </div>
+        <div class="ref-tier">
+          <div class="ref-tier-lbl">Mời 5 người</div>
+          <div class="ref-tier-num">🎨</div>
+          <div class="ref-tier-reward">Skin độc quyền</div>
+        </div>
+        <div class="ref-tier">
+          <div class="ref-tier-lbl">Mời 10 người</div>
+          <div class="ref-tier-num">👑</div>
+          <div class="ref-tier-reward">Huy hiệu Trưởng đàn</div>
+        </div>
+      </div>
+
+      <div class="ref-code-box">
+        <div class="ref-code-lbl">Mã của bạn</div>
+        <div class="ref-code-val" id="refCodeVal">__REF_CODE__</div>
+        <button class="ref-copy-btn" onclick="copyRef()">📋 Sao chép</button>
+      </div>
+
+      <button class="ref-invite-btn" onclick="showToast('🔗 Đã sao chép link mời!')">
+        Mời ngay — cùng nhau tiết kiệm 🐑
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
-// ── CHAT PROMPTS (AI-initiated) ──
-var prompts = [
-  "Mình đang lo cho giấc mơ của bạn...",
-  "Hoa, bạn có chuyện gì muốn kể không?",
-  "Tuần này có điều gì tốt xảy ra không?",
-  "Bạn ổn không? Mình muốn nghe bạn kể.",
-  "Mình vừa nhớ ra điều gì đó về bạn nè...",
-  "Nói chuyện với mình đi, mình đang đây!"
-];
-var thinkings = [
-  '💭 <strong>"Hoa</strong>, bạn vẫn đang tiết kiệm cho giấc mơ MBA không? Mình đang nghĩ về bạn đó..."',
-  '💭 <strong>"Hoa</strong>, hôm nay bạn có cần mình không? Mình luôn ở đây nha..."',
-  '💭 <strong>"Hoa</strong>, mình nhớ bạn nói muốn mua nhà — bạn đang tiến đến đó rồi đó! 🏠"',
-  '💭 <strong>"Hoa</strong>, 7 ngày rồi đó — bạn đang làm rất tốt, mình tự hào về bạn! ❤️"'
-];
-
-var pi = Math.floor(Math.random() * prompts.length);
-var ti = Math.floor(Math.random() * thinkings.length);
-document.getElementById("prompt-text").textContent = prompts[pi];
-document.getElementById("ai-thinking").innerHTML = thinkings[ti];
-
-// Rotate prompt every 6s
-setInterval(function() {
-  pi = (pi + 1) % prompts.length;
-  var el = document.getElementById("prompt-text");
-  el.style.opacity = "0";
-  setTimeout(function() {
-el.textContent = prompts[pi];
-el.style.opacity = "1";
-  }, 250);
-}, 6000);
-
-// ── SHEEP FEED ──
-var feedMsgs = [
-  '💭 <strong>"Hoa</strong>, cảm ơn bạn đã cho mình ăn! Mình yêu bạn! ❤️"',
-  '💭 <strong>"Yay!</strong> Mình đầy năng lượng rồi! Cùng cố gắng nhé! 💪"',
-  '💭 <strong>"Ngon</strong> quá Hoa ơi! Mình sẽ tiết kiệm thêm cho bạn! 🎉"',
-  '💭 <strong>"Mình</strong> lớn thêm rồi! Nhờ có bạn đó, cảm ơn! 🌟"'
-];
-function feedSheep() {
-  var s = document.getElementById("sheep");
-  if (!s) return;
-  s.style.animationPlayState = "paused";
-  s.style.transition = "transform 0.25s cubic-bezier(.34,1.56,.64,1)";
-  s.style.transform = "translateY(-14px) scale(1.12)";
-  setTimeout(function() {
-s.style.transform = "";
-s.style.transition = "";
-setTimeout(function() { s.style.animationPlayState = "running"; }, 300);
-  }, 300);
-  spawnConfetti(14);
-  var msg = feedMsgs[Math.floor(Math.random() * feedMsgs.length)];
-  document.getElementById("ai-thinking").innerHTML = msg;
-  toast("Bông lớn thêm 2%! 🥕");
-}
-
-// ── CHAT OVERLAY ──
-function openChat() {
-  document.getElementById("chat-overlay").classList.add("open");
-  document.querySelectorAll(".ni").forEach(function(n) { n.classList.remove("active"); });
-  document.querySelectorAll(".ni")[2].classList.add("active");
-}
-function closeChat() {
-  document.getElementById("chat-overlay").classList.remove("open");
-  document.querySelectorAll(".ni").forEach(function(n) { n.classList.remove("active"); });
-  document.querySelectorAll(".ni")[0].classList.add("active");
-}
-
-// ── CELEBRATE ──
-function celebrate() {
-  spawnConfetti(20);
-  toast("Chúc mừng! 🎉");
-}
-
-// ── NAV ──
-function setNav(el) {
-  document.querySelectorAll(".ni").forEach(function(n) { n.classList.remove("active"); });
-  el.classList.add("active");
-}
-
-// ── CONFETTI ──
-function spawnConfetti(n) {
-  var layer = document.getElementById("confetti");
-  var cols = ["#FF6B6B","#FFD93D","#6BCF6B","#4ECDC4","#FF9500","#C77DFF","#FF85A1","#4FC3F7"];
-  for (var i = 0; i < (n || 12); i++) {
-(function() {
-  var el = document.createElement("div");
-  var sz = 6 + Math.random() * 8;
-  el.style.cssText = [
-    "position:absolute",
-    "width:" + sz + "px", "height:" + sz + "px",
-    "background:" + cols[Math.floor(Math.random() * cols.length)],
-    "border-radius:" + (Math.random() > 0.5 ? "50%" : "3px"),
-    "left:" + (Math.random() * 860) + "px",
-    "top:" + (100 + Math.random() * 200) + "px",
-    "animation:drop " + (0.8 + Math.random() * 0.9) + "s ease-out forwards",
-    "pointer-events:none"
-  ].join(";");
-  layer.appendChild(el);
-  setTimeout(function() { el.remove(); }, 1800);
-})();
-  }
-}
-
-// ── TOAST ──
-var _toastT;
-function toast(msg) {
-  var t = document.getElementById("toast");
+function showToast(msg) {
+  var t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.opacity = "1"; t.style.transform = "translateX(-50%) translateY(0)";
-  clearTimeout(_toastT);
-  _toastT = setTimeout(function() {
-t.style.opacity = "0"; t.style.transform = "translateX(-50%) translateY(10px)";
-  }, 2200);
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+function copyRef() {
+  var code = document.getElementById('refCodeVal').textContent.trim();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(function(){
+      showToast('✅ Đã sao chép mã ' + code);
+    }).catch(function(){ showToast('Mã: ' + code); });
+  } else {
+    showToast('Mã của bạn: ' + code);
+  }
 }
 </script>
 </body>
 </html>
 """
 
-    _HTML = _HTML.replace("__SHEEP__", _sheep_el)
-    _HTML = _HTML.replace("__F1__",    _av("f1", 44))
-    _HTML = _HTML.replace("__F2__",    _av("f2", 44))
-    _HTML = _HTML.replace("__F3__",    _av("f3", 44))
-    # Small versions in chat overlay
-    _HTML = _HTML.replace("__F1_SM__", "🐑" if not _FA.get("f1") else "")
-    _HTML = _HTML.replace("__F2_SM__", "🐑" if not _FA.get("f2") else "")
-    _HTML = _HTML.replace("__F3_SM__", "🐑" if not _FA.get("f3") else "")
+    # ── generate ref code from username ──────────────────────────────────────
+    import hashlib as _hl3
+    _ref_code3 = "CUU-" + _hl3.md5(_uname3.encode()).hexdigest()[:4].upper()
 
-    import streamlit.components.v1 as components
-    components.html(_HTML, height=820, scrolling=False)
+    # ── hero block: image if available, else elegant fallback ─────────────────
+    if _hero_src and not _hero_src.startswith("http"):
+        _hero_block3 = (
+            '<div class="hero-wrapper">'
+            '<div class="hero-img-box">'
+            '<img src="__HERO_SRC__" style="width:100%;max-height:300px;object-fit:cover;display:block;"'
+            ' onerror="this.parentNode.parentNode.querySelector(\'.hero-overlay\').style.position=\'relative\'">'
+            '</div>'
+            '<div class="hero-overlay">'
+            '<div class="hero-tag">👥 Cộng đồng Cừu Cần Cù</div>'
+            '<div class="hero-title">Không ai tiết kiệm một mình</div>'
+            '<div class="hero-sub">Nơi những người đang theo đuổi giấc mơ cùng nhau trưởng thành.</div>'
+            '</div>'
+            '</div>'
+        ).replace("__HERO_SRC__", _hero_src)
+    else:
+        _hero_block3 = (
+            '<div class="hero-wrapper">'
+            '<div class="hero-placeholder">'
+            '<div class="emoji">🐑</div>'
+            '<div class="hero-tag" style="position:relative;">👥 Cộng đồng Cừu Cần Cù</div>'
+            '<div class="hero-title" style="color:#fff;text-align:center;">Không ai tiết kiệm một mình</div>'
+            '<div class="hero-sub" style="color:rgba(255,255,255,0.65);text-align:center;max-width:320px;">'
+            'Nơi những người đang theo đuổi giấc mơ cùng nhau trưởng thành.</div>'
+            '</div>'
+            '</div>'
+        )
 
+    # ── apply substitutions ───────────────────────────────────────────────────
+    _HTML_COMM = (
+        _HTML_COMM
+        .replace("__HERO_BLOCK__",  _hero_block3)
+        .replace("__AV1__",         _av1)
+        .replace("__AV2__",         _av2)
+        .replace("__AV3__",         _av3_)
+        .replace("__USER_LV__",     str(_lv3))
+        .replace("__REF_CODE__",    _ref_code3)
+    )
+
+    _comp3.html(_HTML_COMM, height=1900, scrolling=True)
