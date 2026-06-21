@@ -2558,8 +2558,12 @@ function followFriend(btn,name){
         # ── buddy_sheep.png (native Streamlit — PIL-safe, no iframe CSP) ──────
         st.markdown("""<style>
         div[data-testid="stImage"] img {
-            border-radius:20px !important; max-height:300px;
-            object-fit:cover; box-shadow:0 5px 18px rgba(0,0,0,.1);
+            border-radius:20px !important;
+            object-fit:contain !important;
+            max-height:none !important;
+            width:100%;
+            box-shadow:0 5px 18px rgba(0,0,0,.08);
+            background:#f8f6ff;
         }</style>""", unsafe_allow_html=True)
         _buddy_local = _os3.path.join(_os3.path.dirname(__file__), "assets", "buddy_sheep.png")
         _buddy_gh    = _GH3 + "/buddy_sheep.png"
@@ -2798,7 +2802,17 @@ function toast(msg){
   clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2600);
 }
 </script></body></html>"""
-        # ── family_sheep.png (native Streamlit — PIL-safe, no iframe CSP) ─────
+        # ── family_sheep.png (native Streamlit — PIL-safe, no iframe CSP) ──────
+        st.markdown("""<style>
+        div[data-testid="stImage"] img {
+            border-radius:20px !important;
+            object-fit:contain !important;
+            max-height:none !important;
+            width:100%;
+            box-shadow:0 5px 18px rgba(0,0,0,.08);
+            background:#fdf8ff;
+        }</style>""", unsafe_allow_html=True)
+        # ── family_sheep.png load ─────────────────────────────────────────────
         _fam_local = _os3.path.join(_os3.path.dirname(__file__), "assets", "family_sheep.png")
         _fam_gh    = _GH3 + "/family_sheep.png"
         try:
