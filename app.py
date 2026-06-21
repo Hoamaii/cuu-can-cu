@@ -2074,8 +2074,21 @@ with tab3:
     # Load friend avatars
     _GH3 = "https://raw.githubusercontent.com/Hoamaii/cuu-can-cu/main/assets"
 
+    def _dl_asset(local_rel, gh_url):
+        """Download asset from GitHub to local cache if missing."""
+        import urllib.request as _ur
+        full = _os3.path.join(_os3.path.dirname(__file__), local_rel)
+        if not _os3.path.exists(full):
+            try:
+                _os3.makedirs(_os3.path.dirname(full), exist_ok=True)
+                _ur.urlretrieve(gh_url, full)
+            except Exception:
+                pass
+        return full
+
     def _lca3(local_path, gh_url=""):
-        full = _os3.path.join(_os3.path.dirname(__file__), local_path)
+        """Load local asset as base64; auto-download from GitHub if missing."""
+        full = _dl_asset(local_path, gh_url) if gh_url else _os3.path.join(_os3.path.dirname(__file__), local_path)
         if _os3.path.exists(full):
             import base64 as _b3
             with open(full, "rb") as _f:
@@ -2083,12 +2096,12 @@ with tab3:
             ext = local_path.rsplit(".", 1)[-1].lower()
             mime = {"png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp"}.get(ext,"image/png")
             return "data:" + mime + ";base64," + _d
-        return gh_url
+        return ""
 
-    _f1s3 = _lca3("assets/friends/friend1.png", _GH3 + "/friend_sheep_1.png")
-    _f2s3 = _lca3("assets/friends/friend2.png", _GH3 + "/friend_sheep_2.png")
-    _f3s3 = _lca3("assets/friends/friend3.png", _GH3 + "/friend_sheep_3.png")
-    _inv3 = _lca3("assets/invite_friend.png",    _GH3 + "/invite_friend.png")
+    _f1s3 = _lca3("assets/friends/friend_sheep_1.png", _GH3 + "/friend_sheep_1.png")
+    _f2s3 = _lca3("assets/friends/friend_sheep_2.png", _GH3 + "/friend_sheep_2.png")
+    _f3s3 = _lca3("assets/friends/friend_sheep_3.png", _GH3 + "/friend_sheep_3.png")
+    _inv3 = _lca3("assets/invite_friend.png",           _GH3 + "/invite_friend.png")
 
     def _av3(src, fb="🐑"):
         s = "width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;"
