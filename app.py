@@ -2608,13 +2608,18 @@ function copyCode() {
 """
 
     # Substitute dynamic values
-    # Build invite image tag
+    # Build invite image tag — only use <img> when local base64 exists
     if _inv3 and not _inv3.startswith('http'):
-        _inv_img_tag = '<img src="' + _inv3 + '" style="width:100%;max-height:200px;object-fit:cover;display:block;">'
-    elif _inv3:
-        _inv_img_tag = '<img src="' + _inv3 + '" style="width:100%;max-height:200px;object-fit:cover;display:block;" onerror="this.outerHTML=\'<div class=inv-img-fallback><div class=sheep-duo>🐑🐑</div></div>\'">'
+        # Local file found — embed as base64, always works
+        _inv_img_tag = '<img src="' + _inv3 + '" style="width:100%;max-height:220px;object-fit:cover;display:block;">'
     else:
-        _inv_img_tag = '<div class=\'inv-img-fallback\'><div class=\'sheep-duo\'>🐑🐑</div><div style=\'font-size:0.75rem;color:#aaa;margin-top:4px;\'>Upload assets/invite_friend.png</div></div>'
+        # No local asset yet — show warm fallback, never a broken image
+        _inv_img_tag = (
+            '<div class="inv-img-fallback">'
+            '<div class="sheep-duo">🐑🐑</div>'
+            '<div style="font-size:0.78rem;color:#7B5EA7;font-weight:700;margin-top:6px;">Đặt ảnh vào assets/invite_friend.png</div>'
+            '</div>'
+        )
     _HTML3 = (
         _HTML3
         .replace("__AV1__",        _av1s)
