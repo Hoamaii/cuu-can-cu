@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════╗
-║        CỪU CẦN CÙ — v3.0 Production-Ready                      ║
+║        CỪU CẦN CÙ — v4.0 Wealth Genome Edition                 ║
 ║        Principal PM · CX Designer · Streamlit Engineer          ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -363,9 +363,22 @@ MEMORY_DEFAULT: dict = {
     "last_visit_date": "",
     "sentiment":       "neutral",
     "wealth_genome": {
-        "risk_type":   "",
-        "personality": "",
-        "stage":       "",
+        "risk_type":      "",
+        "personality":    "",          # legacy — giữ lại để không break UI cũ
+        "primary_type":   "",          # dream_chaser|explorer|collector|builder|social_achiever|comfort_seeker|trend_follower|creator|independent_thinker
+        "secondary_type": "",
+        "confidence":     0.0,
+        "stage":          "",
+        "dimensions": {
+            "dream_intensity":     0,  # 0-100
+            "social_drive":        0,
+            "instant_gratify":     0,
+            "creative_identity":   0,
+            "fear_of_missing_out": 0,
+            "stability_need":      0,
+        },
+        "chat_signals":     [],        # top keywords 7 ngày gần nhất
+        "last_scored_at":   "",
     },
     "diary_entries": [],
     "last_fed_amount": 0,
@@ -730,51 +743,140 @@ def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
 
 
 # ═══════════════════════════════════════════════════════
+# WEALTH GENOME HELPER
+# ═══════════════════════════════════════════════════════
+_GENOME_TALK_STYLES: dict[str, str] = {
+    "dream_chaser":       "Nhắc countdown đến dream cụ thể. Dùng động từ hành động mạnh.",
+    "explorer":           "Frame mọi thứ là khám phá và adventure. Giữ tone tươi mới.",
+    "collector":          "Nhắc streak, badge, progress number cụ thể. Celebrate collection.",
+    "builder":            "Cung cấp insight có data. Respect intelligence. Show compound effect.",
+    "social_achiever":    "Social proof nhẹ nhàng. Nhắc community và peer progress.",
+    "comfort_seeker":     "Giọng nhẹ nhàng, reassuring. Không pressure. Praise từng bước nhỏ.",
+    "trend_follower":     "FOMO light. Viral framing. 'Nhiều bạn đang làm X'.",
+    "creator":            "Kết nối saving với creative identity và self-expression.",
+    "independent_thinker":"Offer data không push. Respect autonomy. 'Bạn quyết định thôi'.",
+}
+
+_GENOME_PRODUCT_MAP: dict[str, str] = {
+    "dream_chaser":       "Micro Saving theo goal · Dream Community",
+    "explorer":           "iPower · TCFF (linh hoạt)",
+    "collector":          "Streak system · iXu Loyalty · Achievement",
+    "builder":            "TCEF/TCBF/TCFF · DCA · Portfolio tracker",
+    "social_achiever":    "Community Engine · Group Goal · Referral",
+    "comfort_seeker":     "TCBF (ổn định) · Micro Saving (bắt đầu nhỏ)",
+    "trend_follower":     "Group Challenge · Creator Economy · Viral hooks",
+    "creator":            "Micro Saving (goal: thiết bị) · Dream Community",
+    "independent_thinker":"TCEF · Advanced tools · Self-directed research",
+}
+
+
+def _genome_context() -> str:
+    """Build ≤90-token genome context string. Injected into system prompts."""
+    g   = mem.get("wealth_genome", {})
+    pt  = g.get("primary_type") or g.get("personality") or ""
+    dream = next(iter(mem.get("dreams", [])), {})
+    dream_str = (
+        f"Dream: {dream.get('name','').title()} · {fmt(dream.get('amount', 0))}"
+        if dream and dream.get("name") else ""
+    )
+    streak = mem.get("streak", 0)
+    style  = _GENOME_TALK_STYLES.get(pt, "")
+    parts  = [p for p in [pt.upper() if pt else "", dream_str,
+                           f"Streak {streak}d" if streak else "", style] if p]
+    return " | ".join(parts) if parts else "Chưa xác định"
+
+
+def _update_genome_signal(signal_type: str) -> None:
+    """Update genome primary_type based on a new signal. Lightweight, no LLM call."""
+    g = mem.setdefault("wealth_genome", {})
+    chat_signals: list[str] = g.get("chat_signals", [])
+    chat_signals.append(signal_type)
+    if len(chat_signals) > 50:
+        chat_signals = chat_signals[-50:]
+    g["chat_signals"] = chat_signals
+
+    from collections import Counter
+    counts = Counter(chat_signals)
+    if counts:
+        top = counts.most_common(1)[0][0]
+        total = sum(counts.values())
+        confidence = counts[top] / total
+        if confidence >= 0.25 or not g.get("primary_type"):
+            g["primary_type"]   = top
+            g["confidence"]     = round(confidence, 2)
+            if len(counts) > 1:
+                g["secondary_type"] = counts.most_common(2)[1][0]
+    _save()
+
+
+# ═══════════════════════════════════════════════════════
 # LLM ENGINE
 # ═══════════════════════════════════════════════════════
-_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc.
+_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc của Gen Z.
 KHÔNG phải chatbot tư vấn đầu tư. KHÔNG phải CSKH.
 
 XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em".
 TUYỆT ĐỐI KHÔNG: nhắc cổ phiếu, NAV, lợi nhuận cụ thể, khuyến nghị mua bán.
+TUYỆT ĐỐI KHÔNG nhắc: mua nhà, mua xe, nghỉ hưu — xa vời với Gen Z.
 TONE: Ấm áp 🌸 Nhẹ nhàng 🌿 Thỉnh thoảng "bê bê~". Không phán xét.
 
+GENOME_CTX: {genome_ctx}
+→ Nếu có personality trong GENOME_CTX, hãy nói chuyện theo style đó.
+→ Nếu dream có trong GENOME_CTX, hãy nhắc đến dream cụ thể khi phù hợp.
+
 QUY TẮC BẮT BUỘC:
-1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress/buồn ngủ):
+1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress):
    → Phản hồi đồng cảm NGAY. Hỏi thêm 1 câu nhẹ.
-   → VD "mệt" → "Ôi mệt rồi à... bê bê~ 🐑 Cừu hiểu! Mệt vì chuyện gì vậy bạn?"
+   → VD "mệt" → "Ôi mệt rồi à... bê bê~ 🐑 Mệt vì chuyện gì vậy bạn?"
 2. TUYỆT ĐỐI KHÔNG nói: "bị lạc", "nói lại được không", "không hiểu".
    → Luôn hỏi mở: "Bê bê~ 🐑 Kể thêm cho mình nghe đi!"
 3. Nhớ thông tin KH đã kể → nhắc lại khi phù hợp.
+4. Kết thúc mỗi response = 1 câu hỏi nhẹ HOẶC 1 action nhỏ gợi ý.
 
 TAG PHÁT HIỆN:
 học/thi→education | chia tay/buồn→emotional | việc làm→career
-nhà ở→dream_house | du lịch→dream_travel | xe→dream_car
+nhà ở→dream_house | du lịch→dream_travel | concert/kpop/idol→dream_experience
 khởi nghiệp→dream_business | hết tiền→cashflow | stress→stress
 gia đình→family | sức khỏe→health | cưới/sinh con→milestone
+camera/laptop/iphone/thiết bị→dream_tech | học tiếng anh/du học→dream_education
+
+DREAM COMMUNITY GỢI Ý (khi phù hợp, 1 câu, không push):
+Nhật Bản/Hàn/concert/laptop/iPhone/du học/học tiếng Anh → gợi ý join Dream Community.
+
+GENOME SIGNAL — phát hiện personality từ message:
+Nhắc dream cụ thể/countdown→dream_chaser | Thích thử mới/khám phá→explorer
+Badge/streak/collection→collector | Tối ưu/hệ thống→builder
+Bạn bè/cộng đồng/so sánh→social_achiever | Lo lắng/cần an toàn→comfort_seeker
+Trend/TikTok/viral→trend_follower | Sáng tạo/dự án/thiết bị→creator
+Phân tích/tự quyết/tại sao→independent_thinker
 
 OUTPUT (JSON hợp lệ, KHÔNG text ngoài):
-{
+{{
   "message": "Phản hồi ấm áp max 3-4 câu",
   "memory_note": "Thông tin quan trọng cần nhớ (rỗng nếu không)",
   "tags": ["tag1"],
   "dream_name": "tên giấc mơ (rỗng nếu không)",
   "dream_amount": 0,
-  "mood": "listening|happy|sad|goal|celebrate|determined|default"
-}"""
+  "mood": "listening|happy|sad|goal|celebrate|determined|default",
+  "genome_signal": "dream_chaser|explorer|collector|builder|social_achiever|comfort_seeker|trend_follower|creator|independent_thinker|unknown"
+}}"""
 
 _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
 Phân tích: cảm xúc, giấc mơ ẩn, áp lực, mục tiêu.
-Đừng đưa ra lời khuyên tài chính.
+Đừng đưa ra lời khuyên tài chính. Không nhắc mua nhà/xe/nghỉ hưu.
+
+GENOME_CTX: {genome_ctx}
+→ Nếu có personality, phản hồi theo tone phù hợp với personality đó.
 
 OUTPUT (JSON):
-{
-  "sheep_reply": "Phản hồi ấm áp 2-3 câu",
+{{
+  "sheep_reply": "Phản hồi ấm áp 2-3 câu, phù hợp với personality nếu có",
   "emotion": "vui|buồn|lo|bình_thường|stress|mơ_mộng",
   "tags": ["tag1"],
   "dream_detected": "tên giấc mơ (rỗng nếu không)",
-  "mood": "listening|happy|sad|celebrate|determined"
-}"""
+  "mood": "listening|happy|sad|celebrate|determined",
+  "genome_signal": "dream_chaser|explorer|collector|builder|social_achiever|comfort_seeker|trend_follower|creator|independent_thinker|unknown"
+}}"""
 
 
 def _parse(raw: str) -> dict:
@@ -825,17 +927,27 @@ def _call_llm(user_text: str, system: str) -> dict:
             f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:120]}"
             for m in hist
         )
+        # Build genome-aware memory context (Tier 1 + Tier 2)
+        genome_ctx  = _genome_context()
+        genome_data = mem.get("wealth_genome", {})
+        pt_label    = genome_data.get("primary_type", "")
         mem_ctx = (
             f"Tên: {mem['name'] or 'chưa biết'}. "
+            f"Genome: {genome_ctx}. "
             f"Tags: {', '.join(mem['life_events'][-6:]) or 'chưa có'}. "
             f"Ghi chú: {'; '.join(mem['notes'][-3:]) or 'chưa có'}."
+        )
+        # Inject genome_ctx into system prompt if it has the placeholder
+        system_filled = (
+            system.format(genome_ctx=genome_ctx)
+            if "{genome_ctx}" in system else system
         )
         prompt = f"[Memory: {mem_ctx}]\n[Lịch sử:\n{hist_ctx}]\n\nKH: {user_text}"
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
         resp   = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=600,
-            system=system,
+            system=system_filled,
             messages=[{"role": "user", "content": prompt}],
         )
         result = _parse(resp.content[0].text)
@@ -852,6 +964,10 @@ def _call_llm(user_text: str, system: str) -> dict:
                                        "saved": 0, "tags": result.get("tags", [])})
         if m_mood := result.get("mood"):
             set_mood(m_mood)
+        # Update Wealth Genome with new signal
+        if gs := result.get("genome_signal", ""):
+            if gs and gs != "unknown":
+                _update_genome_signal(gs)
         _save()
         return result
     except Exception as e:
@@ -2380,6 +2496,36 @@ with tab2:
                     "Vì gia đình của bạn","Để bạn tự do tài chính","Đang thử nghiệm",
                 ], key="profile_motive3")
                 _save()
+
+            # ── Wealth Genome Display ──────────────────────────────
+            _genome_disp = mem.get("wealth_genome", {})
+            _pt_disp     = _genome_disp.get("primary_type", "")
+            _st_disp     = _genome_disp.get("secondary_type", "")
+            _cf_disp     = _genome_disp.get("confidence", 0.0)
+            _GENOME_EMOJI = {
+                "dream_chaser": "🌠", "explorer": "🧭", "collector": "🏆",
+                "builder": "🏗️", "social_achiever": "🌟", "comfort_seeker": "☁️",
+                "trend_follower": "🔥", "creator": "🎨", "independent_thinker": "🦁",
+            }
+            if _pt_disp:
+                _pt_emo  = _GENOME_EMOJI.get(_pt_disp, "🐑")
+                _pt_name = _pt_disp.replace("_", " ").title()
+                _st_name = _st_disp.replace("_", " ").title() if _st_disp else ""
+                _prod    = _GENOME_PRODUCT_MAP.get(_pt_disp, "")
+                st.markdown(
+                    f'<div style="background:linear-gradient(135deg,#f0e8ff,#e8f8ff);'
+                    f'border-radius:14px;padding:12px 14px;margin-top:10px;">'
+                    f'<div style="font-size:.72rem;color:#7B5EA7;font-weight:800;margin-bottom:6px;">🧬 Wealth Genome</div>'
+                    f'<div style="font-size:.95rem;font-weight:800;color:#C4607F;">'
+                    f'{_pt_emo} {_pt_name}'
+                    f'{"  ·  " + _st_name if _st_name else ""}</div>'
+                    f'<div style="font-size:.7rem;color:#888;margin-top:3px;">'
+                    f'Confidence: {int(_cf_disp * 100)}% &nbsp;·&nbsp; {_prod}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.caption("🧬 Genome đang được xây dựng — tâm sự với Cừu thêm nhé!")
             if mem.get("life_events"):
                 st.markdown("**🏷️ Cừu nhớ chuyện của bạn:**")
                 _ev3c = st.columns(3)
