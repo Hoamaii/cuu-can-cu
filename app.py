@@ -523,34 +523,43 @@ def render_mini_calendar(last_7_days: list):
 
 def render_entry_card(entry: dict, expanded: bool = False):
     """Render một diary entry với emoji và màu sắc theo emotion."""
+    import html as _html
     emotion = entry.get("emotion", "binh_thuong")
     ecfg = EMOTION_CONFIG.get(emotion, EMOTION_CONFIG["binh_thuong"])
 
-    dream = entry.get("dream", "")
+    dream = _html.escape(entry.get("dream", ""))
     dream_badge = f"<span style='background:#E8D5FF;color:#6B3FA0;padding:2px 8px;border-radius:12px;font-size:11px;margin-left:6px'>🌟 {dream}</span>" if dream else ""
 
     tags = entry.get("tags", [])
     tags_html = " ".join(
-        f"<span style='background:#E3F2FD;color:#1565C0;padding:1px 6px;border-radius:10px;font-size:10px'>{t}</span>"
+        f"<span style='background:#E3F2FD;color:#1565C0;padding:1px 6px;border-radius:10px;font-size:10px'>{_html.escape(str(t))}</span>"
         for t in tags[:3]
     )
 
+    title = _html.escape(entry.get("title", ""))
+    date  = _html.escape(entry.get("date", ""))
+    content_raw = entry.get("content", "")
+    content = _html.escape(content_raw[:200]) + ("..." if len(content_raw) > 200 else "")
+    reply   = _html.escape(entry.get("reply", ""))
+    color   = ecfg["color"]
+    emoji   = ecfg["emoji"]
+
     st.markdown(
-        f"""<div style='background:white;border-left:4px solid {ecfg["color"]};
+        f"""<div style='background:white;border-left:4px solid {color};
             border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:10px;
             box-shadow:0 1px 4px rgba(0,0,0,0.06)'>
             <div style='display:flex;align-items:center;margin-bottom:8px'>
-                <span style='font-size:20px'>{ecfg["emoji"]}</span>
-                <span style='margin-left:8px;font-weight:600;color:#333;font-size:14px'>{entry.get("title", "")}</span>
-                <span style='margin-left:8px;color:#999;font-size:12px'>{entry.get("date", "")}</span>
+                <span style='font-size:20px'>{emoji}</span>
+                <span style='margin-left:8px;font-weight:600;color:#333;font-size:14px'>{title}</span>
+                <span style='margin-left:8px;color:#999;font-size:12px'>{date}</span>
                 {dream_badge}
             </div>
             <div style='color:#555;font-size:13px;line-height:1.6;margin-bottom:8px'>
-                {entry.get("content", "")[:200]}{"..." if len(entry.get("content","")) > 200 else ""}
+                {content}
             </div>
-            <div style='background:{ecfg["color"]}22;border-radius:8px;padding:8px 12px;
+            <div style='background:{color}22;border-radius:8px;padding:8px 12px;
                         font-size:13px;color:#333;font-style:italic;margin-bottom:8px'>
-                🐑 {entry.get("reply", "")}
+                🐑 {reply}
             </div>
             <div>{tags_html}</div>
         </div>""",
@@ -559,10 +568,12 @@ def render_entry_card(entry: dict, expanded: bool = False):
 
     # Show richer insight if available
     if entry.get("pattern_insight") and expanded:
+        pi = _html.escape(entry["pattern_insight"])
+        ss = _html.escape(entry.get("secret_signal", ""))
         st.markdown(
             f"""<div style='background:#F0F9FF;border-radius:8px;padding:10px 14px;font-size:13px;color:#0369A1'>
-            {entry["pattern_insight"]}<br>
-            <span style='color:#666'>{entry.get("secret_signal", "")}</span>
+            {pi}<br>
+            <span style='color:#666'>{ss}</span>
             </div>""",
             unsafe_allow_html=True,
         )
