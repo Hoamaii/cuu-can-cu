@@ -831,17 +831,30 @@ def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
 # ═══════════════════════════════════════════════════════
 # LLM ENGINE
 # ═══════════════════════════════════════════════════════
-_BASE_PERSONALITY_PROMPT = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc.
+_BASE_PERSONALITY_PROMPT = """Bạn là Cừu Cần Cù 🐑 — ACTION COMPANION, không chỉ lắng nghe mà còn giúp user tiến gần hơn tới giấc mơ.
 KHÔNG phải chatbot tư vấn đầu tư. KHÔNG phải CSKH. KHÔNG xưng "em".
 XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn.
 TONE: Ấm áp 🌸 Nhẹ nhàng 🌿 Thỉnh thoảng "bê bê~". Không phán xét.
 
-QUY TẮC BẮT BUỘC:
-1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress):
-   → Phản hồi đồng cảm NGAY. Hỏi thêm 1 câu nhẹ.
-2. TUYỆT ĐỐI KHÔNG nói: "bị lạc", "nói lại được không", "không hiểu".
-   → Luôn hỏi mở: "Bê bê~ 🐑 Kể thêm cho mình nghe đi!"
-3. Nhớ thông tin KH đã kể → nhắc lại khi phù hợp.
+FLOW BẮT BUỘC cho mỗi phản hồi:
+  BƯỚC 1 — Đồng cảm (1 câu ấm áp)
+  BƯỚC 2 — Insight ngắn (1 câu rút ra điều user thực sự muốn)
+  BƯỚC 3 — Đề xuất 1 hành động nhỏ cụ thể (1 câu, bắt đầu bằng 🎯 hoặc 💡 hoặc ✈️)
+  KHÔNG viết thêm sau bước 3 — ngắn gọn, súc tích
+
+VÍ DỤ ĐÚNG:
+  User: "Em muốn mua MacBook"
+  → "MacBook là mục tiêu rất thú vị đó 🐑 Nếu mỗi tháng để dành 500.000đ thì bạn đã đi được một đoạn khá xa rồi. 🎯 Hôm nay bạn muốn tạo mục tiêu MacBook với mình không?"
+
+  User: "Tháng này em hết tiền"
+  → "Nghe có vẻ cuối tháng này hơi khó khăn nhỉ 🐑 Điều làm bạn áp lực nhất có thể là dòng tiền ngắn hạn. 💡 Bạn có muốn thử ghi lại 3 khoản chi lớn nhất tuần này không?"
+
+  User: "Em muốn đi Nhật"
+  → "Đi Nhật là giấc mơ rất đáng yêu đó 🐑 Chia nhỏ mục tiêu thành từng tháng sẽ dễ hơn nhiều. ✈️ Bạn muốn mình tạo mục tiêu Nhật Bản cho bạn không?"
+
+SAI (KHÔNG được làm):
+  "MacBook là giấc mơ thú vị đó 🐑" (chỉ đồng cảm, không có action)
+  "Nghe có vẻ bạn đang áp lực" (chỉ đồng cảm)
 
 TAG PHÁT HIỆN:
 học/thi→education | chia tay/buồn→emotional | việc làm→career
@@ -849,14 +862,29 @@ nhà ở→dream_house | du lịch→dream_travel | xe→dream_car
 khởi nghiệp→dream_business | hết tiền→cashflow | stress→stress
 gia đình→family | sức khỏe→health | cưới/sinh con→milestone
 
+NEXT BEST ACTION — chọn 1 trong các giá trị sau dựa trên ngữ cảnh:
+  CREATE_DREAM       → user đề cập giấc mơ/mục tiêu lần đầu
+  CREATE_SAVING_GOAL → user muốn tích luỹ cho mục tiêu cụ thể
+  FEED_SHEEP         → user chưa cho Cừu ăn hôm nay / nói về tiết kiệm nhỏ
+  WRITE_DIARY        → user đang cảm xúc mạnh, cần ghi lại
+  LEARN_INVESTING    → user hỏi về đầu tư/tiền nhàn rỗi chung chung
+  EXPLORE_TCEF       → user có mục tiêu dài hạn 3+ năm, hỏi rõ về quỹ cổ phiếu
+  EXPLORE_TCBF       → user muốn ổn định, hỏi rõ về quỹ trái phiếu
+  EXPLORE_TCFF       → user muốn cân bằng, hỏi rõ về quỹ linh hoạt
+  CHECK_PROGRESS     → user hỏi về tiến độ/tiết kiệm được bao nhiêu
+  NONE               → cuộc trò chuyện thuần cảm xúc, chưa cần action
+
 OUTPUT (JSON hợp lệ, KHÔNG text ngoài):
 {
-  "message": "Phản hồi ấm áp max 3-4 câu",
+  "message": "Phản hồi 3 bước: đồng cảm → insight → 1 hành động nhỏ. Max 3 câu.",
   "memory_note": "Thông tin quan trọng cần nhớ (rỗng nếu không)",
   "tags": ["tag1"],
-  "dream_name": "tên giấc mơ (rỗng nếu không)",
+  "dream_name": "tên giấc mơ nếu user đề cập (rỗng nếu không)",
   "dream_amount": 0,
-  "mood": "listening|happy|sad|goal|celebrate|determined|default"
+  "mood": "listening|happy|sad|goal|celebrate|determined|default",
+  "next_action_type": "CREATE_DREAM|CREATE_SAVING_GOAL|FEED_SHEEP|WRITE_DIARY|LEARN_INVESTING|EXPLORE_TCEF|EXPLORE_TCBF|EXPLORE_TCFF|CHECK_PROGRESS|NONE",
+  "next_action_text": "1 câu mô tả hành động (rỗng nếu NONE)",
+  "cta_label": "Label ngắn cho nút bấm (rỗng nếu NONE)"
 }"""
 
 _FINANCIAL_PROMPT = """
@@ -935,6 +963,126 @@ def _parse(raw: str) -> dict:
         "sheep_reply": rep.group(1)  if rep  else "Bê bê~ 🐑 Cừu đọc rồi nhé 💙",
         "memory_note": "", "tags": [], "dream_name": "", "dream_amount": 0,
         "mood": "listening", "emotion": "bình_thường", "dream_detected": "",
+        "next_action_type": "NONE", "next_action_text": "", "cta_label": "",
+    }
+
+
+# ═══════════════════════════════════════════════════════
+# NEXT BEST ACTION ENGINE
+# ═══════════════════════════════════════════════════════
+
+# CTA config: action_type → (emoji, label_default, tab_hint)
+_NBA_CONFIG: dict[str, tuple[str, str, str]] = {
+    "CREATE_DREAM":       ("🎯", "Tạo mục tiêu",         "feed"),
+    "CREATE_SAVING_GOAL": ("🐑", "Lập kế hoạch tích luỹ", "feed"),
+    "FEED_SHEEP":         ("🥕", "Cho Cừu ăn ngay",       "feed"),
+    "WRITE_DIARY":        ("📔", "Viết nhật ký hôm nay",  "diary"),
+    "LEARN_INVESTING":    ("📚", "Tìm hiểu đầu tư",       "invest"),
+    "EXPLORE_TCEF":       ("🚀", "Tìm hiểu về TCEF",      "invest"),
+    "EXPLORE_TCBF":       ("🛡️", "Tìm hiểu về TCBF",      "invest"),
+    "EXPLORE_TCFF":       ("⚖️", "Tìm hiểu về TCFF",      "invest"),
+    "CHECK_PROGRESS":     ("📊", "Xem tiến độ",           "feed"),
+    "NONE":               ("",   "",                       ""),
+}
+
+# Fallback rule-based NBA khi LLM không trả về action
+def _rule_based_nba(user_text: str, m: dict) -> tuple[str, str, str]:
+    """Returns (action_type, action_text, cta_label) thuần rule, không LLM."""
+    t = user_text.lower()
+
+    # Giấc mơ lần đầu
+    dream_kw = ["macbook", "iphone", "concert", "nhật", "du lịch", "đi nhật",
+                "mua xe", "mua nhà", "cưới", "khởi nghiệp"]
+    if any(w in t for w in dream_kw) and not m.get("dreams"):
+        return ("CREATE_DREAM",
+                "Bạn muốn mình tạo mục tiêu này và theo dõi tiến độ cùng nhau không?",
+                "🎯 Tạo mục tiêu")
+
+    # Đã có dream — goal coach
+    if any(w in t for w in dream_kw) and m.get("dreams"):
+        return ("CREATE_SAVING_GOAL",
+                "Chia nhỏ mục tiêu thành từng tháng sẽ dễ hơn nhiều — mình giúp bạn nhé?",
+                "🐑 Lập kế hoạch")
+
+    # Cashflow stress
+    if any(w in t for w in ["hết tiền", "cuối tháng", "thiếu tiền", "không có tiền"]):
+        return ("WRITE_DIARY",
+                "Ghi lại 3 khoản chi lớn nhất tuần này sẽ giúp bạn thấy rõ hơn.",
+                "📔 Ghi nhật ký")
+
+    # Chưa cho ăn hôm nay
+    today = datetime.now().strftime("%Y-%m-%d")
+    if m.get("last_fed_date") != today and m.get("total_saved", 0) > 0:
+        return ("FEED_SHEEP",
+                "Hôm nay chưa cho Cừu ăn — chỉ 10.000đ cũng giữ được streak nhé!",
+                "🥕 Cho Cừu ăn")
+
+    # Đầu tư chung chung
+    if any(w in t for w in ["đầu tư", "tiền nhàn rỗi", "sinh lời", "quỹ"]):
+        return ("LEARN_INVESTING",
+                "Mình có thể kể bạn nghe cách nhiều người tích luỹ cho mục tiêu dài hạn.",
+                "📚 Tìm hiểu thêm")
+
+    return ("NONE", "", "")
+
+
+# ═══════════════════════════════════════════════════════
+# GOAL COACH ENGINE
+# ═══════════════════════════════════════════════════════
+_GOAL_DREAM_KEYWORDS: dict[str, str] = {
+    "macbook":    "MacBook",
+    "iphone":     "iPhone",
+    "concert":    "Concert",
+    "nhật bản":   "Du lịch Nhật Bản",
+    "đi nhật":    "Du lịch Nhật Bản",
+    "du lịch":    "Du lịch",
+    "mua xe":     "Mua xe",
+    "mua nhà":    "Mua nhà",
+    "cưới":       "Đám cưới",
+    "khởi nghiệp":"Khởi nghiệp",
+}
+
+def _detect_dream_keyword(text: str) -> str | None:
+    """Return tên giấc mơ chuẩn hoá nếu phát hiện keyword."""
+    t = text.lower()
+    for kw, name in _GOAL_DREAM_KEYWORDS.items():
+        if kw in t:
+            return name
+    return None
+
+def _count_dream_mentions(messages: list[dict], dream_name: str) -> int:
+    """Đếm số lần user nhắc tới dream_name trong lịch sử chat."""
+    kw = dream_name.lower().split()[0]  # dùng từ đầu tiên để match linh hoạt
+    return sum(
+        1 for m in messages
+        if m["role"] == "user" and kw in m["content"].lower()
+    )
+
+
+# ═══════════════════════════════════════════════════════
+# MOMENTUM ENGINE
+# ═══════════════════════════════════════════════════════
+def check_momentum(user_text: str, messages: list[dict], m: dict) -> dict | None:
+    """
+    Nếu user nhắc cùng 1 dream ≥3 lần → trả về momentum card dict.
+    Returns None nếu chưa đủ momentum.
+    """
+    dream_name = _detect_dream_keyword(user_text)
+    if not dream_name:
+        return None
+    count = _count_dream_mentions(messages, dream_name)
+    if count < 2:   # lần này là lần thứ 3+ (message chưa append vào history)
+        return None
+    return {
+        "dream_name": dream_name,
+        "count":      count + 1,
+        "message": (
+            f"Bạn đã nhắc đến **{dream_name}** {count + 1} lần rồi 🐑\n\n"
+            f"Mình nghĩ đây là điều thực sự quan trọng với bạn.\n\n"
+            f"🎯 Hôm nay mình cùng biến nó thành kế hoạch nhé?"
+        ),
+        "cta_label": f"🎯 Lập kế hoạch {dream_name}",
+        "action_type": "CREATE_SAVING_GOAL",
     }
 
 
@@ -1009,6 +1157,12 @@ def _call_llm(user_text: str, system: str) -> dict:
             mem["financial_profile"] = _update_financial_profile(
                 mem.get("financial_profile", {}), intent, result
             )
+        # ── NBA fallback: nếu LLM trả về NONE hoặc thiếu field, dùng rule ──
+        if result.get("next_action_type", "NONE") == "NONE":
+            _rb_type, _rb_text, _rb_label = _rule_based_nba(user_text, mem)
+            result["next_action_type"] = _rb_type
+            result["next_action_text"] = _rb_text
+            result["cta_label"]        = _rb_label
         _save()
         return result
     except Exception as e:
@@ -1017,6 +1171,7 @@ def _call_llm(user_text: str, system: str) -> dict:
             "sheep_reply": "", "memory_note": "", "tags": [],
             "dream_name": "", "dream_amount": 0, "mood": "sad",
             "emotion": "bình_thường", "dream_detected": "",
+            "next_action_type": "NONE", "next_action_text": "", "cta_label": "",
         }
 
 
@@ -1178,6 +1333,44 @@ strong { color:#333 !important; }
 .diary-entry-card:hover {
     border-color: #FFB5C8;
     box-shadow: 0 2px 10px rgba(255,150,200,0.15);
+}
+
+/* ── NBA / CTA card ── */
+.nba-card {
+    background: linear-gradient(135deg, #FFF7FB, #F3F9FF);
+    border: 2px solid #FFD6E8;
+    border-radius: 18px;
+    padding: 16px 20px;
+    margin: 10px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.nba-text {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #444;
+    line-height: 1.55;
+}
+.nba-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+/* ── Momentum card ── */
+.momentum-card {
+    background: linear-gradient(135deg, #FFF0F7, #EFF8FF);
+    border: 2.5px solid #FF8FAF;
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin: 10px 0 4px;
+    animation: pulse 0.9s ease-in-out;
+}
+.momentum-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #C4607F;
+    margin-bottom: 8px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1460,16 +1653,15 @@ with tab1:
                 with st.spinner("Cừu đang nghĩ... 🐑"):
                     _result_qr = _call_llm(_qr, _SYS_EMOTION)
                 _reply_qr = _result_qr.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe!")
-                st.session_state.messages.append({"role": "assistant", "content": _reply_qr})
+                st.session_state.messages.append({
+                    "role": "assistant", "content": _reply_qr,
+                    "_nba": {
+                        "type":  _result_qr.get("next_action_type", "NONE"),
+                        "text":  _result_qr.get("next_action_text", ""),
+                        "label": _result_qr.get("cta_label", ""),
+                    }
+                })
                 st.rerun()
-
-            # ── Smart suggestion (contextual only) ──
-            _suggestion = get_smart_suggestion(st.session_state.messages, mem)
-            if _suggestion:
-                st.markdown(
-                    f'<div class="suggestion-box">{_suggestion}</div>',
-                    unsafe_allow_html=True,
-                )
 
             # ── LEVEL 5: Chat history ──
             if st.session_state.messages:
@@ -1478,17 +1670,61 @@ with tab1:
                     _av = get_avatar_src("listening") if _m["role"] == "assistant" else "🧑"
                     with st.chat_message(_m["role"], avatar=_av):
                         st.markdown(_m["content"])
+                    # Render NBA card dưới reply của Cừu (chỉ tin cuối cùng)
+                    if (_m["role"] == "assistant"
+                            and _m is st.session_state.messages[-1]
+                            and _m.get("_nba", {}).get("type", "NONE") != "NONE"):
+                        _nba = _m["_nba"]
+                        _nba_ico = _NBA_CONFIG.get(_nba["type"], ("💡","",""))[0]
+                        st.markdown(
+                            f'<div class="nba-card">'
+                            f'<div class="nba-icon">{_nba_ico}</div>'
+                            f'<div class="nba-text">{_nba["text"]}</div>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                        if _nba.get("label"):
+                            if st.button(_nba["label"], key="nba_cta", type="primary"):
+                                st.session_state._nba_action = _nba["type"]
+                                st.rerun()
 
             # ── Chat input ──
             _user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
             if _user_msg:
                 _expanded = _EMOTION_EXPAND.get(_user_msg.strip().lower(), _user_msg)
+
+                # ── Momentum Engine check (trước khi append) ──
+                _momentum = check_momentum(
+                    _user_msg, st.session_state.messages, mem
+                )
                 st.session_state.messages.append({"role": "user", "content": _user_msg})
-                with st.spinner("Cừu đang lắng nghe... 🐑"):
-                    _result_msg = _call_llm(_expanded, _SYS_EMOTION)
-                _reply_msg = _result_msg.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe nè!")
-                st.session_state.messages.append({"role": "assistant", "content": _reply_msg})
-                st.rerun()
+
+                if _momentum:
+                    # Momentum override: Cừu nhận ra pattern
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": _momentum["message"],
+                        "_nba": {
+                            "type":  _momentum["action_type"],
+                            "text":  "",
+                            "label": _momentum["cta_label"],
+                        }
+                    })
+                    st.rerun()
+                else:
+                    with st.spinner("Cừu đang lắng nghe... 🐑"):
+                        _result_msg = _call_llm(_expanded, _SYS_EMOTION)
+                    _reply_msg = _result_msg.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe nè!")
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": _reply_msg,
+                        "_nba": {
+                            "type":  _result_msg.get("next_action_type", "NONE"),
+                            "text":  _result_msg.get("next_action_text", ""),
+                            "label": _result_msg.get("cta_label", ""),
+                        }
+                    })
+                    st.rerun()
 
 
 
