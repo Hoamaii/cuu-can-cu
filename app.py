@@ -43,20 +43,979 @@ import math
 from datetime import datetime, timedelta
 from copy import deepcopy
 
-# ── JOURNAL ENGINE V2 ──────────────────────────────────────────────────────
-# Drop-in replacement cho diary tab. Import từ journal_engine.py (cùng folder)
-try:
-    from journal_engine import (
-        render_diary_v2,
-        _SYS_DIARY_V2,
-        get_today_prompt,
-        build_diary_stats,
-        EMOTION_CONFIG,
+# ── JOURNAL ENGINE V2 (inlined) ──────────────────────────────────────────
+_SYS_DIARY_V2 = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phân tích sâu.
+
+TÍNH CÁCH: Ấm áp như người bạn thân nhất, không phán xét, thỉnh thoảng dùng tiếng lóng Gen Z tự nhiên.
+KHÔNG dùng ngôn ngữ ngân hàng, KHÔNG đề cập sản phẩm tài chính cụ thể.
+
+PHÂN TÍCH 6 LỚP (Wealth Genome):
+1. Self-concept: user tự nhìn nhận họ là ai về mặt tài chính?
+2. Life event: có sự kiện lớn nào đang xảy ra?
+3. Intention: họ muốn làm gì trong 1-6 tháng tới?
+4. Dream: giấc mơ sâu thẳm nhất là gì?
+5. Emotional state: mức độ lo lắng / tự tin tài chính?
+6. Motivation: họ được thúc đẩy bởi security, growth, hay status?
+
+OUTPUT (JSON hợp lệ, KHÔNG text ngoài):
+{
+  "sheep_reply": "Phản hồi ấm áp, xác nhận cảm xúc, 1-2 câu ngắn. Giọng bạn thân không phải tư vấn viên.",
+  "pattern_insight": "1 câu rút ra pattern thú vị từ những gì họ chia sẻ. Bắt đầu bằng '✨ Mình nhận ra...' Phải cụ thể, không chung chung.",
+  "secret_signal": "1 câu về điều user có thể chưa nhận ra về bản thân họ. Bắt đầu bằng '🔍' Ví dụ: 'Bạn hay nhắc đến sự an toàn — điều đó cho thấy bạn là người...'",
+  "micro_action": "1 hành động NHỎ cụ thể user có thể làm NGAY HÔM NAY. Không liên quan đến đầu tư. Ví dụ: 'Tối nay thử note lại 3 khoản chi bạn thấy đáng nhất tuần này.'",
+  "emotion": "vui|buồn|lo_lang|binh_thuong|stress|mo_mong|quyet_tam|tu_tin",
+  "life_event_signal": "tên sự kiện nếu phát hiện (cưới, sinh con, đổi việc, v.v.) hoặc rỗng",
+  "dream_detected": "tên giấc mơ cụ thể nếu có (đi Nhật, mua MacBook, v.v.) hoặc rỗng",
+  "dream_amount_estimate": 0,
+  "financial_readiness": "not_ready|curious|ready",
+  "tags": ["tag1", "tag2"],
+  "mood": "listening|happy|sad|celebrate|determined|curious",
+  "wealth_signal": "security|growth|status|unknown"
+}"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROMPT POOL — 60+ prompts theo 7 category, rotate thông minh
+# ─────────────────────────────────────────────────────────────────────────────
+
+_PROMPT_POOL = {
+    # Spending & Money Feelings — không hỏi số, hỏi cảm xúc
+    "spending": [
+        {
+            "main": "💸 Hôm nay bạn chi tiêu cho điều gì khiến bạn cảm thấy OK nhất?",
+            "depth": "Nếu bạn xem lại app ngân hàng lúc này, khoản nào bạn tự hào, khoản nào bạn muốn 'undo'?",
+            "vibe": "reflective",
+        },
+        {
+            "main": "🤔 Tuần này có khoản nào bạn tiêu xong mà thấy 'ừ, xứng đáng' không?",
+            "depth": "Điều gì khiến nó xứng đáng — là vì bạn thích, hay vì nó giúp ích cho tương lai?",
+            "vibe": "curious",
+        },
+        {
+            "main": "😬 Có khoản nào gần đây bạn tiêu rồi hơi... hối hận không?",
+            "depth": "Điều gì đã xảy ra lúc đó — bạn đang buồn, đang vui, hay chỉ đơn giản là bị cuốn?",
+            "vibe": "honest",
+        },
+        {
+            "main": "☕ Nếu tính tổng chi 'vui vẻ nhỏ' của bạn tuần này (trà sữa, đồ ăn, mua đồ nhỏ...) — bạn nghĩ nó là bao nhiêu? Và bạn cảm thấy thế nào về con số đó?",
+            "depth": None,
+            "vibe": "fun",
+        },
+        {
+            "main": "💳 Bạn hay chi tiền nhất cho lĩnh vực nào trong cuộc sống?",
+            "depth": "Lĩnh vực đó phản ánh điều gì quan trọng với bạn?",
+            "vibe": "identity",
+        },
+        {
+            "main": "🛍️ Gần đây bạn có mua thứ gì vì 'thấy sale' dù không thực sự cần không?",
+            "depth": "Bạn hay bị trigger mua sắm bởi điều gì — sale, bạn bè mua, hay tâm trạng?",
+            "vibe": "honest",
+        },
+        {
+            "main": "💰 Khoản tiền nào bạn đang tiết kiệm hoặc dự định tiết kiệm mà khiến bạn thực sự hào hứng?",
+            "depth": None,
+            "vibe": "aspirational",
+        },
+    ],
+
+    # Dreams & Goals — khai thác khát vọng
+    "dreams": [
+        {
+            "main": "✈️ Nếu có thêm 10 triệu tháng này, điều đầu tiên bạn nghĩ đến là gì?",
+            "depth": "Tại sao điều đó lại quan trọng với bạn hơn những thứ khác?",
+            "vibe": "aspirational",
+        },
+        {
+            "main": "🌅 Bạn đang mơ đến điều gì trong 1 năm tới mà chưa kể với nhiều người?",
+            "depth": "Điều gì đang cản bạn bắt đầu hành động với giấc mơ đó?",
+            "vibe": "vulnerable",
+        },
+        {
+            "main": "🗺️ 5 năm nữa, phiên bản lý tưởng nhất của bạn đang làm gì, ở đâu?",
+            "depth": "Khoảng cách giữa bạn hiện tại và phiên bản đó, thứ gì thiếu nhất — tiền, kỹ năng, hay can đảm?",
+            "vibe": "future",
+        },
+        {
+            "main": "🎯 Có điều gì bạn muốn mua hoặc trải nghiệm mà bạn thấy 'chắc là khó với mình lắm' không?",
+            "depth": "Nếu thực sự cố gắng tiết kiệm cho nó, bạn cần bao lâu?",
+            "vibe": "possibility",
+        },
+        {
+            "main": "🌟 Điều gì khiến bạn vui khi nghĩ đến — một chuyến đi, một vật, một trải nghiệm, hay một sự thay đổi?",
+            "depth": None,
+            "vibe": "joy",
+        },
+        {
+            "main": "🏠 Khi bạn tưởng tượng cuộc sống 'ổn định' với bản thân — nó trông như thế nào?",
+            "depth": "Điều gì trong bức tranh đó bạn nghĩ phải có tiền mới làm được?",
+            "vibe": "security",
+        },
+        {
+            "main": "🎒 Chuyến đi nào bạn muốn đi nhất trong 12 tháng tới?",
+            "depth": "Điều gì đang ngăn bạn lên kế hoạch cho nó?",
+            "vibe": "adventure",
+        },
+        {
+            "main": "📱 Thứ bạn đang thực sự muốn mua gần đây nhất là gì?",
+            "depth": "Bạn đã tìm hiểu về nó chưa, hay chỉ đang 'ước'?",
+            "vibe": "desire",
+        },
+    ],
+
+    # Life Events — phát hiện sự kiện lớn
+    "life_events": [
+        {
+            "main": "🌊 Gần đây cuộc sống có gì thay đổi không — dù lớn hay nhỏ?",
+            "depth": "Sự thay đổi đó ảnh hưởng đến cách bạn nghĩ về tiền bạc thế nào?",
+            "vibe": "transition",
+        },
+        {
+            "main": "💼 Công việc / học tập của bạn đang đi về hướng nào gần đây?",
+            "depth": "Bạn có đang nghĩ đến việc thay đổi gì không — dù chỉ là suy nghĩ thôi?",
+            "vibe": "career",
+        },
+        {
+            "main": "👫 Có sự kiện nào trong gia đình hoặc mối quan hệ đang khiến bạn suy nghĩ về tài chính không?",
+            "depth": None,
+            "vibe": "relationships",
+        },
+        {
+            "main": "🎓 Bạn vừa học được hoặc nhận ra điều gì về tiền bạc gần đây?",
+            "depth": "Ai hoặc điều gì đã giúp bạn nhận ra điều đó?",
+            "vibe": "learning",
+        },
+        {
+            "main": "📅 Trong 3-6 tháng tới, bạn biết trước sẽ có khoản chi lớn nào không?",
+            "depth": "Bạn đã chuẩn bị cho nó chưa, hay đang để tự nhiên?",
+            "vibe": "planning",
+        },
+        {
+            "main": "🌱 Có điều gì mới bạn vừa bắt đầu — một thói quen, một sở thích, một dự án — không?",
+            "depth": "Nó có liên quan đến tài chính hay kế hoạch tương lai của bạn không?",
+            "vibe": "new_beginning",
+        },
+    ],
+
+    # Financial Feelings — khai thác tâm lý tài chính sâu hơn
+    "financial_feelings": [
+        {
+            "main": "😰 Khi nghĩ đến tiền bạc, cảm giác đầu tiên bạn có là gì — lo, ổn, hào hứng, hay... né tránh?",
+            "depth": "Cảm giác đó đến từ đâu — do thói quen gia đình, kinh nghiệm bản thân, hay không chắc về tương lai?",
+            "vibe": "emotional",
+        },
+        {
+            "main": "🔐 Bạn muốn cảm giác 'an toàn về tài chính' trông như thế nào với bạn?",
+            "depth": "Có con số cụ thể nào trong đầu không — tiết kiệm bao nhiêu, thu nhập bao nhiêu?",
+            "vibe": "security",
+        },
+        {
+            "main": "🎢 Tháng này bạn cảm thấy tài chính của mình đang ở đâu trên thang điểm 'lo lắng → tự tin'?",
+            "depth": "Điều gì đang kéo bạn về phía lo lắng (nếu có)?",
+            "vibe": "assessment",
+        },
+        {
+            "main": "💬 Bạn có hay nói chuyện về tiền bạc với bạn bè / người thân không?",
+            "depth": "Nếu không — lý do là gì? Ngại, không biết nói gì, hay không ai quan tâm?",
+            "vibe": "social",
+        },
+        {
+            "main": "🌙 Bạn có bao giờ mất ngủ vì nghĩ đến tài chính không? Gần đây nhất là khi nào?",
+            "depth": "Điều gì cụ thể làm bạn lo — chi tiêu, tiết kiệm, hay tương lai chung?",
+            "vibe": "anxiety",
+        },
+        {
+            "main": "💪 Lần gần đây nhất bạn cảm thấy tự hào về một quyết định tài chính là khi nào?",
+            "depth": "Quyết định đó phản ánh điều gì về bản thân bạn?",
+            "vibe": "pride",
+        },
+        {
+            "main": "🤷 Có điều gì về tài chính bạn biết mình nên làm nhưng vẫn chưa làm không?",
+            "depth": "Điều gì đang cản bạn — thiếu thời gian, thiếu tiền, hay thiếu kiến thức?",
+            "vibe": "gap",
+        },
+    ],
+
+    # Identity & Self — khai thác danh tính
+    "identity": [
+        {
+            "main": "🪞 Khi mô tả bản thân về tiền bạc, bạn hay nói gì — 'mình hay tằn tiện', 'mình chi thoải mái', hay gì khác?",
+            "depth": "Bạn muốn người khác nghĩ gì về cách bạn quản lý tiền?",
+            "vibe": "self_perception",
+        },
+        {
+            "main": "👀 Nhìn vào nhóm bạn bè của bạn, bạn thấy mình đang ở đâu về khoản tài chính — phía trước, giữa, hay đang theo kịp?",
+            "depth": "Bạn cảm thấy thế nào về điều đó?",
+            "vibe": "comparison",
+        },
+        {
+            "main": "🧠 Bạn nghĩ mình thuộc kiểu người nào — người lập kế hoạch hay người sống theo khoảnh khắc?",
+            "depth": "Kiểu đó phù hợp hay không phù hợp với mục tiêu tài chính của bạn?",
+            "vibe": "type",
+        },
+        {
+            "main": "🎭 Bố mẹ bạn dạy bạn về tiền bạc theo kiểu nào — tiết kiệm chặt, chi thoải mái, hay không nói đến?",
+            "depth": "Bạn đang theo hoặc đang cố thoát khỏi kiểu đó?",
+            "vibe": "family",
+        },
+        {
+            "main": "⚖️ Với bạn, tiêu tiền cho bản thân hôm nay quan trọng hơn hay tiết kiệm cho tương lai quan trọng hơn?",
+            "depth": "Câu trả lời đó thay đổi không khi bạn nghĩ đến 10 năm nữa?",
+            "vibe": "values",
+        },
+    ],
+
+    # Fun & Light — cho ngày không muốn viết nhiều
+    "fun": [
+        {
+            "main": "🐑 Nếu Cừu Cần Cù của bạn có thể nói chuyện, bạn nghĩ nó đang nghĩ gì về cách bạn quản lý tiền?",
+            "depth": None,
+            "vibe": "playful",
+        },
+        {
+            "main": "🎲 Hôm nay bạn cảm thấy tài chính của mình giống game gì nhất — Mario (vượt thử thách), Minecraft (xây dần), hay GTA (không có kế hoạch)?",
+            "depth": "Bạn muốn nó giống game nào hơn?",
+            "vibe": "playful",
+        },
+        {
+            "main": "🌈 Nếu tâm trạng hôm nay của bạn là một màu sắc, nó màu gì? Và nó liên quan gì đến tiền bạc không?",
+            "depth": None,
+            "vibe": "creative",
+        },
+        {
+            "main": "☀️ Hôm nay có gì khiến bạn cười không — dù nhỏ?",
+            "depth": "Khoảnh khắc đó có liên quan đến tiền không hay hoàn toàn không liên quan?",
+            "vibe": "joy",
+        },
+        {
+            "main": "🔮 Nếu biết chính xác 1 năm nữa bạn có bao nhiêu tiền tiết kiệm, con số bạn MUỐN thấy là bao nhiêu?",
+            "depth": "Con số đó có thực tế không, hay chỉ là mơ ước?",
+            "vibe": "aspiration",
+        },
+        {
+            "main": "🍕 Hôm nay bạn muốn được 'đãi' gì — một buổi đi chơi, một món đồ, hay chỉ cần nghỉ ngơi?",
+            "depth": "Bạn có nghĩ đến chi phí của nó không, hay chỉ nghĩ đến cảm giác?",
+            "vibe": "desire",
+        },
+    ],
+
+    # Quick Mode — 1 dòng, cho ngày bận
+    "quick": [
+        {"main": "⚡ 1 từ mô tả tài chính của bạn hôm nay:", "depth": None, "vibe": "quick"},
+        {"main": "⚡ Hôm nay bạn cảm thấy 'ổn về tiền' ở mức 1-10?", "depth": None, "vibe": "quick"},
+        {"main": "⚡ Điều duy nhất bạn muốn hoàn thành về mặt tài chính tuần này?", "depth": None, "vibe": "quick"},
+        {"main": "⚡ Bạn vừa chi gì đáng nhất hôm nay?", "depth": None, "vibe": "quick"},
+        {"main": "⚡ Cảm xúc về tiền lúc này: lo / ổn / vui / meh?", "depth": None, "vibe": "quick"},
+    ],
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROMPT SELECTION ENGINE — chọn prompt thông minh dựa vào context
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_today_prompt(mem: dict, mode: str = "normal") -> dict:
+    """
+    Chọn prompt dựa vào:
+    - streak (mới / veteran)
+    - last emotion
+    - life events detected
+    - day of week (Thứ Hai = reflective, Thứ Sáu = fun)
+    - mode: "quick" | "normal" | "deep"
+    """
+    if mode == "quick":
+        return random.choice(_PROMPT_POOL["quick"])
+
+    # Ngày trong tuần ảnh hưởng category
+    weekday = datetime.now().weekday()  # 0=Mon, 6=Sun
+    last_entries = mem.get("diary_entries", [])[:3]
+    last_emotions = [e.get("emotion", "") for e in last_entries]
+    streak = mem.get("streak", 0)
+    life_events = mem.get("life_events", [])
+    recent_dreams = mem.get("dreams", [])
+
+    # Priority logic
+    # 1. Nếu có life event mới → hỏi về nó
+    life_event_keywords = ["cưới", "sinh con", "đổi việc", "tăng lương", "mua nhà", "ra trường"]
+    has_major_event = any(kw in " ".join(life_events[-5:]) for kw in life_event_keywords)
+    if has_major_event and random.random() < 0.6:
+        return random.choice(_PROMPT_POOL["life_events"])
+
+    # 2. Nếu user mới (streak < 5) → nhẹ nhàng, không áp lực
+    if streak < 5:
+        options = _PROMPT_POOL["fun"] + _PROMPT_POOL["dreams"][:3]
+        return random.choice(options)
+
+    # 3. Nếu user vừa có dream → follow up
+    if recent_dreams and random.random() < 0.4:
+        dream_name = recent_dreams[-1].get("name", "")
+        if dream_name:
+            return {
+                "main": f"🌟 Hôm qua bạn nhắc đến '{dream_name}' — hôm nay bạn có nghĩ thêm về nó không?",
+                "depth": "Có điều gì cụ thể bạn muốn làm để tiến gần hơn đến nó không?",
+                "vibe": "follow_up",
+            }
+
+    # 4. Nếu liên tiếp lo lắng → xen kẽ fun
+    if last_emotions.count("lo_lang") >= 2 or last_emotions.count("stress") >= 2:
+        return random.choice(_PROMPT_POOL["fun"])
+
+    # 5. Thứ Hai/Ba → spending reflection
+    if weekday in (0, 1):
+        return random.choice(_PROMPT_POOL["spending"])
+    # Thứ Tư → identity / values
+    if weekday == 2:
+        return random.choice(_PROMPT_POOL["identity"])
+    # Thứ Năm/Sáu → dreams & aspirations
+    if weekday in (3, 4):
+        return random.choice(_PROMPT_POOL["dreams"])
+    # Cuối tuần → life events hoặc financial feelings
+    if weekday in (5, 6):
+        cat = random.choice(["life_events", "financial_feelings"])
+        return random.choice(_PROMPT_POOL[cat])
+
+    # Default: random weighted
+    weights = {
+        "spending": 2,
+        "dreams": 3,
+        "life_events": 2,
+        "financial_feelings": 2,
+        "identity": 1,
+        "fun": 1,
+    }
+    categories = []
+    for cat, w in weights.items():
+        categories.extend([cat] * w)
+    chosen_cat = random.choice(categories)
+    return random.choice(_PROMPT_POOL[chosen_cat])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EMOTION CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+EMOTION_CONFIG = {
+    "vui": {"emoji": "😊", "color": "#FFE066", "label": "Vui vẻ"},
+    "buon": {"emoji": "😔", "color": "#A8C5DA", "label": "Buồn"},
+    "lo_lang": {"emoji": "😰", "color": "#FFB3B3", "label": "Lo lắng"},
+    "binh_thuong": {"emoji": "😐", "color": "#D4D4D4", "label": "Bình thường"},
+    "stress": {"emoji": "😤", "color": "#FFB347", "label": "Stress"},
+    "mo_mong": {"emoji": "🌈", "color": "#C3B1E1", "label": "Mơ mộng"},
+    "quyet_tam": {"emoji": "💪", "color": "#90EE90", "label": "Quyết tâm"},
+    "tu_tin": {"emoji": "😎", "color": "#87CEEB", "label": "Tự tin"},
+}
+
+MOOD_QUICK = [
+    ("😊", "vui"),
+    ("😔", "buon"),
+    ("😰", "lo_lang"),
+    ("😤", "stress"),
+    ("🌈", "mo_mong"),
+    ("💪", "quyet_tam"),
+    ("😐", "binh_thuong"),
+    ("😎", "tu_tin"),
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CELEBRATION MESSAGES — post-save animation text
+# ─────────────────────────────────────────────────────────────────────────────
+
+CELEBRATION_MESSAGES = {
+    "vui": ["Bê bê~ 🐑 Cừu thích thấy bạn vui! ✨", "Tuyệt quá! Cừu cũng vui lây rồi nè 🌟"],
+    "buon": ["Cừu ở đây bên bạn nha 🤍", "Bê bê~ Cừu đọc rồi. Cảm ơn bạn đã chia sẻ 💙"],
+    "lo_lang": ["Bê bê~ Viết ra rồi nhẹ hơn xíu chưa? 🫂", "Cừu nghe hết rồi nha. Bạn không một mình đâu 💙"],
+    "stress": ["Stress là ổn, ai cũng có lúc vậy 🌿", "Bê bê~ Cừu đọc và hiểu bạn rồi 💙"],
+    "mo_mong": ["Mơ mộng đẹp lắm~ Cừu thích nghe! 🌈", "Ước mơ là bước đầu tiên mà 🌟"],
+    "quyet_tam": ["YES! Bê bê~ Cừu cũng quyết tâm cùng bạn! 💪", "Năng lượng này xịn lắm! 🔥"],
+    "binh_thuong": ["Ngày bình thường cũng đáng được ghi lại 🐑", "Bê bê~ Cừu đọc rồi nha 💙"],
+    "tu_tin": ["Vibe này Cừu thích lắm! 😎✨", "Tự tin đi — bạn xứng đáng mà! 🌟"],
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STREAK MILESTONE MESSAGES
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_streak_message(diary_count: int) -> str | None:
+    milestones = {
+        3: "🎉 3 ngày viết nhật ký! Cừu bắt đầu hiểu bạn rồi~",
+        7: "🔥 1 tuần rồi! Bạn kiên trì hơn 80% người dùng đó!",
+        14: "⭐ 2 tuần! Cừu đã học được nhiều về bạn lắm rồi~",
+        30: "🏆 1 THÁNG! Bạn là top 5% user kiên trì nhất. Bê bê kính phục!",
+        50: "👑 50 ngày! Wealth Genome của bạn đang rất rõ ràng rồi~",
+        100: "🌟 100 NGÀY! Bạn là Cừu Huyền Thoại thật sự!",
+    }
+    return milestones.get(diary_count)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MINI STATS BUILDER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_diary_stats(diary_entries: list) -> dict:
+    """Tính stats từ diary entries để hiển thị insights."""
+    if not diary_entries:
+        return {}
+
+    total = len(diary_entries)
+    emotions = [e.get("emotion", "binh_thuong") for e in diary_entries]
+    emotion_counts = {}
+    for em in emotions:
+        emotion_counts[em] = emotion_counts.get(em, 0) + 1
+
+    dominant = max(emotion_counts, key=emotion_counts.get) if emotion_counts else "binh_thuong"
+
+    # Dream mentions
+    all_dreams = [e.get("dream", "") for e in diary_entries if e.get("dream")]
+    dream_counts = {}
+    for d in all_dreams:
+        dream_counts[d] = dream_counts.get(d, 0) + 1
+    top_dream = max(dream_counts, key=dream_counts.get) if dream_counts else None
+
+    # Last 7 days streak
+    today = datetime.now().date()
+    last_7_days = []
+    for i in range(6, -1, -1):
+        target = today - timedelta(days=i)
+        has_entry = any(
+            datetime.fromisoformat(e.get("date_raw", "2000-01-01")).date() == target
+            for e in diary_entries if e.get("date_raw")
+        )
+        last_7_days.append({"date": target, "has_entry": has_entry})
+
+    # Life events
+    life_tags = []
+    for e in diary_entries[-10:]:
+        life_tags.extend(e.get("tags", []))
+
+    return {
+        "total": total,
+        "dominant_emotion": dominant,
+        "emotion_counts": emotion_counts,
+        "top_dream": top_dream,
+        "last_7_days": last_7_days,
+        "recent_tags": list(set(life_tags))[:5],
+    }
+
+
+def render_mini_calendar(last_7_days: list):
+    """Render mini 7-day streak calendar."""
+    cols = st.columns(7)
+    day_labels = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+    for i, (col, day_info) in enumerate(zip(cols, last_7_days)):
+        with col:
+            is_today = day_info["date"] == datetime.now().date()
+            if day_info["has_entry"]:
+                bg = "#4CAF50" if not is_today else "#2196F3"
+                icon = "✅" if not is_today else "📝"
+            else:
+                bg = "#E0E0E0"
+                icon = "○"
+
+            day_label = day_labels[day_info["date"].weekday()]
+            st.markdown(
+                f"""<div style='text-align:center;background:{bg};border-radius:8px;
+                    padding:6px 2px;font-size:11px;color:{"white" if day_info["has_entry"] else "#666"}'>
+                    <div>{day_label}</div><div style='font-size:14px'>{icon}</div></div>""",
+                unsafe_allow_html=True,
+            )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENTRY CARD RENDERER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_entry_card(entry: dict, expanded: bool = False):
+    """Render một diary entry với emoji và màu sắc theo emotion."""
+    emotion = entry.get("emotion", "binh_thuong")
+    ecfg = EMOTION_CONFIG.get(emotion, EMOTION_CONFIG["binh_thuong"])
+
+    dream = entry.get("dream", "")
+    dream_badge = f"<span style='background:#E8D5FF;color:#6B3FA0;padding:2px 8px;border-radius:12px;font-size:11px;margin-left:6px'>🌟 {dream}</span>" if dream else ""
+
+    tags = entry.get("tags", [])
+    tags_html = " ".join(
+        f"<span style='background:#E3F2FD;color:#1565C0;padding:1px 6px;border-radius:10px;font-size:10px'>{t}</span>"
+        for t in tags[:3]
     )
-    _JOURNAL_V2_ENABLED = True
-except ImportError:
-    _JOURNAL_V2_ENABLED = False  # Fallback về code cũ nếu file chưa có
-# ───────────────────────────────────────────────────────────────────────────
+
+    st.markdown(
+        f"""<div style='background:white;border-left:4px solid {ecfg["color"]};
+            border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:10px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06)'>
+            <div style='display:flex;align-items:center;margin-bottom:8px'>
+                <span style='font-size:20px'>{ecfg["emoji"]}</span>
+                <span style='margin-left:8px;font-weight:600;color:#333;font-size:14px'>{entry.get("title", "")}</span>
+                <span style='margin-left:8px;color:#999;font-size:12px'>{entry.get("date", "")}</span>
+                {dream_badge}
+            </div>
+            <div style='color:#555;font-size:13px;line-height:1.6;margin-bottom:8px'>
+                {entry.get("content", "")[:200]}{"..." if len(entry.get("content","")) > 200 else ""}
+            </div>
+            <div style='background:{ecfg["color"]}22;border-radius:8px;padding:8px 12px;
+                        font-size:13px;color:#333;font-style:italic;margin-bottom:8px'>
+                🐑 {entry.get("reply", "")}
+            </div>
+            <div>{tags_html}</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Show richer insight if available
+    if entry.get("pattern_insight") and expanded:
+        st.markdown(
+            f"""<div style='background:#F0F9FF;border-radius:8px;padding:10px 14px;font-size:13px;color:#0369A1'>
+            {entry["pattern_insight"]}<br>
+            <span style='color:#666'>{entry.get("secret_signal", "")}</span>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST-SAVE INSIGHT CARD
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_post_save_insight(result: dict, emotion: str):
+    """Hiển thị card insight sau khi lưu — phần quan trọng nhất của UX mới."""
+    ecfg = EMOTION_CONFIG.get(emotion, EMOTION_CONFIG["binh_thuong"])
+
+    st.markdown(
+        f"""<div style='background:linear-gradient(135deg, {ecfg["color"]}44, #fff);
+            border-radius:16px;padding:20px;border:1px solid {ecfg["color"]};margin:10px 0'>
+            <div style='font-size:28px;text-align:center;margin-bottom:4px'>{ecfg["emoji"]}</div>
+            <div style='font-size:16px;font-weight:600;text-align:center;color:#333;margin-bottom:16px'>
+                {result.get("sheep_reply", "Cừu đã đọc rồi! 💙")}
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Pattern insight
+    if result.get("pattern_insight"):
+        st.markdown(
+            f"""<div style='background:#EFF6FF;border-radius:12px;padding:14px;margin:8px 0'>
+                <div style='font-size:12px;color:#666;margin-bottom:4px;font-weight:600'>✨ PATTERN</div>
+                <div style='font-size:14px;color:#1E40AF'>{result["pattern_insight"]}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # Secret signal
+    if result.get("secret_signal"):
+        st.markdown(
+            f"""<div style='background:#F5F3FF;border-radius:12px;padding:14px;margin:8px 0'>
+                <div style='font-size:12px;color:#666;margin-bottom:4px;font-weight:600'>🔍 INSIGHT VỀ BẠN</div>
+                <div style='font-size:14px;color:#5B21B6'>{result["secret_signal"]}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # Micro action
+    if result.get("micro_action"):
+        st.markdown(
+            f"""<div style='background:#F0FDF4;border-radius:12px;padding:14px;margin:8px 0'>
+                <div style='font-size:12px;color:#666;margin-bottom:4px;font-weight:600'>🎯 THỬ NGAY HÔM NAY</div>
+                <div style='font-size:14px;color:#166534'>{result["micro_action"]}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # Dream detected
+    if result.get("dream_detected"):
+        st.markdown(
+            f"""<div style='background:#FDF4FF;border-radius:12px;padding:14px;margin:8px 0;
+                border:1px dashed #A855F7'>
+                <div style='font-size:12px;color:#666;margin-bottom:4px;font-weight:600'>🌟 PHÁT HIỆN GIẤC MƠ</div>
+                <div style='font-size:14px;color:#7C3AED'>Bạn đang mơ đến: <strong>{result["dream_detected"]}</strong></div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN RENDER FUNCTION
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_diary_v2(mem: dict, save_fn, call_llm_fn):
+    """
+    Main journal rendering function.
+
+    Args:
+        mem: st.session_state.user_memory dict
+        save_fn: function to call to persist state (e.g., _save)
+        call_llm_fn: function(user_text: str, system_prompt: str) -> dict
+    """
+    diary_entries = mem.get("diary_entries", [])
+    stats = build_diary_stats(diary_entries)
+
+    # ── HEADER ──────────────────────────────────────────────────────────────
+    total_entries = stats.get("total", 0)
+    streak_msg = get_streak_message(total_entries)
+
+    if streak_msg:
+        st.success(streak_msg)
+
+    st.markdown(
+        f"""<div style='background:linear-gradient(135deg,#667eea22,#764ba222);
+            border-radius:16px;padding:16px 20px;margin-bottom:16px'>
+            <span style='font-size:22px'>📔</span>
+            <span style='font-size:18px;font-weight:700;color:#333;margin-left:8px'>Nhật ký Cừu</span>
+            <span style='float:right;background:white;padding:4px 12px;border-radius:20px;
+                font-size:13px;color:#666'>{total_entries} entries · Streak 🔥</span>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # ── 7-DAY CALENDAR ───────────────────────────────────────────────────────
+    if stats.get("last_7_days"):
+        st.markdown("<div style='font-size:12px;color:#888;margin-bottom:4px'>7 ngày gần nhất</div>", unsafe_allow_html=True)
+        render_mini_calendar(stats["last_7_days"])
+        st.markdown("")
+
+    # ── STATS MINI PILLS ─────────────────────────────────────────────────────
+    if total_entries > 0:
+        dom_em = stats.get("dominant_emotion", "binh_thuong")
+        dom_cfg = EMOTION_CONFIG.get(dom_em, EMOTION_CONFIG["binh_thuong"])
+        top_dream = stats.get("top_dream")
+        pills = [f"{dom_cfg['emoji']} Hay {dom_cfg['label'].lower()} nhất"]
+        if top_dream:
+            pills.append(f"🌟 Hay nhắc: {top_dream}")
+        if stats.get("recent_tags"):
+            pills.append(f"🏷️ {stats['recent_tags'][0]}")
+
+        pills_html = " ".join(
+            f"<span style='background:#F1F5F9;color:#475569;padding:4px 10px;border-radius:20px;font-size:12px'>{p}</span>"
+            for p in pills
+        )
+        st.markdown(f"<div style='margin:8px 0 16px'>{pills_html}</div>", unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # WRITE AREA
+    # ─────────────────────────────────────────────────────────────────────────
+    left_col, right_col = st.columns([3, 2], gap="large")
+
+    with left_col:
+        st.markdown("### ✍️ Hôm nay")
+
+        # Mode toggle
+        mode = st.radio(
+            "",
+            ["⚡ Quick (30 giây)", "📝 Normal", "🌊 Deep mode"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="diary_mode",
+        )
+        mode_key = "quick" if "Quick" in mode else ("deep" if "Deep" in mode else "normal")
+
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
+        # ── PROMPT OF THE DAY ────────────────────────────────────────────────
+        # Regenerate only once per day or on first load
+        prompt_key = f"today_prompt_{datetime.now().strftime('%Y%m%d')}_{mode_key}"
+        if prompt_key not in st.session_state:
+            st.session_state[prompt_key] = get_today_prompt(mem, mode=mode_key)
+
+        today_prompt = st.session_state[prompt_key]
+
+        st.markdown(
+            f"""<div style='background:linear-gradient(135deg,#667eea11,#764ba211);
+                border-left:4px solid #667eea;border-radius:0 12px 12px 0;
+                padding:14px 16px;margin-bottom:12px'>
+                <div style='font-size:15px;font-weight:600;color:#333;line-height:1.5'>
+                    {today_prompt["main"]}
+                </div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+        # New prompt button
+        if st.button("🔄 Câu hỏi khác", key="refresh_prompt", type="secondary"):
+            # Force a different prompt
+            all_options = []
+            for cat, prompts in _PROMPT_POOL.items():
+                if cat != "quick" or mode_key == "quick":
+                    all_options.extend(prompts)
+            # Filter out current
+            others = [p for p in all_options if p["main"] != today_prompt["main"]]
+            st.session_state[prompt_key] = random.choice(others) if others else today_prompt
+            st.rerun()
+
+        # ── MOOD SELECTOR ────────────────────────────────────────────────────
+        st.markdown("<div style='font-size:13px;color:#666;margin:8px 0 4px'>Tâm trạng của bạn lúc này:</div>", unsafe_allow_html=True)
+
+        if "selected_mood_key" not in st.session_state:
+            st.session_state.selected_mood_key = ""
+
+        mood_cols = st.columns(8)
+        for i, (emoji, key) in enumerate(MOOD_QUICK):
+            with mood_cols[i]:
+                selected = st.session_state.selected_mood_key == key
+                if st.button(
+                    emoji,
+                    key=f"mood_{key}",
+                    help=EMOTION_CONFIG.get(key, {}).get("label", key),
+                    type="primary" if selected else "secondary",
+                ):
+                    st.session_state.selected_mood_key = key
+                    st.rerun()
+
+        current_mood_key = st.session_state.get("selected_mood_key", "")
+        if current_mood_key:
+            ecfg = EMOTION_CONFIG.get(current_mood_key, {})
+            st.markdown(
+                f"<div style='font-size:12px;color:#888;margin-top:2px'>{ecfg.get('emoji','')} {ecfg.get('label','')}</div>",
+                unsafe_allow_html=True,
+            )
+
+        # ── MAIN TEXT AREA ───────────────────────────────────────────────────
+        placeholder_map = {
+            "quick": "1-2 từ hoặc 1 câu ngắn là đủ...",
+            "normal": "Viết thoải mái — không cần hoàn hảo hay dài...",
+            "deep": "Bạn có thể viết dài tùy thích. Cừu sẽ đọc hết 🐑",
+        }
+
+        answer = st.text_area(
+            "Câu trả lời của bạn:",
+            height=120 if mode_key == "quick" else (200 if mode_key == "normal" else 300),
+            placeholder=placeholder_map.get(mode_key, "Viết thoải mái..."),
+            key="diary_main_answer",
+            label_visibility="collapsed",
+        )
+
+        # ── DEPTH QUESTION (normal/deep mode only) ──────────────────────────
+        depth_answer = ""
+        if mode_key != "quick" and today_prompt.get("depth"):
+            with st.expander("💬 Muốn chia sẻ thêm? (tùy chọn)"):
+                st.markdown(
+                    f"<div style='font-size:14px;color:#555;margin-bottom:8px'>{today_prompt['depth']}</div>",
+                    unsafe_allow_html=True,
+                )
+                depth_answer = st.text_area(
+                    "Chia sẻ thêm:",
+                    height=100,
+                    placeholder="Hoàn toàn tùy ý — bỏ qua cũng được...",
+                    key="diary_depth_answer",
+                    label_visibility="collapsed",
+                )
+
+        # ── SAVE BUTTON ──────────────────────────────────────────────────────
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+        can_save = bool(answer.strip()) and bool(current_mood_key)
+
+        if not can_save:
+            missing = []
+            if not current_mood_key:
+                missing.append("chọn tâm trạng")
+            if not answer.strip():
+                missing.append("viết gì đó")
+            st.markdown(
+                f"<div style='font-size:12px;color:#999'>⬆️ Cần {' và '.join(missing)} để lưu</div>",
+                unsafe_allow_html=True,
+            )
+
+        save_clicked = st.button(
+            "💾 Lưu nhật ký",
+            disabled=not can_save,
+            type="primary",
+            use_container_width=True,
+        )
+
+        if save_clicked and can_save:
+            # Build entry text
+            combined_parts = [
+                f"Prompt: {today_prompt['main']}",
+                f"Tâm trạng: {EMOTION_CONFIG.get(current_mood_key, {}).get('label', current_mood_key)}",
+                f"Chia sẻ: {answer.strip()}",
+            ]
+            if depth_answer.strip():
+                combined_parts.append(f"Thêm: {depth_answer.strip()}")
+
+            combined = "\n".join(combined_parts)
+
+            # Defaults
+            ai_result = {
+                "sheep_reply": random.choice(CELEBRATION_MESSAGES.get(current_mood_key, ["Cừu đọc rồi! 💙"])),
+                "pattern_insight": "",
+                "secret_signal": "",
+                "micro_action": "",
+                "emotion": current_mood_key,
+                "dream_detected": "",
+                "dream_amount_estimate": 0,
+                "life_event_signal": "",
+                "financial_readiness": "not_ready",
+                "tags": [],
+                "mood": "listening",
+                "wealth_signal": "unknown",
+            }
+
+            if st.session_state.get("api_key"):
+                with st.spinner("🐑 Cừu đang đọc nhật ký..."):
+                    try:
+                        r = call_llm_fn(combined, _SYS_DIARY_V2)
+                        ai_result.update({k: v for k, v in r.items() if v})
+                    except Exception:
+                        pass
+
+            # Save entry
+            entry = {
+                "id": datetime.now().isoformat(),
+                "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                "date_raw": datetime.now().isoformat(),
+                "title": f"Ngày {datetime.now().strftime('%d/%m')}",
+                "mood": current_mood_key,
+                "mood_label": EMOTION_CONFIG.get(current_mood_key, {}).get("label", ""),
+                "prompt_used": today_prompt["main"],
+                "content": f"{answer.strip()}" + (f"\n\n{depth_answer.strip()}" if depth_answer.strip() else ""),
+                "emotion": ai_result.get("emotion", current_mood_key),
+                "tags": ai_result.get("tags", []),
+                "dream": ai_result.get("dream_detected", ""),
+                "life_event": ai_result.get("life_event_signal", ""),
+                "reply": ai_result.get("sheep_reply", ""),
+                "pattern_insight": ai_result.get("pattern_insight", ""),
+                "secret_signal": ai_result.get("secret_signal", ""),
+                "micro_action": ai_result.get("micro_action", ""),
+                "wealth_signal": ai_result.get("wealth_signal", ""),
+                "financial_readiness": ai_result.get("financial_readiness", "not_ready"),
+            }
+
+            diary_entries.insert(0, entry)
+            mem["diary_entries"] = diary_entries
+
+            # Update life events in memory
+            for tag in ai_result.get("tags", []):
+                if tag and tag not in mem.get("life_events", []):
+                    mem.setdefault("life_events", []).append(tag)
+
+            # Update dream in memory
+            dream = ai_result.get("dream_detected", "")
+            dream_amount = ai_result.get("dream_amount_estimate", 0)
+            if dream and dream_amount > 0:
+                existing_dreams = [d["name"] for d in mem.get("dreams", [])]
+                if dream not in existing_dreams:
+                    mem.setdefault("dreams", []).append({
+                        "name": dream,
+                        "amount": dream_amount,
+                        "saved": 0,
+                        "tags": ai_result.get("tags", []),
+                    })
+
+            # Update wealth signal
+            ws = ai_result.get("wealth_signal", "")
+            if ws and ws != "unknown":
+                wg = mem.setdefault("wealth_genome_v2", {})
+                wg["wealth_signal"] = ws
+
+            # Update financial stage from readiness
+            fr = ai_result.get("financial_readiness", "")
+            if fr == "ready":
+                mem.setdefault("financial_profile", {})["financial_stage"] = "ready"
+            elif fr == "curious":
+                fp = mem.setdefault("financial_profile", {})
+                if fp.get("financial_stage") == "exploring":
+                    fp["financial_stage"] = "learning"
+
+            save_fn()
+
+            # Reset mood selection
+            st.session_state.selected_mood_key = ""
+
+            # ── POST-SAVE EXPERIENCE ─────────────────────────────────────────
+            st.markdown("---")
+            st.markdown("### 🐑 Cừu đã đọc rồi!")
+
+            cele_msg = random.choice(CELEBRATION_MESSAGES.get(current_mood_key, ["💙"]))
+            st.markdown(
+                f"<div style='text-align:center;font-size:32px;margin:8px'>🐑</div>",
+                unsafe_allow_html=True,
+            )
+
+            render_post_save_insight(ai_result, current_mood_key)
+
+            # Dream CTA
+            if dream and dream_amount > 0:
+                st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+                if st.button(f"🎯 Lập kế hoạch cho '{dream}'", type="primary", use_container_width=True):
+                    st.session_state["show_dream_plan"] = dream
+
+            # Milestone check
+            new_total = len(diary_entries)
+            ms = get_streak_message(new_total)
+            if ms:
+                st.balloons()
+                st.success(ms)
+
+            st.rerun()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # RIGHT COLUMN — History
+    # ─────────────────────────────────────────────────────────────────────────
+    with right_col:
+        st.markdown("### 📚 Nhật ký của bạn")
+
+        if not diary_entries:
+            st.markdown(
+                """<div style='text-align:center;padding:40px 20px;color:#999'>
+                    <div style='font-size:40px'>📔</div>
+                    <div style='margin-top:8px'>Chưa có entry nào<br>
+                    <small>Viết entry đầu tiên để Cừu hiểu bạn hơn 🐑</small></div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+        else:
+            # Filter
+            filter_col1, filter_col2 = st.columns(2)
+            with filter_col1:
+                time_filter = st.selectbox(
+                    "Thời gian",
+                    ["Tất cả", "Hôm nay", "Tuần này", "Tháng này"],
+                    key="diary_time_filter",
+                    label_visibility="collapsed",
+                )
+            with filter_col2:
+                emotion_options = ["Tất cả cảm xúc"] + [
+                    f"{v['emoji']} {v['label']}" for v in EMOTION_CONFIG.values()
+                ]
+                emotion_filter = st.selectbox(
+                    "Cảm xúc",
+                    emotion_options,
+                    key="diary_emotion_filter",
+                    label_visibility="collapsed",
+                )
+
+            # Apply filters
+            now = datetime.now()
+            filtered = diary_entries
+            if time_filter == "Hôm nay":
+                filtered = [e for e in filtered if e.get("date", "").startswith(now.strftime("%d/%m/%Y"))]
+            elif time_filter == "Tuần này":
+                week_ago = (now - timedelta(days=7)).isoformat()
+                filtered = [e for e in filtered if e.get("date_raw", "") >= week_ago]
+            elif time_filter == "Tháng này":
+                month_ago = (now - timedelta(days=30)).isoformat()
+                filtered = [e for e in filtered if e.get("date_raw", "") >= month_ago]
+
+            if emotion_filter != "Tất cả cảm xúc":
+                target_em = None
+                for k, v in EMOTION_CONFIG.items():
+                    if v["label"] in emotion_filter:
+                        target_em = k
+                        break
+                if target_em:
+                    filtered = [e for e in filtered if e.get("emotion") == target_em]
+
+            if not filtered:
+                st.info("Không có entry nào trong khoảng thời gian này.")
+            else:
+                st.markdown(
+                    f"<div style='font-size:12px;color:#888;margin-bottom:8px'>{len(filtered)} entries</div>",
+                    unsafe_allow_html=True,
+                )
+                for entry in filtered[:10]:
+                    render_entry_card(entry, expanded=False)
+                if len(filtered) > 10:
+                    st.markdown(
+                        f"<div style='text-align:center;color:#888;font-size:13px'>+ {len(filtered)-10} entries nữa</div>",
+                        unsafe_allow_html=True,
+                    )
+
 
 st.set_page_config(
     page_title="Cừu Cần Cù 🐑",
@@ -1268,22 +2227,7 @@ OUTPUT JSON giữ nguyên cấu trúc cũ, thêm field:
 # Alias ngược để không vỡ code cũ nếu có nơi nào còn dùng _SYS_EMOTION
 _SYS_EMOTION = _BASE_PERSONALITY_PROMPT
 
-# _SYS_DIARY: dùng V2 nếu journal_engine đã import, fallback về V1 cũ
-if _JOURNAL_V2_ENABLED:
-    _SYS_DIARY = _SYS_DIARY_V2   # Rich 6-layer Wealth Genome extraction
-else:
-    _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
-Phân tích: cảm xúc, giấc mơ ẩn, áp lực, mục tiêu.
-Đừng đưa ra lời khuyên tài chính.
-
-OUTPUT (JSON):
-{
-  "sheep_reply": "Phản hồi ấm áp 2-3 câu",
-  "emotion": "vui|buồn|lo|bình_thường|stress|mơ_mộng",
-  "tags": ["tag1"],
-  "dream_detected": "tên giấc mơ (rỗng nếu không)",
-  "mood": "listening|happy|sad|celebrate|determined"
-}"""
+_SYS_DIARY = _SYS_DIARY_V2  # Rich 6-layer Wealth Genome extraction
 
 
 def _parse(raw: str) -> dict:
@@ -2386,57 +3330,17 @@ with tab1:
         # ══════════════════════════════════════════════
         # DIARY VIEW — Nhật ký tâm sự v2 (Journal Engine)
         # ══════════════════════════════════════════════
-            if _JOURNAL_V2_ENABLED:
-                # ── V2: Adaptive Journal Engine ───────────────────────────────
-                # Wrapper để bridge _call_llm sang interface của journal_engine
-                def _call_llm_diary(user_text: str, system_prompt: str) -> dict:
-                    return _call_llm(user_text, system_prompt)
+            def _call_llm_diary(user_text: str, system_prompt: str) -> dict:
+                return _call_llm(user_text, system_prompt)
 
-                render_diary_v2(mem, _save, _call_llm_diary)
+            render_diary_v2(mem, _save, _call_llm_diary)
 
-                # Quest completion: nếu vừa lưu entry mới hôm nay
-                diary_entries_v2 = mem.get("diary_entries", [])
-                today_str_q = datetime.now().strftime("%Y-%m-%d")
-                if diary_entries_v2 and diary_entries_v2[0].get("date_raw", "")[:10] == today_str_q:
-                    _complete_quest(mem, "diary", 15)
-                    _save()
-
-            else:
-                # ── FALLBACK V1 (nếu journal_engine.py chưa có trong folder) ──
-                st.error(
-                    "⚠️ Chưa tìm thấy `journal_engine.py`. "
-                    "Copy file này vào cùng folder với app-10.py để dùng Journal V2."
-                )
-                diary_entries: list[dict] = mem.get("diary_entries", [])
-                st.markdown("### 📔 Nhật Ký (Legacy Mode)")
-                q1 = st.text_area("Hôm nay điều gì khiến bạn nhớ nhất?", height=100, key="dq1")
-                q2 = st.text_area("Có điều gì khiến bạn vui, buồn hoặc lo lắng không?", height=100, key="dq2")
-                q3 = st.text_area("Nhắn cho chính mình trong tương lai:", height=100, key="dq3")
-                if st.button("💾 Lưu", disabled=not any([q1.strip(), q2.strip(), q3.strip()])):
-                    combined = "\n\n".join(filter(None, [
-                        f"Điều nhớ nhất: {q1.strip()}" if q1.strip() else "",
-                        f"Cảm xúc hôm nay: {q2.strip()}" if q2.strip() else "",
-                        f"Nhắn cho tương lai: {q3.strip()}" if q3.strip() else "",
-                    ]))
-                    entry = {
-                        "id": datetime.now().isoformat(),
-                        "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                        "date_raw": datetime.now().isoformat(),
-                        "title": f"Ngày {datetime.now().strftime('%d/%m')}",
-                        "mood": "🐑 Bình thường",
-                        "content": combined,
-                        "emotion": "binh_thuong",
-                        "tags": [],
-                        "dream": "",
-                        "reply": "Bê bê~ Cừu đã đọc rồi! 💙",
-                    }
-                    diary_entries.insert(0, entry)
-                    mem["diary_entries"] = diary_entries
-                    _save()
-                    st.rerun()
-
-        # ═══════════════════════════════════════════════════════
-
+            # Quest completion: nếu vừa lưu entry mới hôm nay
+            diary_entries_v2 = mem.get("diary_entries", [])
+            today_str_q = datetime.now().strftime("%Y-%m-%d")
+            if diary_entries_v2 and diary_entries_v2[0].get("date_raw", "")[:10] == today_str_q:
+                _complete_quest(mem, "diary", 15)
+                _save()
 
 # ═══════════════════════════════════════════════════════
 # TAB 2 — CỪU CỦA TÔI  (Feeding + condensed Profile)
