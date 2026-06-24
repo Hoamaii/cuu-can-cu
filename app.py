@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════╗
-║        CỪU CẦN CÙ — v4.0 Wealth Genome Edition                 ║
+║        CỪU CẦN CÙ — v3.0 Production-Ready                      ║
 ║        Principal PM · CX Designer · Streamlit Engineer          ║
 ╚══════════════════════════════════════════════════════════════════╝
 
@@ -363,22 +363,9 @@ MEMORY_DEFAULT: dict = {
     "last_visit_date": "",
     "sentiment":       "neutral",
     "wealth_genome": {
-        "risk_type":      "",
-        "personality":    "",          # legacy — giữ lại để không break UI cũ
-        "primary_type":   "",          # dream_chaser|explorer|collector|builder|social_achiever|comfort_seeker|trend_follower|creator|independent_thinker
-        "secondary_type": "",
-        "confidence":     0.0,
-        "stage":          "",
-        "dimensions": {
-            "dream_intensity":     0,  # 0-100
-            "social_drive":        0,
-            "instant_gratify":     0,
-            "creative_identity":   0,
-            "fear_of_missing_out": 0,
-            "stability_need":      0,
-        },
-        "chat_signals":     [],        # top keywords 7 ngày gần nhất
-        "last_scored_at":   "",
+        "risk_type":   "",
+        "personality": "",
+        "stage":       "",
     },
     "diary_entries": [],
     "last_fed_amount": 0,
@@ -743,140 +730,51 @@ def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
 
 
 # ═══════════════════════════════════════════════════════
-# WEALTH GENOME HELPER
-# ═══════════════════════════════════════════════════════
-_GENOME_TALK_STYLES: dict[str, str] = {
-    "dream_chaser":       "Nhắc countdown đến dream cụ thể. Dùng động từ hành động mạnh.",
-    "explorer":           "Frame mọi thứ là khám phá và adventure. Giữ tone tươi mới.",
-    "collector":          "Nhắc streak, badge, progress number cụ thể. Celebrate collection.",
-    "builder":            "Cung cấp insight có data. Respect intelligence. Show compound effect.",
-    "social_achiever":    "Social proof nhẹ nhàng. Nhắc community và peer progress.",
-    "comfort_seeker":     "Giọng nhẹ nhàng, reassuring. Không pressure. Praise từng bước nhỏ.",
-    "trend_follower":     "FOMO light. Viral framing. 'Nhiều bạn đang làm X'.",
-    "creator":            "Kết nối saving với creative identity và self-expression.",
-    "independent_thinker":"Offer data không push. Respect autonomy. 'Bạn quyết định thôi'.",
-}
-
-_GENOME_PRODUCT_MAP: dict[str, str] = {
-    "dream_chaser":       "Micro Saving theo goal · Dream Community",
-    "explorer":           "iPower · TCFF (linh hoạt)",
-    "collector":          "Streak system · iXu Loyalty · Achievement",
-    "builder":            "TCEF/TCBF/TCFF · DCA · Portfolio tracker",
-    "social_achiever":    "Community Engine · Group Goal · Referral",
-    "comfort_seeker":     "TCBF (ổn định) · Micro Saving (bắt đầu nhỏ)",
-    "trend_follower":     "Group Challenge · Creator Economy · Viral hooks",
-    "creator":            "Micro Saving (goal: thiết bị) · Dream Community",
-    "independent_thinker":"TCEF · Advanced tools · Self-directed research",
-}
-
-
-def _genome_context() -> str:
-    """Build ≤90-token genome context string. Injected into system prompts."""
-    g   = mem.get("wealth_genome", {})
-    pt  = g.get("primary_type") or g.get("personality") or ""
-    dream = next(iter(mem.get("dreams", [])), {})
-    dream_str = (
-        f"Dream: {dream.get('name','').title()} · {fmt(dream.get('amount', 0))}"
-        if dream and dream.get("name") else ""
-    )
-    streak = mem.get("streak", 0)
-    style  = _GENOME_TALK_STYLES.get(pt, "")
-    parts  = [p for p in [pt.upper() if pt else "", dream_str,
-                           f"Streak {streak}d" if streak else "", style] if p]
-    return " | ".join(parts) if parts else "Chưa xác định"
-
-
-def _update_genome_signal(signal_type: str) -> None:
-    """Update genome primary_type based on a new signal. Lightweight, no LLM call."""
-    g = mem.setdefault("wealth_genome", {})
-    chat_signals: list[str] = g.get("chat_signals", [])
-    chat_signals.append(signal_type)
-    if len(chat_signals) > 50:
-        chat_signals = chat_signals[-50:]
-    g["chat_signals"] = chat_signals
-
-    from collections import Counter
-    counts = Counter(chat_signals)
-    if counts:
-        top = counts.most_common(1)[0][0]
-        total = sum(counts.values())
-        confidence = counts[top] / total
-        if confidence >= 0.25 or not g.get("primary_type"):
-            g["primary_type"]   = top
-            g["confidence"]     = round(confidence, 2)
-            if len(counts) > 1:
-                g["secondary_type"] = counts.most_common(2)[1][0]
-    _save()
-
-
-# ═══════════════════════════════════════════════════════
 # LLM ENGINE
 # ═══════════════════════════════════════════════════════
-_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc của Gen Z.
+_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc.
 KHÔNG phải chatbot tư vấn đầu tư. KHÔNG phải CSKH.
 
 XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em".
 TUYỆT ĐỐI KHÔNG: nhắc cổ phiếu, NAV, lợi nhuận cụ thể, khuyến nghị mua bán.
-TUYỆT ĐỐI KHÔNG nhắc: mua nhà, mua xe, nghỉ hưu — xa vời với Gen Z.
 TONE: Ấm áp 🌸 Nhẹ nhàng 🌿 Thỉnh thoảng "bê bê~". Không phán xét.
 
-GENOME_CTX: {genome_ctx}
-→ Nếu có personality trong GENOME_CTX, hãy nói chuyện theo style đó.
-→ Nếu dream có trong GENOME_CTX, hãy nhắc đến dream cụ thể khi phù hợp.
-
 QUY TẮC BẮT BUỘC:
-1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress):
+1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress/buồn ngủ):
    → Phản hồi đồng cảm NGAY. Hỏi thêm 1 câu nhẹ.
-   → VD "mệt" → "Ôi mệt rồi à... bê bê~ 🐑 Mệt vì chuyện gì vậy bạn?"
+   → VD "mệt" → "Ôi mệt rồi à... bê bê~ 🐑 Cừu hiểu! Mệt vì chuyện gì vậy bạn?"
 2. TUYỆT ĐỐI KHÔNG nói: "bị lạc", "nói lại được không", "không hiểu".
    → Luôn hỏi mở: "Bê bê~ 🐑 Kể thêm cho mình nghe đi!"
 3. Nhớ thông tin KH đã kể → nhắc lại khi phù hợp.
-4. Kết thúc mỗi response = 1 câu hỏi nhẹ HOẶC 1 action nhỏ gợi ý.
 
 TAG PHÁT HIỆN:
 học/thi→education | chia tay/buồn→emotional | việc làm→career
-nhà ở→dream_house | du lịch→dream_travel | concert/kpop/idol→dream_experience
+nhà ở→dream_house | du lịch→dream_travel | xe→dream_car
 khởi nghiệp→dream_business | hết tiền→cashflow | stress→stress
 gia đình→family | sức khỏe→health | cưới/sinh con→milestone
-camera/laptop/iphone/thiết bị→dream_tech | học tiếng anh/du học→dream_education
-
-DREAM COMMUNITY GỢI Ý (khi phù hợp, 1 câu, không push):
-Nhật Bản/Hàn/concert/laptop/iPhone/du học/học tiếng Anh → gợi ý join Dream Community.
-
-GENOME SIGNAL — phát hiện personality từ message:
-Nhắc dream cụ thể/countdown→dream_chaser | Thích thử mới/khám phá→explorer
-Badge/streak/collection→collector | Tối ưu/hệ thống→builder
-Bạn bè/cộng đồng/so sánh→social_achiever | Lo lắng/cần an toàn→comfort_seeker
-Trend/TikTok/viral→trend_follower | Sáng tạo/dự án/thiết bị→creator
-Phân tích/tự quyết/tại sao→independent_thinker
 
 OUTPUT (JSON hợp lệ, KHÔNG text ngoài):
-{{
+{
   "message": "Phản hồi ấm áp max 3-4 câu",
   "memory_note": "Thông tin quan trọng cần nhớ (rỗng nếu không)",
   "tags": ["tag1"],
   "dream_name": "tên giấc mơ (rỗng nếu không)",
   "dream_amount": 0,
-  "mood": "listening|happy|sad|goal|celebrate|determined|default",
-  "genome_signal": "dream_chaser|explorer|collector|builder|social_achiever|comfort_seeker|trend_follower|creator|independent_thinker|unknown"
-}}"""
+  "mood": "listening|happy|sad|goal|celebrate|determined|default"
+}"""
 
 _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
 Phân tích: cảm xúc, giấc mơ ẩn, áp lực, mục tiêu.
-Đừng đưa ra lời khuyên tài chính. Không nhắc mua nhà/xe/nghỉ hưu.
-
-GENOME_CTX: {genome_ctx}
-→ Nếu có personality, phản hồi theo tone phù hợp với personality đó.
+Đừng đưa ra lời khuyên tài chính.
 
 OUTPUT (JSON):
-{{
-  "sheep_reply": "Phản hồi ấm áp 2-3 câu, phù hợp với personality nếu có",
+{
+  "sheep_reply": "Phản hồi ấm áp 2-3 câu",
   "emotion": "vui|buồn|lo|bình_thường|stress|mơ_mộng",
   "tags": ["tag1"],
   "dream_detected": "tên giấc mơ (rỗng nếu không)",
-  "mood": "listening|happy|sad|celebrate|determined",
-  "genome_signal": "dream_chaser|explorer|collector|builder|social_achiever|comfort_seeker|trend_follower|creator|independent_thinker|unknown"
-}}"""
+  "mood": "listening|happy|sad|celebrate|determined"
+}"""
 
 
 def _parse(raw: str) -> dict:
@@ -927,27 +825,17 @@ def _call_llm(user_text: str, system: str) -> dict:
             f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:120]}"
             for m in hist
         )
-        # Build genome-aware memory context (Tier 1 + Tier 2)
-        genome_ctx  = _genome_context()
-        genome_data = mem.get("wealth_genome", {})
-        pt_label    = genome_data.get("primary_type", "")
         mem_ctx = (
             f"Tên: {mem['name'] or 'chưa biết'}. "
-            f"Genome: {genome_ctx}. "
             f"Tags: {', '.join(mem['life_events'][-6:]) or 'chưa có'}. "
             f"Ghi chú: {'; '.join(mem['notes'][-3:]) or 'chưa có'}."
-        )
-        # Inject genome_ctx into system prompt if it has the placeholder
-        system_filled = (
-            system.format(genome_ctx=genome_ctx)
-            if "{genome_ctx}" in system else system
         )
         prompt = f"[Memory: {mem_ctx}]\n[Lịch sử:\n{hist_ctx}]\n\nKH: {user_text}"
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
         resp   = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=600,
-            system=system_filled,
+            system=system,
             messages=[{"role": "user", "content": prompt}],
         )
         result = _parse(resp.content[0].text)
@@ -964,10 +852,6 @@ def _call_llm(user_text: str, system: str) -> dict:
                                        "saved": 0, "tags": result.get("tags", [])})
         if m_mood := result.get("mood"):
             set_mood(m_mood)
-        # Update Wealth Genome with new signal
-        if gs := result.get("genome_signal", ""):
-            if gs and gs != "unknown":
-                _update_genome_signal(gs)
         _save()
         return result
     except Exception as e:
@@ -1199,10 +1083,11 @@ with st.sidebar:
 # Vision: Finch × Duolingo × Character AI × TCBS
 # 💬 Tâm sự · 🐑 Cừu của tôi · 👥 Cộng đồng
 # ═══════════════════════════════════════════════════════
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "💬 Tâm sự",
     "🐑 Cừu của tôi",
     "👥 Cộng đồng",
+    "🎯 AI Intelligence",
 ])
 
 # ═══════════════════════════════════════════════════════
@@ -2496,36 +2381,6 @@ with tab2:
                     "Vì gia đình của bạn","Để bạn tự do tài chính","Đang thử nghiệm",
                 ], key="profile_motive3")
                 _save()
-
-            # ── Wealth Genome Display ──────────────────────────────
-            _genome_disp = mem.get("wealth_genome", {})
-            _pt_disp     = _genome_disp.get("primary_type", "")
-            _st_disp     = _genome_disp.get("secondary_type", "")
-            _cf_disp     = _genome_disp.get("confidence", 0.0)
-            _GENOME_EMOJI = {
-                "dream_chaser": "🌠", "explorer": "🧭", "collector": "🏆",
-                "builder": "🏗️", "social_achiever": "🌟", "comfort_seeker": "☁️",
-                "trend_follower": "🔥", "creator": "🎨", "independent_thinker": "🦁",
-            }
-            if _pt_disp:
-                _pt_emo  = _GENOME_EMOJI.get(_pt_disp, "🐑")
-                _pt_name = _pt_disp.replace("_", " ").title()
-                _st_name = _st_disp.replace("_", " ").title() if _st_disp else ""
-                _prod    = _GENOME_PRODUCT_MAP.get(_pt_disp, "")
-                st.markdown(
-                    f'<div style="background:linear-gradient(135deg,#f0e8ff,#e8f8ff);'
-                    f'border-radius:14px;padding:12px 14px;margin-top:10px;">'
-                    f'<div style="font-size:.72rem;color:#7B5EA7;font-weight:800;margin-bottom:6px;">🧬 Wealth Genome</div>'
-                    f'<div style="font-size:.95rem;font-weight:800;color:#C4607F;">'
-                    f'{_pt_emo} {_pt_name}'
-                    f'{"  ·  " + _st_name if _st_name else ""}</div>'
-                    f'<div style="font-size:.7rem;color:#888;margin-top:3px;">'
-                    f'Confidence: {int(_cf_disp * 100)}% &nbsp;·&nbsp; {_prod}</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.caption("🧬 Genome đang được xây dựng — tâm sự với Cừu thêm nhé!")
             if mem.get("life_events"):
                 st.markdown("**🏷️ Cừu nhớ chuyện của bạn:**")
                 _ev3c = st.columns(3)
@@ -3697,3 +3552,990 @@ function toggleItem(el,name){
 }
 </script></body></html>"""
         _comp3.html(_HTML_T4, height=2100, scrolling=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 4 — 🎯 AI INTELLIGENCE DEMO  (CEO Presentation)
+# Vision: "Đây không phải chatbot — đây là AI biến cảm xúc Gen Z thành tích lũy"
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab4:
+
+    # ── CSS riêng cho CEO Demo ────────────────────────────────────────────────
+    st.markdown("""
+    <style>
+    .ceo-hero{background:linear-gradient(135deg,#0F0C29,#302B63,#24243E);
+              border-radius:24px;padding:36px 28px;text-align:center;margin-bottom:24px;}
+    .ceo-hero h1{font-size:2rem;font-weight:900;color:#fff;margin:0 0 10px;}
+    .ceo-hero p{font-size:1.05rem;color:rgba(255,255,255,.75);margin:0;}
+    .ceo-section{background:#fff;border:1.5px solid #e8e0ff;border-radius:20px;
+                 padding:22px 24px;margin-bottom:18px;}
+    .ceo-section-title{font-size:1.15rem;font-weight:900;color:#302B63;margin-bottom:16px;
+                       display:flex;align-items:center;gap:10px;}
+    .chat-bubble-user{background:#E8F4FF;border-radius:18px 18px 4px 18px;
+                      padding:12px 16px;margin:6px 0 6px auto;max-width:76%;
+                      font-size:.93rem;color:#1a1a2e;line-height:1.6;}
+    .chat-bubble-sheep{background:linear-gradient(135deg,#FFF0F7,#FFF8F0);
+                       border:1.5px solid #FFD6E8;border-radius:18px 18px 18px 4px;
+                       padding:12px 16px;margin:6px auto 6px 0;max-width:76%;
+                       font-size:.93rem;color:#444;line-height:1.6;}
+    .chat-meta{font-size:.72rem;color:#aaa;margin:2px 0 8px;padding-left:4px;}
+    .insight-tag{display:inline-flex;align-items:center;gap:5px;
+                 border-radius:20px;padding:5px 14px;font-size:.8rem;
+                 font-weight:700;margin:3px;white-space:nowrap;}
+    .genome-layer{background:linear-gradient(135deg,#f8f4ff,#fff4f8);
+                  border:1.5px solid #e8d8ff;border-radius:16px;
+                  padding:14px 18px;margin-bottom:10px;}
+    .genome-label{font-size:.78rem;font-weight:800;color:#7B5EA7;text-transform:uppercase;
+                  letter-spacing:.06em;margin-bottom:8px;}
+    .segment-card{border-radius:20px;padding:20px;margin-bottom:12px;border:2px solid;}
+    .seg-a{background:linear-gradient(135deg,#FFF0E8,#FFF8F0);border-color:#FFB347;}
+    .seg-b{background:linear-gradient(135deg,#E8F8FF,#F0F8FF);border-color:#4ECDC4;}
+    .seg-c{background:linear-gradient(135deg,#F0FFE8,#F8FFF0);border-color:#7ED321;}
+    .offer-card{background:#fff;border:1.5px solid #e8e0ff;border-radius:16px;
+                padding:16px 18px;margin-bottom:10px;}
+    .micro-step{display:flex;align-items:center;gap:14px;padding:14px 16px;
+                border-radius:14px;margin-bottom:8px;border:1.5px solid #FFD6E8;
+                background:linear-gradient(135deg,#FFF5F9,#FFF);}
+    .micro-arrow{font-size:1.4rem;color:#C4607F;flex-shrink:0;}
+    .arch-box{background:linear-gradient(135deg,#1A1A2E,#16213E);border-radius:16px;
+              padding:18px 20px;margin-bottom:10px;color:#fff;}
+    .arch-label{font-size:.78rem;font-weight:800;color:#FFD700;text-transform:uppercase;
+                letter-spacing:.08em;margin-bottom:8px;}
+    .cost-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,215,0,.15);
+               border:1.5px solid rgba(255,215,0,.4);border-radius:20px;
+               padding:6px 14px;font-size:.82rem;font-weight:700;color:#FFD700;margin:3px;}
+    .diary-demo-card{background:linear-gradient(135deg,#FFFBF0,#FFF8FB);
+                     border:1.5px solid #FFE0A0;border-radius:18px;
+                     padding:18px 20px;margin-bottom:14px;}
+    .confidence-bar{background:#f0f0f7;border-radius:8px;height:10px;
+                    overflow:hidden;margin:4px 0 2px;}
+    .confidence-fill{height:100%;border-radius:8px;
+                     background:linear-gradient(90deg,#7B5EA7,#C4607F);}
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── HERO ─────────────────────────────────────────────────────────────────
+    st.markdown("""
+    <div class="ceo-hero">
+      <h1>🐑 Cừu Cần Cù — AI Intelligence System</h1>
+      <p>Không phải chatbot. Đây là AI biến cảm xúc và ước mơ của Gen Z<br/>
+         thành hành vi tích lũy và đầu tư dài hạn.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 1 — DEMO CHAT SCRIPT
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      💬 PHẦN 1 — Demo Chat: AI hiểu khách hàng qua hội thoại
+    </div>
+    """, unsafe_allow_html=True)
+
+    _s1, _s2, _s3 = st.tabs(["🎵 Scenario 1: Concert", "💻 Scenario 2: MacBook", "📱 Scenario 3: iPhone"])
+
+    with _s1:
+        st.markdown("""
+        <div class="ceo-section">
+          <div class="ceo-section-title">🎵 Ước mơ đi concert Taylor Swift</div>
+
+          <div style="color:#888;font-size:.82rem;margin-bottom:14px;">
+            <strong>Đối tượng:</strong> Linh, 21 tuổi, sinh viên năm 3 · <strong>Kênh:</strong> App TCBS
+          </div>
+
+          <div class="chat-bubble-user">Cừu ơi em muốn đi concert của Dì Taylor năm sau 😭</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Bê bê~ Dì Taylor à?! Ôi mình cũng nghe tin rồi! Dì vừa thông báo The Eras Tour
+            Asia đúng không? Bạn đang ở đội "đang cấu kế hoạch" hay đội "tay trắng nhưng vẫn mơ"? 😄
+          </div>
+          <div class="chat-meta">🔵 Rule Engine — Greeting + Fan detection · 0 token</div>
+
+          <div class="chat-bubble-user">Đội hai ạ 😂 vé chắc mấy triệu mà em chưa có kế hoạch gì</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Mình hiểu! Vé concert kiểu này thường từ 2-5 triệu tùy hạng ghế.
+            Còn tầm bao lâu nữa thì concert nhỉ? Bạn nhớ lịch không?
+          </div>
+          <div class="chat-meta">🟡 LLM gọi — Context extraction · ~120 token</div>
+
+          <div class="chat-bubble-user">Khoảng tháng 3 năm sau ạ, tức là còn 12 tháng</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 12 tháng! Đủ để làm được nhiều thứ lắm đó bạn ơi.
+            Nếu mỗi ngày bạn để dành tiền trà sữa thôi — tầm 25k thôi —
+            thì 12 tháng là khoảng 9 triệu rồi. Đủ vé hạng B còn dư 🐑✨
+            <br/><br/>Mình có thể giúp bạn tạo một "Lọ Concert" nhỏ — mỗi ngày Cừu được ăn
+            là mỗi ngày tiền tự động vào lọ. Thử không?
+          </div>
+          <div class="chat-meta">🟡 LLM + Dream Extraction · Dream: Concert Taylor · 12 tháng · ~180 token</div>
+
+          <div class="chat-bubble-user">Ôi hay quá! Em thử đi ạ 🥹</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Bê bê~ Cừu đã tạo mục tiêu <strong>"🎵 Concert Dì Taylor"</strong> cho bạn rồi!
+            Cho Cừu ăn 25k hôm nay là chính thức bắt đầu nhé. Ngày đầu tiên bao giờ cũng khó nhất —
+            mà bạn đã vượt qua rồi đó! 💙
+          </div>
+          <div class="chat-meta">🔵 Rule Engine — Dream created + Feed CTA · 0 token</div>
+
+          <div style="background:linear-gradient(135deg,#F0FFF4,#E8F8FF);border-radius:14px;
+               padding:14px 16px;margin-top:14px;border:1.5px solid #B8F0C8;">
+            <div style="font-size:.82rem;font-weight:800;color:#2D7A4F;margin-bottom:10px;">
+              🧠 AI ĐANG HIỂU ĐƯỢC
+            </div>
+            <span class="insight-tag" style="background:#FFF0E8;border:1.5px solid #FFB347;color:#C07820;">
+              🎯 Dream: Concert Taylor Swift
+            </span>
+            <span class="insight-tag" style="background:#E8F0FF;border:1.5px solid #7090FF;color:#3050C0;">
+              ⏱ Time Horizon: 12 tháng
+            </span>
+            <span class="insight-tag" style="background:#FFE8F8;border:1.5px solid #FF90C0;color:#C03070;">
+              💰 Budget: 2-5 triệu
+            </span>
+            <span class="insight-tag" style="background:#F0FFE8;border:1.5px solid #70C050;color:#2A7A10;">
+              💪 Willingness: Medium-High
+            </span>
+            <span class="insight-tag" style="background:#FFF8E8;border:1.5px solid #FFD060;color:#806020;">
+              😊 Emotion: Excited + FOMO
+            </span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with _s2:
+        st.markdown("""
+        <div class="ceo-section">
+          <div class="ceo-section-title">💻 Ước mơ mua MacBook để học thiết kế</div>
+
+          <div style="color:#888;font-size:.82rem;margin-bottom:14px;">
+            <strong>Đối tượng:</strong> Khang, 20 tuổi, sinh viên RMIT · <strong>Ngày 1</strong>
+          </div>
+
+          <div class="chat-bubble-user">Cừu ơi em muốn mua MacBook để học thiết kế</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Ồ! Thiết kế nghe hay ghê — bạn đang học UI/UX, đồ họa hay motion graphics vậy?
+            Mình hỏi vì mỗi loại sẽ cần specs khác nhau đó!
+          </div>
+          <div class="chat-meta">🟡 LLM — Interest extraction · ~100 token</div>
+
+          <div class="chat-bubble-user">Em học UI/UX, đang học trên Figma nên cần máy mạnh hơn</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Figma! Ổn, Figma không nặng lắm — MacBook Air M2 là đủ rồi,
+            khoảng 28-32 triệu. Còn bạn cần máy khi nào? Đang gấp hay có thể chờ được vài tháng?
+          </div>
+          <div class="chat-meta">🟡 LLM — Budget inference + Urgency probe · ~130 token</div>
+
+          <div class="chat-bubble-user">Kỳ tới em bắt đầu project lớn, tầm 4 tháng nữa</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 4 tháng — tức là đến tháng 10. Nếu mỗi tháng để 7-8 triệu thì vừa khớp!
+            Mình đặt tên mục tiêu là <strong>"💻 MacBook cho Project Lớn"</strong> nhé?
+            Bạn tiết kiệm được bao nhiêu mỗi tháng khoảng?
+          </div>
+          <div class="chat-meta">🔵 Rule Engine — Goal created · 0 token</div>
+
+          <div class="chat-bubble-user">Tầm 3-4 triệu tháng ạ</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Được rồi! Vậy có thể cần 8-10 tháng — hơi lâu hơn project một chút.
+            Cừu có một ý: vừa tiết kiệm vừa cho tiền đó vào Quỹ TCC — trung bình tăng nhẹ hơn
+            để tiền, đến tháng 10 biết đâu bạn mua được sớm hơn 🐑
+          </div>
+          <div class="chat-meta">🟡 LLM — Fund intro soft · ~150 token</div>
+
+          <hr style="border:none;border-top:1.5px dashed #e0d8ff;margin:16px 0;"/>
+
+          <div style="color:#888;font-size:.82rem;margin-bottom:10px;">
+            <strong>📅 Ngày 12 — Cừu nhắc lại (không cần gọi LLM)</strong>
+          </div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Bê bê~ Hôm nay mình nhớ đến bạn! Lần trước bạn kể muốn mua MacBook
+            để làm project UI/UX đúng không? Hôm nay mình thấy bạn vẫn đang cố gắng — streak
+            12 ngày rồi đó! Cho Cừu ăn hôm nay để gần thêm tới chiếc MacBook nhé 💙
+          </div>
+          <div class="chat-meta">🔵 Rule Engine — Memory recall + Streak · 0 token</div>
+
+          <div style="background:linear-gradient(135deg,#F0FFF4,#E8F8FF);border-radius:14px;
+               padding:14px 16px;margin-top:14px;border:1.5px solid #B8F0C8;">
+            <div style="font-size:.82rem;font-weight:800;color:#2D7A4F;margin-bottom:10px;">
+              🧠 AI ĐANG HIỂU ĐƯỢC
+            </div>
+            <span class="insight-tag" style="background:#FFF0E8;border:1.5px solid #FFB347;color:#C07820;">
+              🎯 Dream: MacBook Air M2
+            </span>
+            <span class="insight-tag" style="background:#E8F0FF;border:1.5px solid #7090FF;color:#3050C0;">
+              📚 Goal Type: Education Investment
+            </span>
+            <span class="insight-tag" style="background:#FFE8F8;border:1.5px solid #FF90C0;color:#C03070;">
+              💰 Budget: 28-32 triệu
+            </span>
+            <span class="insight-tag" style="background:#F0FFE8;border:1.5px solid #70C050;color:#2A7A10;">
+              ⏱ Urgency: 4 tháng
+            </span>
+            <span class="insight-tag" style="background:#FFF8E8;border:1.5px solid #FFD060;color:#806020;">
+              💾 Capacity: 3-4tr/tháng
+            </span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with _s3:
+        st.markdown("""
+        <div class="ceo-section">
+          <div class="ceo-section-title">📱 Ước mơ đổi iPhone</div>
+
+          <div style="color:#888;font-size:.82rem;margin-bottom:14px;">
+            <strong>Đối tượng:</strong> Vy, 22 tuổi, nhân viên văn phòng · <strong>Không phán xét</strong>
+          </div>
+
+          <div class="chat-bubble-user">Em đang dùng iPhone 11 muốn đổi máy</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 iPhone 11 vẫn còn xài được mà! Nhưng mình hiểu — 4 năm là lâu rồi.
+            Bạn đang nhắm iPhone 15 hay 16 vậy?
+          </div>
+          <div class="chat-meta">🔵 Rule Engine — No judgment · 0 token</div>
+
+          <div class="chat-bubble-user">Em muốn iPhone 16 Pro Max ạ, nghe bảo camera xịn</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Đúng rồi, camera Pro Max ngon lắm! Bạn hay dùng máy để chụp ảnh nhiều không,
+            hay chủ yếu work và mạng xã hội? Mình hỏi để tính xem có nên lên thẳng Pro Max không nha.
+          </div>
+          <div class="chat-meta">🟡 LLM — Use case extraction · ~110 token</div>
+
+          <div class="chat-bubble-user">Em hay chụp ảnh đồ ăn để post Instagram ạ</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Ah content creator! Thế thì Pro Max là ngon thật.
+            iPhone 16 Pro Max khoảng 34-37 triệu tùy dung lượng.
+            Bạn có thể đổi máy cũ được khoảng 5-8 triệu — còn lại tầm 26-30 triệu.
+            <br/><br/>Mình tính thử nhé: nếu mỗi tháng để dành 3 triệu, mà
+            chia nhỏ ra — mỗi ngày 100k — thì 9-10 tháng là có máy mới rồi!
+            Mình đặt mục tiêu <strong>"📱 iPhone 16 Pro Max"</strong> cho bạn nhé?
+          </div>
+          <div class="chat-meta">🟡 LLM — Goal quantification · ~160 token</div>
+
+          <div class="chat-bubble-user">Oke Cừu ơi, em thử đi</div>
+
+          <div class="chat-bubble-sheep">
+            🐑 Bê bê~ Đã tạo xong! Hôm nay cho Cừu ăn 100k là chính thức bắt đầu.
+            Mỗi lần Cừu được ăn là một bước gần hơn tới chiếc iPhone 16 Pro Max rồi đó 🐑✨
+          </div>
+          <div class="chat-meta">🔵 Rule Engine — Feed CTA · 0 token</div>
+
+          <div style="background:linear-gradient(135deg,#F0FFF4,#E8F8FF);border-radius:14px;
+               padding:14px 16px;margin-top:14px;border:1.5px solid #B8F0C8;">
+            <div style="font-size:.82rem;font-weight:800;color:#2D7A4F;margin-bottom:10px;">
+              🧠 AI ĐANG HIỂU ĐƯỢC
+            </div>
+            <span class="insight-tag" style="background:#FFF0E8;border:1.5px solid #FFB347;color:#C07820;">
+              🎯 Dream: iPhone 16 Pro Max
+            </span>
+            <span class="insight-tag" style="background:#E8F0FF;border:1.5px solid #7090FF;color:#3050C0;">
+              📸 Identity: Content Creator
+            </span>
+            <span class="insight-tag" style="background:#FFE8F8;border:1.5px solid #FF90C0;color:#C03070;">
+              💰 Net Cost: ~26-30 triệu
+            </span>
+            <span class="insight-tag" style="background:#F0FFE8;border:1.5px solid #70C050;color:#2A7A10;">
+              📅 Plan: 100k/ngày × 9 tháng
+            </span>
+            <span class="insight-tag" style="background:#FFF8E8;border:1.5px solid #FFD060;color:#806020;">
+              😊 Emotion: Aspirational
+            </span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 2 — DIARY DEMO
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      📔 PHẦN 2 — Demo Nhật Ký: AI đọc cảm xúc và trích xuất insight
+    </div>
+    """, unsafe_allow_html=True)
+
+    _DIARY_DEMOS = [
+        {
+            "date": "Thứ Hai, 17/06",
+            "mood": "😔 Có chút áp lực",
+            "content": "Hôm nay lương vừa về nhưng em lại đặt Shopee mất 700k. Không biết mình mua gì nữa. Bạn bè cứ tag mình vào deal này deal kia.",
+            "sheep_reply": "Bê bê~ Mình hiểu cảm giác đó — lương về là vui, nhưng Shopee cũng vui theo 😄 Không sao cả, quan trọng là bạn nhận ra điều này. Lần sau mình cùng làm một 'wishlist 24h' nhé — mua gì thì đợi 24h xem còn muốn không?",
+            "emotion": "Impulse Spending",
+            "tags": ["cashflow", "stress"],
+            "dream": "",
+            "financial": "Low",
+            "confidence": 87,
+            "insights": [
+                ("😔", "Emotion", "FOMO + Stress sau lương"),
+                ("🛒", "Behavior", "Impulse Spending triggered by social"),
+                ("💸", "Pattern", "Spending ngay khi nhận lương"),
+                ("📊", "Financial Discipline", "Low"),
+            ]
+        },
+        {
+            "date": "Thứ Ba, 18/06",
+            "mood": "😔 Có chút áp lực",
+            "content": "Hôm nay em thấy áp lực vì bạn bè ai cũng đi du lịch Đà Lạt mà em không có tiền. Thấy hơi tủi.",
+            "sheep_reply": "Cừu hiểu cảm giác nhìn ảnh story của bạn bè mà thấy tủi lắm 💙 Nhưng mình tin mỗi người có timeline riêng. Bạn có muốn cùng Cừu tính xem để dành bao lâu thì có thể đi trip đầu tiên không?",
+            "emotion": "FOMO",
+            "tags": ["dream_travel", "stress", "cashflow"],
+            "dream": "Du lịch Đà Lạt",
+            "financial": "Low-Medium",
+            "confidence": 91,
+            "insights": [
+                ("😢", "Emotion", "FOMO cao — Social comparison"),
+                ("✈️", "Dream", "Travel: Đà Lạt (latent)"),
+                ("💪", "Opportunity", "Có thể convert thành saving goal"),
+                ("📊", "Financial Discipline", "Low-Medium"),
+            ]
+        },
+        {
+            "date": "Thứ Tư, 19/06",
+            "mood": "💪 Đang quyết tâm",
+            "content": "Hôm nay em tiết kiệm được 50k, không mua cà phê ngoài mà pha ở nhà. Nhỏ thôi nhưng em vui.",
+            "sheep_reply": "Bê bê~ 50k nghe nhỏ nhưng KHÔNG nhỏ chút nào! 50k × 30 ngày = 1,5 triệu mỗi tháng — đó là 18 triệu một năm đó bạn! Cừu tự hào về bạn lắm 🎉",
+            "emotion": "Pride + Momentum",
+            "tags": ["milestone"],
+            "dream": "",
+            "financial": "Medium (improving)",
+            "confidence": 94,
+            "insights": [
+                ("🎉", "Emotion", "Self-efficacy đang tăng"),
+                ("✅", "Behavior", "Positive saving habit forming"),
+                ("📈", "Trend", "Discipline improving"),
+                ("📊", "Financial Discipline", "Medium (đang tăng)"),
+            ]
+        },
+        {
+            "date": "Thứ Năm, 20/06",
+            "mood": "😊 Mình rất vui",
+            "content": "Hôm nay sếp khen em trước team. Em đang nghĩ cuối năm có thể xin tăng lương. Tự nhiên thấy muốn đầu tư gì đó.",
+            "sheep_reply": "Ôi tin vui!! 🎉 Bạn xứng đáng được khen lắm! Và ý tưởng về đầu tư khi thu nhập tăng — nghe hay đó. Cừu sẽ nhớ điều này và khi nào bạn sẵn sàng mình sẽ kể về quỹ đầu tư đơn giản nhé?",
+            "emotion": "Confident + Growth Mindset",
+            "tags": ["career", "milestone"],
+            "dream": "Career growth",
+            "financial": "High",
+            "confidence": 96,
+            "insights": [
+                ("🚀", "Emotion", "High confidence + Growth mindset"),
+                ("💼", "Life Event", "Career milestone"),
+                ("📈", "Intent", "Investment intent detected"),
+                ("📊", "Financial Discipline", "High"),
+            ]
+        },
+        {
+            "date": "Thứ Sáu, 21/06",
+            "mood": "😴 Hơi mệt",
+            "content": "Mệt quá, deadline dồn 3 cái một lúc. Cảm giác làm mãi không đủ tiền. Em thấy bế tắc.",
+            "sheep_reply": "Bê bê~ Mình ở đây nè 💙 Ba deadline một lúc là quá tải thật. Không cần phải ổn ngay hôm nay đâu. Bạn cứ nghỉ ngơi — tiền thì ngày mai tính tiếp, hôm nay cứ để Cừu lo một nửa nhé?",
+            "emotion": "Burnout",
+            "tags": ["stress", "cashflow", "career"],
+            "dream": "",
+            "financial": "Low (stress-driven)",
+            "confidence": 78,
+            "insights": [
+                ("😓", "Emotion", "Burnout + Financial anxiety"),
+                ("⚡", "Risk", "Vulnerability to impulse spending"),
+                ("💙", "Action", "Need support, not product push"),
+                ("📊", "Financial Discipline", "Low (stress-driven)"),
+            ]
+        },
+    ]
+
+    for _de in _DIARY_DEMOS:
+        with st.expander(f"📔 {_de['date']} — {_de['mood']} · {_de['emotion']}"):
+            _dc1, _dc2 = st.columns([3, 2])
+            with _dc1:
+                st.markdown(f"""
+                <div class="diary-demo-card">
+                  <div style="font-size:.78rem;color:#aaa;margin-bottom:8px;">{_de['date']} · {_de['mood']}</div>
+                  <div style="font-size:.95rem;color:#333;line-height:1.7;font-style:italic;">
+                    "{_de['content']}"
+                  </div>
+                  <div style="margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,#FFF0F7,#FFF8F0);
+                       border-radius:12px;border:1.5px solid #FFD6E8;">
+                    <div style="font-size:.78rem;color:#C4607F;font-weight:700;margin-bottom:4px;">
+                      🐑 Cừu phản hồi:
+                    </div>
+                    <div style="font-size:.88rem;color:#555;line-height:1.6;">{_de['sheep_reply']}</div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with _dc2:
+                st.markdown("""
+                <div style="font-size:.82rem;font-weight:800;color:#7B5EA7;
+                     text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">
+                  🧠 AI Insight Extract
+                </div>
+                """, unsafe_allow_html=True)
+                for _ico, _lbl, _val in _de["insights"]:
+                    st.markdown(f"""
+                    <div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;">
+                      <span style="font-size:1.1rem;flex-shrink:0;">{_ico}</span>
+                      <div>
+                        <div style="font-size:.72rem;color:#aaa;font-weight:700;text-transform:uppercase;">{_lbl}</div>
+                        <div style="font-size:.88rem;color:#333;">{_val}</div>
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                _conf = _de["confidence"]
+                st.markdown(f"""
+                <div style="margin-top:10px;">
+                  <div style="font-size:.72rem;color:#aaa;font-weight:700;
+                       text-transform:uppercase;margin-bottom:4px;">Confidence</div>
+                  <div class="confidence-bar">
+                    <div class="confidence-fill" style="width:{_conf}%;"></div>
+                  </div>
+                  <div style="font-size:.8rem;color:#7B5EA7;font-weight:700;">{_conf}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 3 — WEALTH GENOME ENGINE
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      🧬 PHẦN 3 — Wealth Genome Engine: AI xây hồ sơ tài chính đa chiều
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ceo-section">
+      <div style="font-size:.9rem;color:#666;margin-bottom:18px;line-height:1.6;">
+        Từ <strong>Chat</strong> + <strong>Diary</strong> + <strong>Transaction</strong> + <strong>Interaction</strong>,
+        AI tổng hợp thành Wealth Genome — hồ sơ tài chính đa chiều cho mỗi khách hàng.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+
+        <div class="genome-layer">
+          <div class="genome-label">🎯 Dream Layer</div>
+          <div style="font-size:.88rem;color:#444;line-height:1.8;">
+            🎵 Concert Dì Taylor<br/>
+            💻 MacBook Air M2<br/>
+            ✈️ Du lịch Nhật Bản<br/>
+            📱 iPhone 16 Pro Max
+          </div>
+          <div style="font-size:.72rem;color:#aaa;margin-top:8px;">
+            Extracted từ 12 cuộc chat · 5 diary entries
+          </div>
+        </div>
+
+        <div class="genome-layer">
+          <div class="genome-label">💙 Emotion Layer</div>
+          <div style="font-size:.88rem;color:#444;line-height:1.8;">
+            😢 FOMO: Cao (score 8.2/10)<br/>
+            🎉 Excitement: Cao<br/>
+            😓 Stress: Trung bình<br/>
+            💪 Ambition: Cao-Trung
+          </div>
+          <div style="font-size:.72rem;color:#aaa;margin-top:8px;">
+            Sentiment analysis · 7 ngày gần nhất
+          </div>
+        </div>
+
+        <div class="genome-layer">
+          <div class="genome-label">💸 Spending Layer</div>
+          <div style="font-size:.88rem;color:#444;line-height:1.8;">
+            🛒 Impulse Spending: Cao<br/>
+            ☕ Daily habits: 35k/ngày<br/>
+            📦 Shopee: 2-3 lần/tuần<br/>
+            🍜 Food: 150k/ngày avg
+          </div>
+          <div style="font-size:.72rem;color:#aaa;margin-top:8px;">
+            Từ transaction data + diary signals
+          </div>
+        </div>
+
+        <div class="genome-layer">
+          <div class="genome-label">🌱 Saving Layer</div>
+          <div style="font-size:.88rem;color:#444;line-height:1.8;">
+            💰 Capacity: 3-5tr/tháng<br/>
+            📅 Consistency: Không đều<br/>
+            🎯 Best trigger: Streak reward<br/>
+            ⚡ Risk of churn: Sau stress
+          </div>
+          <div style="font-size:.72rem;color:#aaa;margin-top:8px;">
+            Feeding history + behavior patterns
+          </div>
+        </div>
+
+        <div class="genome-layer">
+          <div class="genome-label">🎓 Life Stage Layer</div>
+          <div style="font-size:.88rem;color:#444;line-height:1.8;">
+            👤 Gen Z · 21 tuổi<br/>
+            📚 Đang đi học/đi làm mới<br/>
+            🏠 Sống cùng gia đình<br/>
+            💼 Thu nhập: 8-12tr/tháng
+          </div>
+          <div style="font-size:.72rem;color:#aaa;margin-top:8px;">
+            Inferred từ context + life events
+          </div>
+        </div>
+
+        <div class="genome-layer">
+          <div class="genome-label">⚖️ Risk Layer</div>
+          <div style="font-size:.88rem;color:#444;line-height:1.8;">
+            🎯 Risk appetite: Trung bình<br/>
+            ⏱ Time horizon: 6-12 tháng<br/>
+            📈 Fund ready: TCBF → TCFF<br/>
+            🔄 Rebalance: Tự động OK
+          </div>
+          <div style="font-size:.72rem;color:#aaa;margin-top:8px;">
+            Risk model · Inferred, not asked
+          </div>
+        </div>
+
+      </div>
+
+      <div style="background:linear-gradient(135deg,#1A1A2E,#302B63);border-radius:16px;
+           padding:18px 20px;margin-top:18px;text-align:center;">
+        <div style="font-size:.82rem;font-weight:800;color:#FFD700;margin-bottom:8px;">
+          🧬 WEALTH GENOME SCORE
+        </div>
+        <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:#fff;">82</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.6);">Dream Clarity</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:#FFD700;">67</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.6);">Financial Discipline</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:#4ECDC4;">74</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.6);">Saving Potential</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.6rem;font-weight:900;color:#FF6B6B;">55</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.6);">Investment Readiness</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 4 — CUSTOMER SEGMENTATION
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      👥 PHẦN 4 — Customer Segmentation: AI gom cụm, KHÔNG cá nhân hóa từng người
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="font-size:.9rem;color:#666;margin-bottom:16px;line-height:1.6;
+         background:#f8f4ff;border-radius:12px;padding:12px 16px;">
+      💡 <strong>Nguyên tắc:</strong> AI không lưu hành vi cá nhân để target — AI gom cụm theo
+      Wealth Genome pattern, sau đó TCBS truyền thông theo segment. Privacy-first by design.
+    </div>
+    """, unsafe_allow_html=True)
+
+    _seg_col1, _seg_col2, _seg_col3 = st.columns(3)
+
+    with _seg_col1:
+        st.markdown("""
+        <div class="segment-card seg-a">
+          <div style="font-size:1.5rem;margin-bottom:8px;">🌟</div>
+          <div style="font-size:1rem;font-weight:900;color:#C07820;margin-bottom:4px;">
+            SEGMENT A — Dream Chaser
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-bottom:12px;">
+            18-25 tuổi · ~38% Gen Z users
+          </div>
+
+          <div style="font-size:.8rem;font-weight:700;color:#666;margin-bottom:6px;">🎯 Ước mơ:</div>
+          <div style="font-size:.83rem;color:#444;margin-bottom:12px;line-height:1.7;">
+            🎵 Concert / Sự kiện<br/>
+            📱 iPhone / Gadget<br/>
+            💻 MacBook / Tool học
+          </div>
+
+          <div style="font-size:.8rem;font-weight:700;color:#666;margin-bottom:6px;">🧠 Đặc điểm:</div>
+          <div style="font-size:.83rem;color:#444;margin-bottom:12px;line-height:1.7;">
+            • Thích phần thưởng ngắn hạn<br/>
+            • Tiết kiệm không đều<br/>
+            • FOMO cao<br/>
+            • Nhạy với streak & milestone
+          </div>
+
+          <div style="background:#FFF0D8;border-radius:12px;padding:10px 12px;border:1.5px solid #FFB347;">
+            <div style="font-size:.72rem;font-weight:800;color:#C07820;margin-bottom:4px;">
+              📢 THÔNG ĐIỆP
+            </div>
+            <div style="font-size:.85rem;color:#604010;font-style:italic;line-height:1.6;">
+              "Mỗi ngày 10.000đ cũng đưa bạn gần hơn tới chiếc MacBook."
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with _seg_col2:
+        st.markdown("""
+        <div class="segment-card seg-b">
+          <div style="font-size:1.5rem;margin-bottom:8px;">✈️</div>
+          <div style="font-size:1rem;font-weight:900;color:#1A8080;margin-bottom:4px;">
+            SEGMENT B — Travel Explorer
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-bottom:12px;">
+            20-28 tuổi · ~29% Gen Z users
+          </div>
+
+          <div style="font-size:.8rem;font-weight:700;color:#666;margin-bottom:6px;">🎯 Ước mơ:</div>
+          <div style="font-size:.83rem;color:#444;margin-bottom:12px;line-height:1.7;">
+            🇯🇵 Nhật Bản<br/>
+            🇰🇷 Hàn Quốc<br/>
+            🇪🇺 Châu Âu backpack
+          </div>
+
+          <div style="font-size:.8rem;font-weight:700;color:#666;margin-bottom:6px;">🧠 Đặc điểm:</div>
+          <div style="font-size:.83rem;color:#444;margin-bottom:12px;line-height:1.7;">
+            • Mơ dài hạn hơn (1-2 năm)<br/>
+            • Social comparison mạnh<br/>
+            • Có khả năng tiết kiệm đều<br/>
+            • Nhạy với community
+          </div>
+
+          <div style="background:#D8F8F8;border-radius:12px;padding:10px 12px;border:1.5px solid #4ECDC4;">
+            <div style="font-size:.72rem;font-weight:800;color:#1A8080;margin-bottom:4px;">
+              📢 THÔNG ĐIỆP
+            </div>
+            <div style="font-size:.85rem;color:#105050;font-style:italic;line-height:1.6;">
+              "Trip đầu tiên không bắt đầu bằng visa. Nó bắt đầu bằng 10.000đ."
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with _seg_col3:
+        st.markdown("""
+        <div class="segment-card seg-c">
+          <div style="font-size:1.5rem;margin-bottom:8px;">📚</div>
+          <div style="font-size:1rem;font-weight:900;color:#3A7A10;margin-bottom:4px;">
+            SEGMENT C — Life Builder
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-bottom:12px;">
+            22-30 tuổi · ~33% Gen Z users
+          </div>
+
+          <div style="font-size:.8rem;font-weight:700;color:#666;margin-bottom:6px;">🎯 Ước mơ:</div>
+          <div style="font-size:.83rem;color:#444;margin-bottom:12px;line-height:1.7;">
+            📜 Chứng chỉ / Học thêm<br/>
+            💼 Khởi nghiệp nhỏ<br/>
+            🏠 Tích lũy dài hạn
+          </div>
+
+          <div style="font-size:.8rem;font-weight:700;color:#666;margin-bottom:6px;">🧠 Đặc điểm:</div>
+          <div style="font-size:.83rem;color:#444;margin-bottom:12px;line-height:1.7;">
+            • Tư duy đầu tư dài hạn hơn<br/>
+            • Thu nhập ổn định hơn<br/>
+            • Chấp nhận rủi ro trung bình<br/>
+            • Nhạy với % return & compound
+          </div>
+
+          <div style="background:#E8FFD8;border-radius:12px;padding:10px 12px;border:1.5px solid #7ED321;">
+            <div style="font-size:.72rem;font-weight:800;color:#3A7A10;margin-bottom:4px;">
+              📢 THÔNG ĐIỆP
+            </div>
+            <div style="font-size:.85rem;color:#204010;font-style:italic;line-height:1.6;">
+              "Đầu tư cho tương lai cũng là một loại đầu tư."
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 5 — OFFER ENGINE
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      🎯 PHẦN 5 — Offer Engine: Truyền thông đúng người, đúng lúc, đúng cách
+    </div>
+    """, unsafe_allow_html=True)
+
+    _oc1, _oc2, _oc3 = st.columns(3)
+    _offer_data = [
+        {
+            "seg": "🌟 Dream Chaser",
+            "color": "#FFB347", "bg": "#FFF8E8",
+            "push": "🐑 Cừu đã ăn 12 ngày liên tiếp!\nMục tiêu MacBook: còn 2.4 triệu nữa thôi.",
+            "banner": "Đã có 3.200 bạn đang tích lũy cho MacBook",
+            "banner_cta": "Xem tiến độ của mình →",
+            "community": "💻 MacBook Hunters",
+            "community_desc": "3.200 thành viên · Chia sẻ deal, review, tips tiết kiệm",
+            "content": "Bí kíp tiết kiệm 30k/ngày mà không nhịn ăn",
+        },
+        {
+            "seg": "✈️ Travel Explorer",
+            "color": "#4ECDC4", "bg": "#E8FFFE",
+            "push": "🐑 Trip Nhật Bản của bạn:\n14% hoàn thành · Bạn đang dẫn đầu nhóm!",
+            "banner": "1.800 người đang tích lũy cho chuyến Nhật",
+            "banner_cta": "Tham gia cộng đồng →",
+            "community": "✈️ Japan Dream Squad",
+            "community_desc": "1.800 thành viên · Lịch trình, tips, review visa",
+            "content": "Checklist chi phí du lịch Nhật 7 ngày từ A-Z",
+        },
+        {
+            "seg": "📚 Life Builder",
+            "color": "#7ED321", "bg": "#F0FFE8",
+            "push": "📈 Quỹ TCC của bạn tháng này:\n+2.3% · Tốt hơn gửi ngân hàng 1.8%",
+            "banner": "Quỹ TCC: trung bình +8.4%/năm (2023)",
+            "banner_cta": "Xem báo cáo quỹ →",
+            "community": "📚 Future Builder Club",
+            "community_desc": "920 thành viên · Tài chính cá nhân, đầu tư cơ bản",
+            "content": "DCA là gì và tại sao người trẻ nên bắt đầu từ 200k/tháng",
+        },
+    ]
+    for _col, _od in zip([_oc1, _oc2, _oc3], _offer_data):
+        with _col:
+            st.markdown(f"""
+            <div class="offer-card" style="border-color:{_od['color']};">
+              <div style="font-size:.95rem;font-weight:800;color:{_od['color']};margin-bottom:14px;">
+                {_od['seg']}
+              </div>
+
+              <div style="font-size:.75rem;font-weight:800;color:#888;text-transform:uppercase;
+                   letter-spacing:.06em;margin-bottom:5px;">📱 Push Notification</div>
+              <div style="background:{_od['bg']};border-radius:10px;padding:10px 12px;
+                   font-size:.82rem;color:#333;line-height:1.6;margin-bottom:12px;
+                   border:1.5px solid {_od['color']}20;white-space:pre-line;">{_od['push']}</div>
+
+              <div style="font-size:.75rem;font-weight:800;color:#888;text-transform:uppercase;
+                   letter-spacing:.06em;margin-bottom:5px;">🖼 Banner</div>
+              <div style="background:linear-gradient(135deg,#1A1A2E,#302B63);border-radius:10px;
+                   padding:10px 12px;margin-bottom:12px;">
+                <div style="font-size:.85rem;color:#fff;font-weight:700;">{_od['banner']}</div>
+                <div style="font-size:.75rem;color:{_od['color']};margin-top:4px;">{_od['banner_cta']}</div>
+              </div>
+
+              <div style="font-size:.75rem;font-weight:800;color:#888;text-transform:uppercase;
+                   letter-spacing:.06em;margin-bottom:5px;">👥 iChat Community</div>
+              <div style="background:{_od['bg']};border-radius:10px;padding:10px 12px;
+                   margin-bottom:12px;border:1.5px solid {_od['color']}30;">
+                <div style="font-size:.88rem;font-weight:700;color:#333;">{_od['community']}</div>
+                <div style="font-size:.78rem;color:#666;margin-top:3px;">{_od['community_desc']}</div>
+              </div>
+
+              <div style="font-size:.75rem;font-weight:800;color:#888;text-transform:uppercase;
+                   letter-spacing:.06em;margin-bottom:5px;">📰 Bài Viết Gợi Ý</div>
+              <div style="font-size:.83rem;color:#444;font-style:italic;padding:8px 0;">
+                "{_od['content']}"
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 6 — MICRO SAVING ENGINE
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      💰 PHẦN 6 — Micro Saving Engine: Tiền lẻ → Chứng chỉ quỹ → Cừu lớn
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ceo-section">
+      <div style="font-size:.9rem;color:#666;margin-bottom:20px;line-height:1.6;">
+        KHÔNG tư vấn cổ phiếu. KHÔNG tư vấn trading. Chỉ một hành trình đơn giản:
+        <strong>Cho Cừu ăn → Tự động mua chứng chỉ quỹ TCC → Cừu lớn → Tiến gần mục tiêu.</strong>
+      </div>
+    """, unsafe_allow_html=True)
+
+    _steps = [
+        ("1", "💸", "Tiền lẻ của bạn", "10.000đ · 20.000đ · 50.000đ · 100.000đ",
+         "Bất kỳ số tiền nào. Tiền cà phê, tiền trà sữa, tiền tiết kiệm được hôm nay."),
+        ("2", "🐑", "Cho Cừu ăn", "Nhấn nút Feed → Cừu được ăn",
+         "Gamification trigger: streak, level, milestone. Habit loop được hình thành."),
+        ("3", "🔄", "Tự động mua Chứng Chỉ Quỹ TCC", "Lệnh đặt mua TCBF/TCFF/TCEF",
+         "Backend tự động gom tiền → đặt lệnh mua chứng chỉ quỹ → không cần khách hàng thao tác."),
+        ("4", "📈", "Tiền sinh lời nhẹ", "Trung bình 6-9%/năm (TCBF/TCFF)",
+         "Không phải magic, không phải hứa hẹn. Chỉ tốt hơn để tiền ngân hàng. Đủ để khách hàng thấy ý nghĩa."),
+        ("5", "🎉", "Cừu lớn + Level tăng", "Baby → Child → Teen → Adult → Master",
+         "Mỗi milestone là một celebration moment. Streak reward. Achievement unlock."),
+        ("6", "🏆", "Tiến gần giấc mơ", "Concert · MacBook · iPhone · Du lịch",
+         "Goal bar hiển thị % hoàn thành. Khách hàng thấy tiến độ thực tế, không phải số trừu tượng."),
+    ]
+
+    for _num, _ico, _title, _subtitle, _desc in _steps:
+        st.markdown(f"""
+        <div class="micro-step">
+          <div style="width:36px;height:36px;border-radius:50%;
+               background:linear-gradient(135deg,#7B5EA7,#C4607F);
+               display:flex;align-items:center;justify-content:center;
+               font-size:.88rem;font-weight:900;color:#fff;flex-shrink:0;">{_num}</div>
+          <div style="font-size:1.5rem;flex-shrink:0;">{_ico}</div>
+          <div style="flex:1;">
+            <div style="font-size:.95rem;font-weight:800;color:#302B63;">{_title}</div>
+            <div style="font-size:.78rem;color:#C4607F;font-weight:700;margin:1px 0 4px;">{_subtitle}</div>
+            <div style="font-size:.82rem;color:#666;line-height:1.5;">{_desc}</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+      <div style="background:linear-gradient(135deg,#FFF0F7,#F0F7FF);border-radius:14px;
+           padding:16px 18px;margin-top:14px;border:1.5px solid #E0D0FF;">
+        <div style="font-size:.82rem;font-weight:800;color:#7B5EA7;margin-bottom:10px;">
+          💬 Ngôn ngữ Gen Z cho Micro Saving:
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.85rem;color:#444;">
+          <div>🎵 <strong>"Lọ Concert"</strong> — thay vì "tài khoản tiết kiệm"</div>
+          <div>☕ <strong>"Tiền trà sữa"</strong> — thay vì "chi phí hàng ngày"</div>
+          <div>🐑 <strong>"Cho Cừu ăn"</strong> — thay vì "nạp tiền đầu tư"</div>
+          <div>🎯 <strong>"Gần hơn 1 bước"</strong> — thay vì "đã tích lũy X đồng"</div>
+          <div>🔥 <strong>"Streak 7 ngày"</strong> — thay vì "đã đầu tư đều đặn"</div>
+          <div>🏆 <strong>"Cừu lên Level"</strong> — thay vì "đạt mốc X triệu"</div>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PHẦN 7 — TOKEN SAVING ARCHITECTURE
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div class="ceo-section-title" style="font-size:1.3rem;color:#302B63;
+         font-weight:900;margin:4px 0 20px;">
+      ⚡ PHẦN 7 — Token Saving Architecture: 90% interaction KHÔNG gọi LLM
+    </div>
+    """, unsafe_allow_html=True)
+
+    _ta1, _ta2 = st.columns([3, 2])
+
+    with _ta1:
+        st.markdown("""
+        <div class="arch-box">
+          <div class="arch-label">🔵 Tầng 1 — Rule Engine (90% interactions · 0 token)</div>
+          <div style="font-size:.85rem;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:4px;">
+            ✅ Greeting / Chào buổi sáng<br/>
+            ✅ Streak reminder ("Hôm nay chưa cho Cừu ăn nhé!")<br/>
+            ✅ Feed confirmation ("Cừu vừa được ăn 50k!")<br/>
+            ✅ Level up celebration<br/>
+            ✅ Goal progress ("MacBook: 34% — thêm 200k nữa nhé")<br/>
+            ✅ Milestone notification<br/>
+            ✅ Simple emotional response (mệt/vui/buồn → preset reply)
+          </div>
+        </div>
+
+        <div class="arch-box" style="margin-top:10px;">
+          <div class="arch-label">🟡 Tầng 2 — Embedding Memory (cached · ~5 token/call)</div>
+          <div style="font-size:.85rem;color:rgba(255,255,255,.85);line-height:1.8;">
+            📌 Dream vector: "concert_taylor_swift_12mo_2-5m"<br/>
+            📌 Emotion state: FOMO_high · Stress_medium<br/>
+            📌 Spending pattern: impulse_shopee · daily_coffee<br/>
+            📌 Life event tags: career_positive · cashflow_stress<br/>
+            <span style="color:#FFD700;">→ Dùng để match segment + trigger offer · KHÔNG gọi LLM</span>
+          </div>
+        </div>
+
+        <div class="arch-box" style="margin-top:10px;">
+          <div class="arch-label">🔴 Tầng 3 — LLM Call (10% interactions · full token)</div>
+          <div style="font-size:.85rem;color:rgba(255,255,255,.85);line-height:1.8;">
+            ⚡ Chat dài (>3 lượt, chưa có context)<br/>
+            ⚡ Nhật ký mới (phân tích cảm xúc + extract insight)<br/>
+            ⚡ Phát hiện dream mới chưa có trong memory<br/>
+            ⚡ Thay đổi lớn trong behavior (đột ngột tiết kiệm nhiều hơn 3x)<br/>
+            ⚡ Câu hỏi phức tạp về tài chính
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with _ta2:
+        st.markdown("""
+        <div class="ceo-section" style="height:100%;box-sizing:border-box;">
+          <div style="font-size:.88rem;font-weight:800;color:#302B63;margin-bottom:16px;">
+            📊 Chi phí Token ước tính
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:.78rem;color:#aaa;text-transform:uppercase;
+                 font-weight:700;margin-bottom:8px;">Trước khi tối ưu</div>
+            <div style="font-size:2rem;font-weight:900;color:#FF6B6B;">~45,000</div>
+            <div style="font-size:.82rem;color:#666;">token/user/tháng</div>
+            <div style="font-size:.78rem;color:#aaa;margin-top:2px;">
+              ~$0.67 USD/user/tháng (Haiku)
+            </div>
+          </div>
+
+          <div style="border-top:1.5px solid #f0e8ff;padding-top:16px;margin-bottom:16px;">
+            <div style="font-size:.78rem;color:#aaa;text-transform:uppercase;
+                 font-weight:700;margin-bottom:8px;">Sau khi tối ưu</div>
+            <div style="font-size:2rem;font-weight:900;color:#7ED321;">~4,500</div>
+            <div style="font-size:.82rem;color:#666;">token/user/tháng</div>
+            <div style="font-size:.78rem;color:#aaa;margin-top:2px;">
+              ~$0.067 USD/user/tháng
+            </div>
+          </div>
+
+          <div style="background:linear-gradient(135deg,#F0FFE8,#E8FFE0);border-radius:12px;
+               padding:12px 14px;border:1.5px solid #7ED321;margin-bottom:14px;">
+            <div style="font-size:1.5rem;font-weight:900;color:#3A7A10;">-90%</div>
+            <div style="font-size:.82rem;color:#2A6010;font-weight:700;">chi phí AI giảm</div>
+            <div style="font-size:.75rem;color:#666;margin-top:2px;">Rule Engine xử lý 90% traffic</div>
+          </div>
+
+          <div style="font-size:.8rem;font-weight:800;color:#302B63;margin-bottom:8px;">
+            💾 Lưu dài hạn (permanent):
+          </div>
+          <div style="font-size:.8rem;color:#444;line-height:1.7;margin-bottom:12px;">
+            ✅ Dream vector<br/>
+            ✅ Segment tag<br/>
+            ✅ Life events<br/>
+            ✅ Streak + total saved<br/>
+            ✅ Growth stage
+          </div>
+
+          <div style="font-size:.8rem;font-weight:800;color:#302B63;margin-bottom:8px;">
+            🗑 Tự động quên (TTL):
+          </div>
+          <div style="font-size:.8rem;color:#666;line-height:1.7;">
+            ⏱ Chat history: 30 ngày<br/>
+            ⏱ Diary raw text: 90 ngày<br/>
+            ⏱ Emotion state: reset hàng tuần<br/>
+            ⏱ Market reactions: 7 ngày
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#0F0C29,#302B63,#24243E);
+         border-radius:20px;padding:28px 24px;text-align:center;margin-top:20px;">
+      <div style="font-size:1.5rem;font-weight:900;color:#FFD700;margin-bottom:12px;">
+        🐑 Kết luận cho CEO
+      </div>
+      <div style="font-size:1rem;color:rgba(255,255,255,.85);line-height:1.8;max-width:700px;margin:0 auto;">
+        Cừu Cần Cù <strong style="color:#FFD700;">không phải chatbot.</strong><br/>
+        Đây là hệ thống AI 3 tầng:<br/><br/>
+        <span style="color:#4ECDC4;">Rule Engine</span> xử lý 90% habit loops →
+        <span style="color:#FFB347;">Embedding Memory</span> hiểu khách hàng theo Wealth Genome →
+        <span style="color:#FF6B6B;">LLM</span> chỉ kích hoạt khi có insight mới.<br/><br/>
+        Kết quả: <strong style="color:#fff;">Chi phí giảm 90%</strong> ·
+        <strong style="color:#fff;">Khách hàng tích lũy mỗi ngày</strong> ·
+        <strong style="color:#fff;">TCBS hiểu từng nhóm khách hàng</strong> ·
+        <strong style="color:#fff;">Micro Saving chuyển thành Fund Investing.</strong>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
