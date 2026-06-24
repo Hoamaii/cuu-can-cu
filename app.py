@@ -1697,11 +1697,12 @@ with st.sidebar:
 # Vision: Finch × Duolingo × Character AI × TCBS
 # 💬 Tâm sự · 🐑 Cừu của tôi · 👥 Cộng đồng
 # ═══════════════════════════════════════════════════════
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "💬 Tâm sự",
     "🐑 Cừu của tôi",
     "👥 Cộng đồng",
     "🎯 AI Intelligence",
+    "🧪 AI QA",
 ])
 
 # ═══════════════════════════════════════════════════════
@@ -5567,3 +5568,727 @@ with tab4:
       </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHEEP QA AGENT — Product Vision Quality Assurance
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── 30 Test Scenarios ──
+_QA_SCENARIOS: list[dict] = [
+    # ───── EMOTIONAL CONNECTION (Test 1) ─────
+    {"id": "E1", "group": "Emotional", "label": "Cảm xúc buồn đơn giản",
+     "user": "Hôm nay em rất buồn.",
+     "pass_if": ["đồng cảm", "hỏi tiếp", "not_sell"],
+     "fail_if": ["đầu tư", "quỹ", "tcef", "tcbf", "tcff", "mua ngay"],
+     "criteria": "Đồng cảm + hỏi mở, không bán hàng"},
+
+    {"id": "E2", "group": "Emotional", "label": "Stress công việc",
+     "user": "Em đang stress với công việc quá.",
+     "pass_if": ["đồng cảm", "hỏi tiếp", "not_sell"],
+     "fail_if": ["đầu tư", "quỹ", "mua ngay", "hãy"],
+     "criteria": "Chia sẻ cảm xúc trước, không dẫn ngay vào tài chính"},
+
+    {"id": "E3", "group": "Emotional", "label": "Vui vẻ chia sẻ",
+     "user": "Hôm nay em vui lắm, vừa được tăng lương!",
+     "pass_if": ["chúc mừng", "hỏi tiếp", "not_sell"],
+     "fail_if": ["nên đầu tư", "hãy mua", "quỹ ngay"],
+     "criteria": "Ăn mừng cùng user trước, không bán hàng ngay"},
+
+    {"id": "E4", "group": "Emotional", "label": "Cô đơn",
+     "user": "Em cảm thấy cô đơn quá.",
+     "pass_if": ["đồng cảm", "hỏi tiếp", "not_sell"],
+     "fail_if": ["đầu tư", "tiết kiệm", "quỹ"],
+     "criteria": "Đồng hành cảm xúc, không chuyển chủ đề sang tài chính"},
+
+    {"id": "E5", "group": "Emotional", "label": "Mệt mỏi ngắn gọn",
+     "user": "mệt",
+     "pass_if": ["đồng cảm", "hỏi tiếp"],
+     "fail_if": ["đầu tư", "quỹ", "tiết kiệm"],
+     "criteria": "Xử lý emotion ngắn đúng cách, hỏi lại ngữ cảnh"},
+
+    # ───── MEMORY (Test 2) ─────
+    {"id": "M1", "group": "Memory", "label": "Nhắc lại mục tiêu cũ",
+     "user": "Hôm nay em mệt.",
+     "context": [{"role": "user", "content": "Em muốn mua MacBook."},
+                 {"role": "assistant", "content": "MacBook là mục tiêu tuyệt vời! 🎯 Nếu mỗi tháng để dành 1 triệu thì khoảng 25 tháng bạn sẽ có ngay."}],
+     "pass_if": ["macbook", "nhớ", "not_forget"],
+     "fail_if": [],
+     "criteria": "Nhắc lại MacBook khi context cho phép"},
+
+    {"id": "M2", "group": "Memory", "label": "Kết nối giấc mơ với cảm xúc hiện tại",
+     "user": "Em đang lo lắng về tiền.",
+     "context": [{"role": "user", "content": "Em muốn đi Nhật năm sau."},
+                 {"role": "assistant", "content": "Du lịch Nhật Bản đẹp lắm! Bạn đang ước tính chi phí là bao nhiêu?"}],
+     "pass_if": ["nhật", "mục tiêu", "not_forget"],
+     "fail_if": [],
+     "criteria": "Kết nối lo lắng về tiền với mục tiêu Nhật Bản"},
+
+    {"id": "M3", "group": "Memory", "label": "Streak nhắc nhở",
+     "user": "Cho mình biết mình đang ở đâu nhé.",
+     "pass_if": ["nhớ", "streak", "tiến"],
+     "fail_if": [],
+     "criteria": "Tổng hợp được những gì nhớ về user"},
+
+    {"id": "M4", "group": "Memory", "label": "Nhớ tên nếu đã kể",
+     "user": "Bạn có nhớ tên mình không?",
+     "context": [{"role": "user", "content": "Tên mình là Linh."},
+                 {"role": "assistant", "content": "Chào Linh! Mình rất vui được gặp bạn."}],
+     "pass_if": ["linh", "nhớ"],
+     "fail_if": ["không biết", "chưa biết"],
+     "criteria": "Nhớ tên đã được kể"},
+
+    {"id": "M5", "group": "Memory", "label": "Không hỏi lại điều đã biết",
+     "user": "Hôm nay mình ổn.",
+     "context": [{"role": "user", "content": "Mình đang tiết kiệm để mua xe."},
+                 {"role": "assistant", "content": "Mua xe là mục tiêu rất thực tế! 🚗"}],
+     "pass_if": ["xe", "not_ask_again"],
+     "fail_if": ["bạn muốn gì", "mục tiêu của bạn là"],
+     "criteria": "Không hỏi lại điều đã biết"},
+
+    # ───── MICRO COMMITMENT (Test 3) ─────
+    {"id": "B1", "group": "Behavior", "label": "Dream → Micro action",
+     "user": "Em muốn đi Nhật.",
+     "pass_if": ["hành động", "bắt đầu", "tháng", "not_sell"],
+     "fail_if": ["hãy đầu tư", "mua quỹ", "tcef", "tcbf"],
+     "criteria": "Đề xuất hành động nhỏ, không bán hàng"},
+
+    {"id": "B2", "group": "Behavior", "label": "Concert dream → kế hoạch",
+     "user": "Em muốn đi xem concert BlackPink.",
+     "pass_if": ["mục tiêu", "kế hoạch", "bắt đầu"],
+     "fail_if": ["hãy mua", "đầu tư ngay"],
+     "criteria": "Tạo goal plan từ dream concert"},
+
+    {"id": "B3", "group": "Behavior", "label": "MacBook → goal card",
+     "user": "Em muốn mua MacBook Air M4.",
+     "pass_if": ["macbook", "tháng", "tích luỹ"],
+     "fail_if": ["tcef", "hãy mua quỹ", "đầu tư ngay"],
+     "criteria": "Hiện goal plan MacBook, không bán sản phẩm"},
+
+    {"id": "B4", "group": "Behavior", "label": "Micro commitment từ nhỏ",
+     "user": "Em muốn bắt đầu tiết kiệm nhưng không biết từ đâu.",
+     "pass_if": ["nhỏ", "10.000", "bắt đầu", "từng chút"],
+     "fail_if": ["quỹ ngay", "đầu tư", "mở tài khoản"],
+     "criteria": "Gợi ý bắt đầu nhỏ, không yêu cầu hành động lớn"},
+
+    {"id": "B5", "group": "Behavior", "label": "Nhà dream → kế hoạch dài hạn",
+     "user": "Em ước mơ có nhà riêng.",
+     "pass_if": ["mục tiêu", "dài hạn", "từng bước"],
+     "fail_if": ["hãy mua tcef", "đầu tư ngay"],
+     "criteria": "Kế hoạch dài hạn cho mục tiêu nhà"},
+
+    # ───── BEHAVIORAL FINANCE (Test 4) ─────
+    {"id": "BF1", "group": "BehavFinance", "label": "Lương → tiết kiệm",
+     "user": "Em vừa nhận lương.",
+     "pass_if": ["tuyệt vời", "tiết kiệm", "để dành", "chúc mừng"],
+     "fail_if": ["tcef", "tcbf", "hãy đầu tư", "mua ngay"],
+     "criteria": "Kết nối lương với cảm xúc + micro saving"},
+
+    {"id": "BF2", "group": "BehavFinance", "label": "Cuối tháng hết tiền",
+     "user": "Tháng này em hết tiền rồi.",
+     "pass_if": ["thông cảm", "chi tiêu", "ghi lại", "not_sell"],
+     "fail_if": ["đầu tư", "quỹ", "tcef"],
+     "criteria": "Đồng cảm + gợi ý theo dõi chi tiêu"},
+
+    {"id": "BF3", "group": "BehavFinance", "label": "Tiền nhàn rỗi",
+     "user": "Em có 5 triệu đang để không biết làm gì.",
+     "pass_if": ["tích luỹ", "để dành", "không vội"],
+     "fail_if": ["hãy mua tcef", "đầu tư ngay", "mở tài khoản ngay"],
+     "criteria": "Giáo dục tài chính trước, không bán hàng"},
+
+    {"id": "BF4", "group": "BehavFinance", "label": "Thói quen tích luỹ đều đặn",
+     "user": "Mình muốn xây dựng thói quen tiết kiệm.",
+     "pass_if": ["mỗi ngày", "đều đặn", "nhỏ", "thói quen"],
+     "fail_if": ["mua quỹ", "hãy đầu tư", "tcef"],
+     "criteria": "Hướng dẫn xây thói quen, không bán sản phẩm"},
+
+    {"id": "BF5", "group": "BehavFinance", "label": "Chi tiêu vượt kiểm soát",
+     "user": "Em hay tiêu hết tiền trước khi tháng kết thúc.",
+     "pass_if": ["theo dõi", "ghi lại", "chi tiêu", "thói quen"],
+     "fail_if": ["hãy mua", "đầu tư ngay"],
+     "criteria": "Gợi ý giải pháp thực tế, không bán sản phẩm"},
+
+    # ───── FINANCIAL PRODUCT INTRO (Test 5) ─────
+    {"id": "FP1", "group": "FinProduct", "label": "Hỏi trực tiếp về TCEF",
+     "user": "TCEF là gì vậy?",
+     "pass_if": ["techcom", "cổ phiếu", "dài hạn", "giải thích"],
+     "fail_if": ["hãy mua", "mua ngay", "đây là cơ hội"],
+     "criteria": "Giải thích đời thường, không kêu gọi mua"},
+
+    {"id": "FP2", "group": "FinProduct", "label": "Hỏi về quỹ mở",
+     "user": "Quỹ mở là gì? Em chưa biết gì về đầu tư.",
+     "pass_if": ["giải thích", "đơn giản", "không vội"],
+     "fail_if": ["hãy mua", "mở tài khoản ngay", "đây là cơ hội"],
+     "criteria": "Giáo dục cơ bản, không bán hàng"},
+
+    {"id": "FP3", "group": "FinProduct", "label": "Tích luỹ MacBook → personality",
+     "user": "Em muốn tích luỹ để mua MacBook, nên làm gì?",
+     "pass_if": ["tích luỹ", "mỗi tháng", "kế hoạch"],
+     "fail_if": ["hãy mua quỹ ngay", "mở tài khoản"],
+     "criteria": "Kế hoạch tích luỹ trước, giới thiệu nhẹ nhàng sau"},
+
+    {"id": "FP4", "group": "FinProduct", "label": "Không push sản phẩm khi không hỏi",
+     "user": "Em đang lo cho kỳ thi tuần sau.",
+     "pass_if": ["đồng cảm", "học", "cố lên"],
+     "fail_if": ["tcef", "tcbf", "quỹ", "đầu tư"],
+     "criteria": "Không nhắc sản phẩm khi user không hỏi"},
+
+    {"id": "FP5", "group": "FinProduct", "label": "Tự chọn, không áp đặt",
+     "user": "Nên chọn TCEF hay TCBF?",
+     "pass_if": ["phụ thuộc", "mục tiêu", "thời gian", "bạn tự"],
+     "fail_if": ["hãy chọn", "chắc chắn nên", "nhất định"],
+     "criteria": "Cho user tự quyết, không áp đặt"},
+
+    # ───── RETENTION HOOK (Test 6) ─────
+    {"id": "R1", "group": "Retention", "label": "Kết thúc có câu hỏi mở",
+     "user": "Oke, cảm ơn nhé.",
+     "pass_if": ["hỏi mở", "ngày mai", "tuần tới", "bao giờ"],
+     "fail_if": [],
+     "criteria": "Mỗi kết thúc có hook để user quay lại"},
+
+    {"id": "R2", "group": "Retention", "label": "Streak motivation",
+     "user": "Hôm nay mình muốn nghỉ không cho Cừu ăn.",
+     "pass_if": ["streak", "tiếc", "ngày mai", "nhỏ thôi"],
+     "fail_if": ["được thôi", "không sao"],
+     "criteria": "Tạo động lực duy trì streak"},
+
+    {"id": "R3", "group": "Retention", "label": "Tạo curiosity hook",
+     "user": "Hôm nay mình không có gì để kể.",
+     "pass_if": ["hỏi mở", "kể về", "chia sẻ"],
+     "fail_if": ["được rồi", "oke"],
+     "criteria": "Tạo curiosity để user muốn chia sẻ tiếp"},
+
+    # ───── JOURNAL COMPANION (Test 7) ─────
+    {"id": "J1", "group": "Journal", "label": "Gợi ý viết nhật ký",
+     "user": "Hôm nay có nhiều chuyện xảy ra quá.",
+     "pass_if": ["nhật ký", "ghi lại", "chia sẻ"],
+     "fail_if": [],
+     "criteria": "Gợi ý viết nhật ký khi user có nhiều cảm xúc"},
+
+    {"id": "J2", "group": "Journal", "label": "Phản hồi nhật ký ấm áp",
+     "user": "Hôm nay mình viết nhật ký lần đầu tiên.",
+     "pass_if": ["tuyệt vời", "chia sẻ", "ghi lại", "cảm xúc"],
+     "fail_if": [],
+     "criteria": "Khuyến khích thói quen viết nhật ký"},
+
+    {"id": "J3", "group": "Journal", "label": "Kết nối cảm xúc với diary",
+     "user": "Em đang có nhiều suy nghĩ lộn xộn.",
+     "pass_if": ["nhật ký", "ghi ra", "rõ hơn"],
+     "fail_if": [],
+     "criteria": "Dùng diary như công cụ xử lý cảm xúc"},
+]
+
+# ── Scorer helpers ──
+_EMPATHY_WORDS = [
+    "hiểu", "nghe", "cảm", "thông cảm", "bê bê", "mình hiểu",
+    "nghe có vẻ", "không sao", "ở đây", "lắng nghe", "chia sẻ",
+    "buồn", "vui", "lo", "mệt", "áp lực",
+]
+_OPEN_Q_WORDS = ["?", "không?", "nhé?", "sao?", "gì?", "thế nào"]
+_SELL_WORDS   = [
+    "hãy mua", "mua ngay", "đây là cơ hội", "nên mua",
+    "mở tài khoản ngay", "đầu tư ngay",
+]
+_ACTION_WORDS = [
+    "bắt đầu", "thử", "tạo", "mục tiêu", "kế hoạch",
+    "hôm nay", "từng bước", "nhỏ", "mỗi tháng",
+]
+_DIARY_WORDS  = ["nhật ký", "ghi lại", "viết ra", "ghi ra"]
+_MEMORY_WORDS = ["nhớ", "kể", "mục tiêu", "giấc mơ", "trước đó", "lần trước"]
+
+
+def _sheep_score_response(scenario: dict, reply: str) -> dict:
+    """
+    Chấm điểm phản hồi của Cừu cho 1 scenario.
+    Returns: {"score": int, "issues": [str], "passes": [str]}
+    """
+    r = reply.lower()
+    score = 5          # điểm gốc
+    issues: list[str] = []
+    passes: list[str] = []
+
+    # ── Kiểm tra fail_if (hard fail, trừ điểm nặng) ──
+    for fw in scenario.get("fail_if", []):
+        if fw == "not_sell":
+            continue
+        if fw in r:
+            score -= 3
+            issues.append(f"❌ Chứa từ cấm: '{fw}'")
+
+    # ── Hard check: không được bán hàng nếu fail_if có not_sell ──
+    if "not_sell" in scenario.get("pass_if", []):
+        for sw in _SELL_WORDS:
+            if sw in r:
+                score -= 2
+                issues.append(f"❌ Ngôn ngữ bán hàng: '{sw}'")
+                break
+        else:
+            score += 1
+            passes.append("✅ Không bán hàng")
+
+    # ── Kiểm tra pass_if ──
+    for pw in scenario.get("pass_if", []):
+        if pw == "not_sell":
+            continue
+        if pw == "hỏi tiếp":
+            if any(q in r for q in _OPEN_Q_WORDS):
+                score += 1
+                passes.append("✅ Có câu hỏi mở")
+            else:
+                score -= 1
+                issues.append("❌ Thiếu câu hỏi mở")
+            continue
+        if pw == "đồng cảm":
+            if any(e in r for e in _EMPATHY_WORDS):
+                score += 1
+                passes.append("✅ Có đồng cảm")
+            else:
+                score -= 1
+                issues.append("❌ Thiếu đồng cảm")
+            continue
+        if pw == "hành động":
+            if any(a in r for a in _ACTION_WORDS):
+                score += 1
+                passes.append("✅ Có gợi ý hành động")
+            else:
+                issues.append("❌ Thiếu gợi ý hành động")
+            continue
+        if pw in ("not_forget", "nhớ", "not_ask_again"):
+            if any(mw in r for mw in _MEMORY_WORDS):
+                score += 1
+                passes.append("✅ Có memory retrieval")
+            continue
+        if pw in r:
+            score += 1
+            passes.append(f"✅ Chứa từ kỳ vọng: '{pw}'")
+
+    # ── Bonus: có diary suggestion ──
+    if any(d in r for d in _DIARY_WORDS):
+        score += 1
+        passes.append("✅ Gợi ý nhật ký")
+
+    # ── Bonus: có action word ──
+    if any(a in r for a in _ACTION_WORDS) and "hành động" not in scenario.get("pass_if", []):
+        score += 1
+        passes.append("✅ Action companion")
+
+    # Clamp 0-10
+    score = max(0, min(10, score))
+    return {"score": score, "issues": issues, "passes": passes}
+
+
+def _group_score(results: list[dict], group: str) -> float:
+    """Tính điểm trung bình cho 1 nhóm."""
+    g = [r for r in results if r["group"] == group]
+    if not g:
+        return 0.0
+    return round(sum(r["score"] for r in g) / len(g), 1)
+
+
+def run_sheep_qa(api_key: str, progress_cb=None) -> list[dict]:
+    """
+    Chạy toàn bộ 30 scenarios. Gọi LLM cho từng scenario.
+    Returns list of result dicts.
+    """
+    import time as _time
+    client = anthropic.Anthropic(api_key=api_key)
+    results = []
+
+    for idx, sc in enumerate(_QA_SCENARIOS):
+        if progress_cb:
+            progress_cb(idx, len(_QA_SCENARIOS), sc["label"])
+
+        # Build messages với context nếu có
+        msgs = list(sc.get("context", []))
+        msgs.append({"role": "user", "content": sc["user"]})
+
+        # Inject memory hint từ context
+        mem_hint = ""
+        for m in sc.get("context", []):
+            if m["role"] == "user":
+                mem_hint += m["content"] + " "
+
+        mem_ctx = f"[Memory hint: {mem_hint.strip()}]" if mem_hint else ""
+        final_msgs = []
+        for m in msgs[:-1]:
+            final_msgs.append(m)
+        final_msgs.append({
+            "role": "user",
+            "content": f"{mem_ctx}\n{msgs[-1]['content']}".strip()
+        })
+
+        try:
+            resp = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=500,
+                system=_BASE_PERSONALITY_PROMPT,
+                messages=final_msgs,
+            )
+            raw = resp.content[0].text
+            # Parse JSON hoặc lấy message field
+            try:
+                parsed = json.loads(raw)
+                reply = parsed.get("message", raw)
+            except Exception:
+                reply = raw
+
+            scored = _sheep_score_response(sc, reply)
+            results.append({
+                "id":       sc["id"],
+                "group":    sc["group"],
+                "label":    sc["label"],
+                "user":     sc["user"],
+                "reply":    reply[:300],
+                "score":    scored["score"],
+                "issues":   scored["issues"],
+                "passes":   scored["passes"],
+                "criteria": sc["criteria"],
+            })
+
+        except Exception as e:
+            results.append({
+                "id": sc["id"], "group": sc["group"], "label": sc["label"],
+                "user": sc["user"], "reply": f"[ERROR: {str(e)[:80]}]",
+                "score": 0, "issues": [f"❌ API Error: {str(e)[:60]}"],
+                "passes": [], "criteria": sc["criteria"],
+            })
+
+        _time.sleep(0.3)   # rate limit buffer
+
+    return results
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 5 — AI QA
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab5:
+
+    st.markdown("""
+    <style>
+    .qa-header {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border-radius: 20px;
+        padding: 28px 32px;
+        color: white;
+        margin-bottom: 20px;
+    }
+    .qa-metric {
+        background: white;
+        border: 2px solid #FFD6E8;
+        border-radius: 16px;
+        padding: 16px 14px;
+        text-align: center;
+    }
+    .qa-scenario-pass {
+        background: linear-gradient(135deg, #F0FFF4, #E8F5E9);
+        border: 1.5px solid #81C784;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin: 6px 0;
+    }
+    .qa-scenario-fail {
+        background: linear-gradient(135deg, #FFF5F5, #FFEBEE);
+        border: 1.5px solid #EF9A9A;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin: 6px 0;
+    }
+    .qa-badge-pass { background:#E8F5E9;color:#2E7D32;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:800; }
+    .qa-badge-fail { background:#FFEBEE;color:#C62828;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:800; }
+    .qa-badge-warn { background:#FFF8E1;color:#F57F17;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:800; }
+    .score-ring {
+        width:80px; height:80px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.4rem; font-weight:900; margin:0 auto 6px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── Hero header ──
+    st.markdown("""
+    <div class="qa-header">
+      <div style="font-size:1.6rem;font-weight:900;margin-bottom:6px;">🧪 Sheep QA Agent</div>
+      <div style="font-size:.95rem;color:#aaa;line-height:1.7;">
+        AI Agent tự động kiểm tra Cừu có đang thực hiện đúng Product Vision không.<br/>
+        30 kịch bản · 7 nhóm tiêu chí · Chấm điểm 0–60 · CEO Demo Readiness Report
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if not st.session_state.get("api_key"):
+        st.warning("⚠️ Nhập API Key ở sidebar để chạy QA Agent.")
+        st.stop()
+
+    # ── Controls ──
+    _qa_col1, _qa_col2 = st.columns([2, 1])
+    with _qa_col1:
+        _qa_mode = st.radio(
+            "Chọn chế độ test:",
+            ["🚀 Full Test (30 scenarios)", "⚡ Quick Test (7 scenarios — 1 per group)"],
+            horizontal=True,
+        )
+    with _qa_col2:
+        _run_qa = st.button("▶️ Run Product Vision Test", type="primary", use_container_width=True)
+
+    # ── Session state ──
+    if "qa_results" not in st.session_state:
+        st.session_state.qa_results = None
+
+    if _run_qa:
+        _scenarios_to_run = _QA_SCENARIOS if "Full" in _qa_mode else (
+            [next(s for s in _QA_SCENARIOS if s["group"] == g)
+             for g in ["Emotional", "Memory", "Behavior", "BehavFinance",
+                       "FinProduct", "Retention", "Journal"]]
+        )
+
+        _prog = st.progress(0.0, text="Đang khởi động QA Agent...")
+        _status = st.empty()
+
+        def _cb(idx, total, label):
+            _prog.progress((idx + 1) / total, text=f"[{idx+1}/{total}] Testing: {label}")
+            _status.caption(f"🔍 Đang kiểm tra: **{label}**")
+
+        # Patch scenarios nếu Quick
+        _orig = _QA_SCENARIOS[:]
+        if "Quick" in _qa_mode:
+            import unittest.mock as _mock
+            # Chạy trực tiếp với list filter
+            _client_tmp = anthropic.Anthropic(api_key=st.session_state.api_key)
+            import time as _t
+            _res_tmp = []
+            for _idx, _sc in enumerate(_scenarios_to_run):
+                _cb(_idx, len(_scenarios_to_run), _sc["label"])
+                _msgs = list(_sc.get("context", []))
+                _mem_h = " ".join(m["content"] for m in _sc.get("context",[]) if m["role"]=="user")
+                _mem_ctx = f"[Memory hint: {_mem_h}]" if _mem_h else ""
+                _final = _msgs[:-1] + [{"role":"user","content":f"{_mem_ctx}\n{_sc['user']}".strip()}] if _msgs else [{"role":"user","content":_sc["user"]}]
+                try:
+                    _r = _client_tmp.messages.create(
+                        model="claude-haiku-4-5-20251001", max_tokens=400,
+                        system=_BASE_PERSONALITY_PROMPT, messages=_final,
+                    )
+                    _raw = _r.content[0].text
+                    try: _reply = json.loads(_raw).get("message", _raw)
+                    except: _reply = _raw
+                    _sc_r = _sheep_score_response(_sc, _reply)
+                    _res_tmp.append({"id":_sc["id"],"group":_sc["group"],"label":_sc["label"],
+                                     "user":_sc["user"],"reply":_reply[:300],
+                                     "score":_sc_r["score"],"issues":_sc_r["issues"],
+                                     "passes":_sc_r["passes"],"criteria":_sc["criteria"]})
+                except Exception as _e:
+                    _res_tmp.append({"id":_sc["id"],"group":_sc["group"],"label":_sc["label"],
+                                     "user":_sc["user"],"reply":f"[ERROR]","score":0,
+                                     "issues":[f"❌ {str(_e)[:60]}"],"passes":[],"criteria":_sc["criteria"]})
+                _t.sleep(0.3)
+            st.session_state.qa_results = _res_tmp
+        else:
+            st.session_state.qa_results = run_sheep_qa(
+                st.session_state.api_key, progress_cb=_cb
+            )
+
+        _prog.empty()
+        _status.empty()
+        st.rerun()
+
+    # ── Show Results ──
+    if st.session_state.qa_results:
+        _results = st.session_state.qa_results
+
+        # ── Tính điểm theo nhóm ──
+        _groups = {
+            "Emotional":    ("❤️",  "Emotion Score",      "Đồng cảm & kết nối"),
+            "Memory":       ("🧠",  "Memory Score",       "Ghi nhớ & nhắc lại"),
+            "Behavior":     ("🎯",  "Behavior Score",     "Hành động nhỏ"),
+            "BehavFinance": ("💡",  "Finance Behavior",   "Tài chính hành vi"),
+            "FinProduct":   ("📚",  "Investment Score",   "Giáo dục đầu tư"),
+            "Retention":    ("🔥",  "Retention Score",    "Giữ user quay lại"),
+            "Journal":      ("📔",  "Journal Score",      "Nhật ký companion"),
+        }
+
+        _group_scores: dict[str, float] = {
+            g: _group_score(_results, g) for g in _groups
+        }
+        _total = round(sum(_group_scores.values()) / len(_group_scores) * 6, 1)
+        # Scale to 0-60
+        _total_60 = round(sum(_group_scores.values()) / len(_group_scores) * 6, 1)
+
+        # ── Overall verdict ──
+        if _total_60 >= 55:
+            _verdict = ("🏆 CEO DEMO READY", "#2E7D32", "#E8F5E9", "linear-gradient(135deg,#E8F5E9,#F1F8E9)")
+        elif _total_60 >= 50:
+            _verdict = ("⭐ VERY GOOD", "#1565C0", "#E3F2FD", "linear-gradient(135deg,#E3F2FD,#EDE7F6)")
+        elif _total_60 >= 40:
+            _verdict = ("✅ GOOD", "#F57F17", "#FFF8E1", "linear-gradient(135deg,#FFF8E1,#FFF3E0)")
+        else:
+            _verdict = ("❌ FAIL — Cần cải thiện", "#C62828", "#FFEBEE", "linear-gradient(135deg,#FFEBEE,#FCE4EC)")
+
+        st.markdown(
+            f'<div style="background:{_verdict[3]};border:2.5px solid {_verdict[1]}44;'
+            f'border-radius:20px;padding:24px 28px;text-align:center;margin-bottom:18px;">'
+            f'<div style="font-size:2rem;font-weight:900;color:{_verdict[1]};">{_verdict[0]}</div>'
+            f'<div style="font-size:3.5rem;font-weight:900;color:{_verdict[1]};margin:6px 0;">'
+            f'{_total_60}<span style="font-size:1.2rem;font-weight:600;color:#888;">/60</span></div>'
+            f'<div style="font-size:.88rem;color:#666;">'
+            f'{len(_results)} scenarios · {sum(1 for r in _results if r["score"]>=6)} passed · '
+            f'{sum(1 for r in _results if r["score"]<4)} failed</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        # ── Group score cards ──
+        _gc = st.columns(len(_groups))
+        for i, (gk, (gico, glbl, gsub)) in enumerate(_groups.items()):
+            gs = _group_scores.get(gk, 0.0)
+            _ring_color = (
+                "#2E7D32" if gs >= 7 else "#F57F17" if gs >= 5 else "#C62828"
+            )
+            _gc[i].markdown(
+                f'<div class="qa-metric">'
+                f'<div class="score-ring" style="background:{_ring_color}18;color:{_ring_color};">'
+                f'{gs}</div>'
+                f'<div style="font-size:.82rem;font-weight:800;color:#333;">{gico} {glbl}</div>'
+                f'<div style="font-size:.7rem;color:#aaa;margin-top:2px;">{gsub}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("<div style='margin:20px 0 8px;'></div>", unsafe_allow_html=True)
+
+        # ── Vision Compliance Report ──
+        _all_issues: list[str] = []
+        for r in _results:
+            _all_issues.extend(r.get("issues", []))
+
+        _compliance = {
+            "Emotion Companion ✅": sum(1 for r in _results if r["group"]=="Emotional" and r["score"]>=6),
+            "Goal Companion 🎯": sum(1 for r in _results if r["group"]=="Behavior" and r["score"]>=6),
+            "Action Companion ⚡": sum(1 for r in _results if r["group"] in ("BehavFinance","FinProduct") and r["score"]>=6),
+        }
+        _total_e  = len([r for r in _results if r["group"]=="Emotional"])
+        _total_g  = len([r for r in _results if r["group"]=="Behavior"])
+        _total_a  = len([r for r in _results if r["group"] in ("BehavFinance","FinProduct")])
+
+        st.markdown("### 🧭 Vision Compliance")
+        _vc1, _vc2, _vc3 = st.columns(3)
+        for col, (label, cnt), total in [
+            (_vc1, list(_compliance.items())[0], _total_e),
+            (_vc2, list(_compliance.items())[1], _total_g),
+            (_vc3, list(_compliance.items())[2], _total_a),
+        ]:
+            _pct = int(cnt / total * 100) if total else 0
+            _ok = _pct >= 70
+            col.markdown(
+                f'<div class="qa-metric">'
+                f'<div style="font-size:1.6rem;font-weight:900;color:{"#2E7D32" if _ok else "#C62828"};">'
+                f'{_pct}%</div>'
+                f'<div style="font-size:.85rem;font-weight:700;color:#333;">{label}</div>'
+                f'<div style="font-size:.75rem;color:#aaa;">{cnt}/{total} scenarios passed</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # ── Issues Summary ──
+        if _all_issues:
+            st.markdown("### ⚠️ Issues phát hiện")
+            from collections import Counter
+            _issue_counts = Counter(_all_issues)
+            for issue, cnt in _issue_counts.most_common(8):
+                _badge = "qa-badge-fail" if "❌" in issue else "qa-badge-warn"
+                st.markdown(
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                    f'padding:8px 14px;border-bottom:1px solid #F5F5F5;">'
+                    f'<span style="font-size:.87rem;color:#333;">{issue}</span>'
+                    f'<span class="{_badge}">{cnt}x</span>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+        st.markdown("<div style='margin:16px 0 8px;'></div>", unsafe_allow_html=True)
+
+        # ── Scenario detail view ──
+        st.markdown("### 📋 Chi tiết 30 Scenarios")
+        _group_filter = st.selectbox(
+            "Lọc theo nhóm:",
+            ["Tất cả"] + list(_groups.keys()),
+        )
+        _show_results = (
+            _results if _group_filter == "Tất cả"
+            else [r for r in _results if r["group"] == _group_filter]
+        )
+
+        for r in _show_results:
+            _sc_ok = r["score"] >= 6
+            _card_cls = "qa-scenario-pass" if _sc_ok else "qa-scenario-fail"
+            _sc_badge = (
+                f'<span class="qa-badge-pass">PASS · {r["score"]}/10</span>'
+                if _sc_ok else
+                f'<span class="qa-badge-fail">FAIL · {r["score"]}/10</span>'
+            )
+            with st.expander(f'{r["id"]} · {r["label"]} — Score: {r["score"]}/10', expanded=False):
+                st.markdown(
+                    f'<div class="{_card_cls}">'
+                    f'<div style="display:flex;justify-content:space-between;margin-bottom:10px;">'
+                    f'<span style="font-size:.78rem;color:#888;">Tiêu chí: {r["criteria"]}</span>'
+                    f'{_sc_badge}'
+                    f'</div>'
+                    f'<div style="font-size:.85rem;margin-bottom:8px;">'
+                    f'<strong>User:</strong> {r["user"]}</div>'
+                    f'<div style="font-size:.85rem;color:#555;margin-bottom:12px;'
+                    f'background:white;border-radius:10px;padding:10px 14px;line-height:1.65;">'
+                    f'<strong>Cừu:</strong> {r["reply"]}</div>'
+                    + (
+                        '<div style="font-size:.78rem;color:#2E7D32;">' +
+                        "<br/>".join(r["passes"]) + '</div>'
+                        if r["passes"] else ""
+                    )
+                    + (
+                        '<div style="font-size:.78rem;color:#C62828;margin-top:6px;">' +
+                        "<br/>".join(r["issues"]) + '</div>'
+                        if r["issues"] else ""
+                    )
+                    + f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+        # ── Download report ──
+        st.markdown("---")
+        _report_lines = [
+            "# Sheep QA Agent — Product Vision Report",
+            f"Total Score: {_total_60}/60 · {_verdict[0]}",
+            "",
+            "## Group Scores",
+        ]
+        for gk, (gico, glbl, _) in _groups.items():
+            _report_lines.append(f"- {gico} {glbl}: {_group_scores.get(gk, 0)}/10")
+        _report_lines += ["", "## Scenario Details"]
+        for r in _results:
+            status = "PASS" if r["score"] >= 6 else "FAIL"
+            _report_lines.append(
+                f"\n### [{status}] {r['id']} · {r['label']} · Score {r['score']}/10"
+            )
+            _report_lines.append(f"User: {r['user']}")
+            _report_lines.append(f"Reply: {r['reply'][:200]}")
+            if r["issues"]:
+                _report_lines.append("Issues: " + " | ".join(r["issues"]))
+
+        st.download_button(
+            "📥 Tải báo cáo QA (.txt)",
+            data="\n".join(_report_lines),
+            file_name=f"sheep_qa_report_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+            mime="text/plain",
+        )
+
+    else:
+        # ── Empty state ──
+        st.markdown("""
+        <div style="text-align:center;padding:60px 20px;color:#aaa;">
+          <div style="font-size:3rem;margin-bottom:14px;">🧪</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#555;margin-bottom:8px;">
+            Chưa có kết quả QA
+          </div>
+          <div style="font-size:.9rem;line-height:1.7;">
+            Nhấn <strong>▶️ Run Product Vision Test</strong> để QA Agent<br/>
+            tự động kiểm tra 30 kịch bản và chấm điểm Cừu.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
