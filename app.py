@@ -43,6 +43,21 @@ import math
 from datetime import datetime, timedelta
 from copy import deepcopy
 
+# ── JOURNAL ENGINE V2 ──────────────────────────────────────────────────────
+# Drop-in replacement cho diary tab. Import từ journal_engine.py (cùng folder)
+try:
+    from journal_engine import (
+        render_diary_v2,
+        _SYS_DIARY_V2,
+        get_today_prompt,
+        build_diary_stats,
+        EMOTION_CONFIG,
+    )
+    _JOURNAL_V2_ENABLED = True
+except ImportError:
+    _JOURNAL_V2_ENABLED = False  # Fallback về code cũ nếu file chưa có
+# ───────────────────────────────────────────────────────────────────────────
+
 st.set_page_config(
     page_title="Cừu Cần Cù 🐑",
     page_icon="🐑",
@@ -425,6 +440,304 @@ def _update_financial_profile(fp: dict, intent: dict, llm_result: dict) -> dict:
 
 
 # ═══════════════════════════════════════════════════════
+# TRADING BEHAVIOR ENGINE
+# ═══════════════════════════════════════════════════════
+
+# Trading personality thresholds
+_TRADING_PERSONALITIES = {
+    "Explorer": {
+        "label": "⚡ Explorer",
+        "desc":  "Thích khám phá, giao dịch nhiều, chấp nhận rủi ro cao.",
+        "color": "#FF6B6B",
+        "risk":  "high",
+    },
+    "Long Term Builder": {
+        "label": "🌳 Long Term Builder",
+        "desc":  "Kiên nhẫn, giữ lâu dài, đầu tư có kế hoạch.",
+        "color": "#51CF66",
+        "risk":  "medium",
+    },
+    "Conservative Saver": {
+        "label": "🛡️ Conservative Saver",
+        "desc":  "Thận trọng, ưa ổn định, thường giữ nhiều tiền mặt.",
+        "color": "#339AF0",
+        "risk":  "low",
+    },
+    "Balanced Allocator": {
+        "label": "⚖️ Balanced Allocator",
+        "desc":  "Cân bằng các loại tài sản, không quá nghiêng về phía nào.",
+        "color": "#9775FA",
+        "risk":  "medium",
+    },
+    "Fund Accumulator": {
+        "label": "🌿 Fund Accumulator",
+        "desc":  "Ưu tiên quỹ mở, tích lũy đều đặn theo định kỳ.",
+        "color": "#20C997",
+        "risk":  "low",
+    },
+}
+
+
+def analyze_trading_behavior(td: dict) -> dict:
+    """Phân tích trading data → Trading Personality + insights."""
+    if not td or not td.get("last_30d_trade_count"):
+        return {
+            "personality_key": "Conservative Saver",
+            "signals": [],
+            "risk_level": "low",
+            "behavior_summary": "Chưa có dữ liệu giao dịch.",
+        }
+
+    cash    = td.get("cash_balance", 0)
+    stocks  = td.get("stock_ratio", 0)
+    funds   = td.get("fund_ratio", 0)
+    bonds   = td.get("bond_ratio", 0)
+    holding = td.get("avg_holding_days", 0)
+    freq    = td.get("trade_frequency", "low")
+    margin  = td.get("margin_usage", False)
+    trades  = td.get("last_30d_trade_count", 0)
+    fav     = td.get("favorite_products", [])
+
+    signals = []
+    score_explorer    = 0
+    score_longterm    = 0
+    score_conservative = 0
+    score_fund        = 0
+
+    # High trading frequency
+    if trades >= 30 or freq == "high":
+        score_explorer += 3
+        signals.append(("⚡", f"Giao dịch {trades} lần/tháng — tần suất cao"))
+    elif trades <= 5 or freq == "low":
+        score_conservative += 2
+        score_longterm += 1
+        signals.append(("🐢", f"Chỉ {trades} lần/tháng — giao dịch ít"))
+
+    # Short holding → Explorer
+    if holding > 0 and holding <= 10:
+        score_explorer += 3
+        signals.append(("⏱️", f"Giữ trung bình {holding} ngày — rất ngắn hạn"))
+    elif holding >= 180:
+        score_longterm += 3
+        signals.append(("🌳", f"Giữ trung bình {holding} ngày — dài hạn"))
+    elif 10 < holding < 180:
+        score_longterm += 1
+
+    # Margin usage
+    if margin:
+        score_explorer += 2
+        signals.append(("⚠️", "Đang dùng margin — chấp nhận đòn bẩy"))
+
+    # High cash → Conservative
+    total_asset = cash + 1  # avoid div/0 if 0
+    cash_pct = stocks + funds + bonds
+    if cash_pct < 30:
+        score_conservative += 3
+        signals.append(("💰", "Tỷ lệ tiền mặt cao — thích giữ thanh khoản"))
+    elif cash_pct > 70:
+        score_explorer += 1
+
+    # Fund preference
+    if funds >= 40 and "Stock" not in fav:
+        score_fund += 3
+        signals.append(("🌿", f"Tỷ lệ quỹ {funds}% — ưu tiên đầu tư quỹ mở"))
+    elif funds >= 20:
+        score_fund += 1
+
+    # Long-term: bonds
+    if bonds >= 20:
+        score_longterm += 2
+        signals.append(("📋", f"Tỷ lệ trái phiếu {bonds}% — cân bằng ổn định"))
+
+    scores = {
+        "Explorer":           score_explorer,
+        "Long Term Builder":  score_longterm,
+        "Conservative Saver": score_conservative,
+        "Fund Accumulator":   score_fund,
+    }
+    if max(scores.values()) == 0:
+        pkey = "Balanced Allocator"
+    else:
+        pkey = max(scores, key=lambda k: scores[k])
+
+    pinfo = _TRADING_PERSONALITIES.get(pkey, _TRADING_PERSONALITIES["Conservative Saver"])
+    risk  = pinfo["risk"]
+
+    # Summary sentence
+    if pkey == "Explorer":
+        summary = f"Bạn giao dịch {trades} lần/tháng, giữ vị thế trung bình {holding} ngày. Đây là phong cách chủ động, chấp nhận rủi ro cao."
+    elif pkey == "Long Term Builder":
+        summary = f"Bạn giữ vị thế trung bình {holding} ngày — đây là dấu hiệu của người đầu tư kiên nhẫn, có chiến lược dài hạn."
+    elif pkey == "Fund Accumulator":
+        summary = f"Tỷ lệ quỹ mở {funds}% cho thấy bạn thích tích lũy định kỳ, ổn định hơn lướt sóng."
+    elif pkey == "Conservative Saver":
+        summary = f"Tỷ lệ tiền mặt cao, ít giao dịch — bạn đang chờ cảm giác chắc chắn trước khi hành động."
+    else:
+        summary = "Danh mục khá cân bằng giữa các loại tài sản — không quá nghiêng về phía nào."
+
+    return {
+        "personality_key": pkey,
+        "personality_info": pinfo,
+        "signals":         signals,
+        "risk_level":      risk,
+        "behavior_summary": summary,
+        "scores":           scores,
+    }
+
+
+# ═══════════════════════════════════════════════════════
+# WEALTH GENOME ENGINE (4 dimensions)
+# ═══════════════════════════════════════════════════════
+
+def _emotional_type_from_diary(entries: list[dict]) -> tuple[str, str]:
+    """Returns (type_label, summary)."""
+    if not entries:
+        return ("💭 Chưa có dữ liệu", "Chưa có nhật ký để phân tích.")
+    moods = [e.get("mood", "") for e in entries]
+    neg = sum(1 for m in moods if any(x in m for x in ["😔","😓","😢","😥"]))
+    pos = sum(1 for m in moods if any(x in m for x in ["😊","💪","🎉","🌟"]))
+    total = len(moods)
+    if total == 0:
+        return ("💭 Chưa có dữ liệu", "Chưa đủ nhật ký.")
+    neg_r = neg / total
+    pos_r = pos / total
+    tags_all = []
+    for e in entries:
+        tags_all += e.get("tags", [])
+
+    if "stress" in tags_all and neg_r > 0.4:
+        return ("😓 Người Chịu Áp Lực", "Nhật ký cho thấy nhiều căng thẳng tài chính và cảm xúc lẫn lộn.")
+    if pos_r > 0.6:
+        return ("🌟 Người Lạc Quan", "Cảm xúc nhật ký chủ yếu tích cực — năng lượng cao, dễ duy trì thói quen.")
+    if "milestone" in tags_all and pos_r > 0.4:
+        return ("💪 Người Quyết Tâm", "Nhiều cột mốc được ghi nhận — đây là người hành động khi đặt mục tiêu.")
+    return ("⚖️ Người Cân Bằng", "Cảm xúc đan xen — vừa áp lực vừa vui, đây là hành trình trưởng thành thực sự.")
+
+
+def _dream_type_from_chat(messages: list[dict], dreams: list[dict]) -> tuple[str, str]:
+    """Returns (type_label, summary)."""
+    if not dreams:
+        return ("🔍 Chưa rõ mục tiêu", "Chưa phát hiện giấc mơ cụ thể qua hội thoại.")
+    n = len(dreams)
+    tags_all = []
+    for d in dreams:
+        tags_all += d.get("tags", [])
+    if "travel" in tags_all and n >= 2:
+        return ("✈️ Dream Explorer", f"Đã phát hiện {n} giấc mơ — đặc biệt thiên về trải nghiệm và khám phá.")
+    if "education" in tags_all:
+        return ("📚 Growth Seeker", "Giấc mơ gắn với học tập, phát triển bản thân — đầu tư cho tương lai.")
+    if "entertainment" in tags_all:
+        return ("🎤 Lifestyle Dreamer", "Giấc mơ gắn với trải nghiệm sống, cảm xúc và kỷ niệm.")
+    return ("🎯 Goal Setter", f"Có {n} mục tiêu rõ ràng — đây là người biết mình muốn gì.")
+
+
+def _saving_type_from_behavior(m: dict) -> tuple[str, str]:
+    """Returns (type_label, summary)."""
+    streak  = m.get("streak", 0)
+    total   = m.get("total_saved", 0)
+    fp      = m.get("financial_profile", {})
+    habit   = fp.get("saving_habit", "none")
+    entries = m.get("diary_entries", [])
+    n_feeds = len(m.get("feed_log", []))
+
+    if streak >= 20 and n_feeds >= 15:
+        return ("🔥 Consistent Saver", f"Streak {streak} ngày, {n_feeds} lần cho Cừu ăn — thói quen cực kỳ ổn định.")
+    if total >= 1_000_000 and streak >= 7:
+        return ("🌱 Growing Saver", f"Đã tích được {total//1000}k trong {streak} ngày streak — đang xây dựng thói quen.")
+    if habit == "occasional" or (streak > 0 and streak < 7):
+        return ("🌀 Irregular Saver", "Tiết kiệm không đều — có ý thức nhưng chưa thành thói quen hàng ngày.")
+    return ("💤 Passive Holder", "Chưa có hành vi tích lũy chủ động trong app.")
+
+
+def build_wealth_genome(m: dict, messages: list[dict]) -> dict:
+    """Tổng hợp 4 chiều → Wealth Genome + Insight + Next Best Action."""
+    td       = m.get("trading_data", {})
+    dreams   = m.get("dreams", [])
+    diary    = m.get("diary_entries", [])
+    fp       = m.get("financial_profile", {})
+
+    trading_result = analyze_trading_behavior(td)
+    trading_key    = trading_result["personality_key"]
+    trading_risk   = trading_result["risk_level"]
+
+    emo_type, emo_summary   = _emotional_type_from_diary(diary)
+    dream_type, dream_sum   = _dream_type_from_chat(messages, dreams)
+    saving_type, saving_sum = _saving_type_from_behavior(m)
+    trading_type = _TRADING_PERSONALITIES.get(trading_key, {}).get("label", trading_key)
+
+    # Wealth Personality (kết hợp 4 chiều)
+    if trading_risk == "high" and "Dream" in dream_type:
+        wealth_personality = "🚀 Ambitious Explorer"
+    elif trading_risk == "low" and "Consistent" in saving_type:
+        wealth_personality = "🛡️ Disciplined Builder"
+    elif "Áp Lực" in emo_type and trading_risk == "low":
+        wealth_personality = "🌱 Cautious Dreamer"
+    elif "Quyết Tâm" in emo_type and "Goal" in dream_type:
+        wealth_personality = "💪 Determined Achiever"
+    elif trading_risk == "medium" and "Balanced" in saving_type or "Balanced" in trading_key:
+        wealth_personality = "⚖️ Balanced Optimizer"
+    else:
+        wealth_personality = "🌿 Steady Accumulator"
+
+    # Insight (không bán hàng, không tư vấn đầu tư)
+    dream_name = dreams[0]["name"] if dreams else ""
+    if "Cautious" in wealth_personality and dream_name:
+        insight = (
+            f"Bạn có xu hướng rất thận trọng với tiền — điều này thể hiện qua cả dữ liệu giao dịch lẫn cảm xúc nhật ký. "
+            f"Mặc dù bạn có mục tiêu rõ ràng ({dream_name}), nhưng vẫn còn ngại bắt đầu. "
+            f"Điều này khá phổ biến ở những người đang xây dựng thói quen tích lũy. "
+            f"Thường thì bắt đầu từ số tiền rất nhỏ lại dễ hơn rất nhiều so với chờ 'sẵn sàng'."
+        )
+    elif "Explorer" in wealth_personality or trading_risk == "high":
+        insight = (
+            f"Bạn có năng lượng hành động cao — {trading_result.get('behavior_summary','')} "
+            f"Nhưng nhật ký cũng cho thấy những lúc mệt mỏi và áp lực. "
+            f"Những người giao dịch nhiều đôi khi bỏ quên mục tiêu dài hạn vì bận focus vào ngắn hạn."
+        )
+    elif "Disciplined" in wealth_personality:
+        insight = (
+            f"Bạn đang xây dựng thói quen tích lũy rất tốt — streak {m.get('streak',0)} ngày và {saving_sum} "
+            f"Điều ít người làm được. Thách thức tiếp theo thường là biến số tiền tiết kiệm thành mục tiêu cụ thể."
+        )
+    else:
+        insight = (
+            f"{emo_summary} {dream_sum} "
+            f"Mỗi người có nhịp độ riêng — quan trọng nhất là bắt đầu và duy trì, dù nhỏ."
+        )
+
+    # Next Best Action (pure behavioral coaching, không bán hàng)
+    total_saved = m.get("total_saved", 0)
+    if total_saved == 0:
+        nba = "Thử cho Cừu ăn 10.000đ đầu tiên — bước nhỏ nhất để bắt đầu hành trình."
+    elif dream_name and total_saved < 500_000:
+        nba = f"Tạo mục tiêu '{dream_name}' và đặt số tiền cụ thể — AI sẽ giúp bạn tính lộ trình."
+    elif trading_risk == "low" and not td.get("fund_ratio", 0):
+        nba = "Khám phá xem quỹ mở hoạt động như thế nào — không cần quyết định, chỉ cần hiểu trước."
+    elif m.get("streak", 0) < 7:
+        nba = "Thử giữ streak 7 ngày liên tiếp — đây là ngưỡng thói quen bắt đầu hình thành."
+    elif dreams and len(dreams) >= 2:
+        d2 = dreams[1]
+        nba = f"Bạn có {len(dreams)} giấc mơ — ưu tiên '{d2['name']}' tiếp theo chưa? Tạo kế hoạch cụ thể cho mục tiêu này."
+    else:
+        nba = f"Tiếp tục streak — mỗi ngày một lần cho Cừu ăn là đủ để xây dựng tương lai tài chính vững chắc."
+
+    return {
+        "emotional_type":    emo_type,
+        "dream_type":        dream_type,
+        "trading_type":      trading_type,
+        "saving_type":       saving_type,
+        "wealth_personality": wealth_personality,
+        "insight":           insight,
+        "next_best_action":  nba,
+        # raw data cho CEO demo
+        "_emo_summary":     emo_summary,
+        "_dream_summary":   dream_sum,
+        "_saving_summary":  saving_sum,
+        "_trading_result":  trading_result,
+    }
+
+
+# ═══════════════════════════════════════════════════════
 # MEMORY ENGINE
 # ═══════════════════════════════════════════════════════
 LIFE_EVENT_LABELS = {
@@ -480,6 +793,28 @@ MEMORY_DEFAULT: dict = {
         "financial_goal":  "",          # tên mục tiêu chính
         "preferred_fund":  "",          # TCEF | TCBF | TCFF
         "financial_stage": "exploring", # exploring | learning | ready | invested
+    },
+    # ── Trading Behavior Engine ──
+    "trading_data": {
+        "cash_balance":        0,
+        "stock_ratio":         0,
+        "fund_ratio":          0,
+        "bond_ratio":          0,
+        "avg_holding_days":    0,
+        "trade_frequency":     "",    # low | medium | high
+        "margin_usage":        False,
+        "favorite_products":   [],
+        "last_30d_trade_count": 0,
+    },
+    # ── Wealth Genome (4 chiều) ──
+    "wealth_genome_v2": {
+        "emotional_type": "",
+        "dream_type":     "",
+        "trading_type":   "",
+        "saving_type":    "",
+        "wealth_personality": "",
+        "insight":        "",
+        "next_best_action": "",
     },
 }
 
@@ -933,7 +1268,11 @@ OUTPUT JSON giữ nguyên cấu trúc cũ, thêm field:
 # Alias ngược để không vỡ code cũ nếu có nơi nào còn dùng _SYS_EMOTION
 _SYS_EMOTION = _BASE_PERSONALITY_PROMPT
 
-_SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
+# _SYS_DIARY: dùng V2 nếu journal_engine đã import, fallback về V1 cũ
+if _JOURNAL_V2_ENABLED:
+    _SYS_DIARY = _SYS_DIARY_V2   # Rich 6-layer Wealth Genome extraction
+else:
+    _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
 Phân tích: cảm xúc, giấc mơ ẩn, áp lực, mục tiêu.
 Đừng đưa ra lời khuyên tài chính.
 
@@ -1974,9 +2313,16 @@ with tab1:
                         # 4) CTA button
                         if _nba.get("label") and _nba.get("type") not in (
                                 "EXPLORE_TCEF", "EXPLORE_TCBF", "EXPLORE_TCFF"):
-                            if st.button(_nba["label"], key="nba_cta", type="primary"):
-                                st.session_state._nba_action = _nba["type"]
-                                st.rerun()
+                            if _nba.get("type") == "CREATE_SAVING_GOAL":
+                                st.link_button(
+                                    _nba["label"],
+                                    "https://tcinvest.tcbs.com.vn/guest/login?returnUrl=%2Fhome%3FreturnUrl%3D%252Fhome",
+                                    type="primary",
+                                )
+                            else:
+                                if st.button(_nba["label"], key="nba_cta", type="primary"):
+                                    st.session_state._nba_action = _nba["type"]
+                                    st.rerun()
 
                         # 5) AI Reasoning Chain — CEO demo expander
                         _ut = _m.get("_user_text", "")
@@ -2038,352 +2384,56 @@ with tab1:
 
     else:
         # ══════════════════════════════════════════════
-        # DIARY VIEW — Nhật ký tâm sự
+        # DIARY VIEW — Nhật ký tâm sự v2 (Journal Engine)
         # ══════════════════════════════════════════════
-            diary_entries: list[dict] = mem.get("diary_entries", [])
+            if _JOURNAL_V2_ENABLED:
+                # ── V2: Adaptive Journal Engine ───────────────────────────────
+                # Wrapper để bridge _call_llm sang interface của journal_engine
+                def _call_llm_diary(user_text: str, system_prompt: str) -> dict:
+                    return _call_llm(user_text, system_prompt)
 
-            # ── PHẦN 1: HERO — sheep_diary + tagline ──
-            col_dimg, col_dhdr = st.columns([1, 4])
-            with col_dimg:
-                show_sheep("diary", width=180, show_badge=False)
-            with col_dhdr:
-                st.title("🐑 Nhật Ký Tâm Sự")
-                st.markdown(
-                    '<div class="diary-framing">'
-                    '<strong style="color:#5A7A4A;font-size:1rem;">'
-                    '📖 Cừu sẽ giữ giúp bạn những điều của hôm nay.</strong><br/>'
-                    '<span style="color:#777;font-size:0.88rem;">'
-                    'Để sau này nhìn lại, bạn sẽ thấy mình đã trưởng thành như thế nào.<br/>'
-                    '<em>Không phải chat realtime — đây là không gian riêng tư của bạn.</em>'
-                    '</span>'
-                    '</div>',
-                    unsafe_allow_html=True,
+                render_diary_v2(mem, _save, _call_llm_diary)
+
+                # Quest completion: nếu vừa lưu entry mới hôm nay
+                diary_entries_v2 = mem.get("diary_entries", [])
+                today_str_q = datetime.now().strftime("%Y-%m-%d")
+                if diary_entries_v2 and diary_entries_v2[0].get("date_raw", "")[:10] == today_str_q:
+                    _complete_quest(mem, "diary", 15)
+                    _save()
+
+            else:
+                # ── FALLBACK V1 (nếu journal_engine.py chưa có trong folder) ──
+                st.error(
+                    "⚠️ Chưa tìm thấy `journal_engine.py`. "
+                    "Copy file này vào cùng folder với app-10.py để dùng Journal V2."
                 )
-
-            # ── PHẦN 6: PROGRESS STATS — chỉ hiện khi có entries ──
-            if diary_entries:
-                d_streak  = _diary_streak(diary_entries)
-                d_theme   = _top_diary_theme(diary_entries)
-                d_dream   = _top_diary_dream(diary_entries)
-                d_last_r  = diary_entries[0].get("reply", "") if diary_entries else ""
-                top_lbl   = LIFE_EVENT_LABELS.get(d_theme, d_theme) if d_theme else "—"
-                dream_lbl = d_dream.title() if d_dream else "—"
-
-                st.markdown("---")
-                sc1, sc2, sc3, sc4, sc5 = st.columns(5)
-                sc1.markdown(
-                    f'<div class="diary-stat-mini">'
-                    f'<div style="font-size:1.3rem;font-weight:800;color:#C4607F;">{len(diary_entries)}</div>'
-                    f'<div style="font-size:0.76rem;color:#888;">📖 Tổng trang</div>'
-                    f'</div>', unsafe_allow_html=True,
-                )
-                sc2.markdown(
-                    f'<div class="diary-stat-mini">'
-                    f'<div style="font-size:1.3rem;font-weight:800;color:#C4607F;">{d_streak}</div>'
-                    f'<div style="font-size:0.76rem;color:#888;">🔥 Streak</div>'
-                    f'</div>', unsafe_allow_html=True,
-                )
-                sc3.markdown(
-                    f'<div class="diary-stat-mini">'
-                    f'<div style="font-size:0.85rem;font-weight:700;color:#4E7DB8;">{top_lbl[:16]}</div>'
-                    f'<div style="font-size:0.76rem;color:#888;">💙 Hay tâm sự</div>'
-                    f'</div>', unsafe_allow_html=True,
-                )
-                sc4.markdown(
-                    f'<div class="diary-stat-mini">'
-                    f'<div style="font-size:0.85rem;font-weight:700;color:#4E7DB8;">{dream_lbl[:16]}</div>'
-                    f'<div style="font-size:0.76rem;color:#888;">🎯 Giấc mơ thường</div>'
-                    f'</div>', unsafe_allow_html=True,
-                )
-                preview_r = f'"{d_last_r[:36]}..."' if len(d_last_r) > 36 else f'"{d_last_r}"'
-                sc5.markdown(
-                    f'<div class="diary-stat-mini">'
-                    f'<div style="font-size:0.78rem;color:#666;font-style:italic;">{preview_r}</div>'
-                    f'<div style="font-size:0.76rem;color:#888;">🐑 Cừu nhớ nhất</div>'
-                    f'</div>', unsafe_allow_html=True,
-                )
-
-            st.markdown("---")
-
-            DIARY_MOODS_V2 = [
-                ("😊", "Mình rất vui"),
-                ("😔", "Có chút áp lực"),
-                ("😴", "Hơi mệt"),
-                ("😡", "Bực một chuyện"),
-                ("💪", "Đang quyết tâm"),
-                ("🥹", "Muốn được lắng nghe"),
-            ]
-
-            col_write, col_history = st.columns([3, 2])
-
-            # ─────────────────────────────────────────────────────
-            # LEFT: WRITING SECTION
-            # ─────────────────────────────────────────────────────
-            with col_write:
-
-                # ── PHẦN 4: INSIGHT CARD — hiển thị sau khi lưu ──
-                if st.session_state.get("diary_just_saved") and st.session_state.get("diary_last_entry"):
-                    last_e   = st.session_state.diary_last_entry
-                    insights = _build_diary_insights(
-                        last_e.get("mood", ""),
-                        last_e.get("tags", []),
-                        last_e.get("dream", ""),
-                        last_e.get("content", ""),
-                    )
-                    diary_src = _b64(_pick_mascot("diary"))
-
-                    insight_html = "".join(
-                        f'<div style="display:flex;align-items:flex-start;gap:8px;margin:5px 0;text-align:left;">'
-                        f'<span style="color:#FF8FAF;font-weight:700;flex-shrink:0;">•</span>'
-                        f'<span style="font-size:0.9rem;color:#444;line-height:1.5;">{ins}</span>'
-                        f'</div>'
-                        for ins in insights
-                    )
-                    st.markdown(
-                        f'<div class="insight-card">'
-                        f'<img src="{diary_src}" width="88" '
-                        f'style="border-radius:50%;border:4px solid #FFB5C8;margin-bottom:12px;" /><br/>'
-                        f'<strong style="color:#C4607F;font-size:1.08rem;">'
-                        f'🐑 Hôm nay mình hiểu thêm về bạn</strong>'
-                        f'<div style="margin:14px 0 10px;padding:0 4px;">{insight_html}</div>'
-                        f'<div style="color:#4E7DB8;font-size:0.92rem;font-style:italic;">'
-                        f'💙 Mình sẽ nhớ điều này giúp bạn.</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-                    if last_e.get("reply"):
-                        st.markdown(
-                            f'<div style="background:rgba(255,182,210,0.15);border-radius:14px;'
-                            f'padding:12px 16px;margin:6px 0 14px;font-style:italic;color:#C4607F;">'
-                            f'🐑 Cừu nhắn: <strong>{last_e["reply"]}</strong>'
-                            f'</div>',
-                            unsafe_allow_html=True,
-                        )
-                    if last_e.get("dream"):
-                        st.markdown(
-                            f'<div style="background:rgba(200,240,200,0.3);border-radius:12px;'
-                            f'padding:10px 14px;margin:6px 0;">'
-                            f'✨ Cừu phát hiện giấc mơ: <strong>{last_e["dream"]}</strong>!'
-                            f'</div>',
-                            unsafe_allow_html=True,
-                        )
-                    if st.button("✏️ Viết thêm hôm nay", type="primary", use_container_width=True):
-                        st.session_state.diary_just_saved = False
-                        st.session_state.diary_last_entry = None
-                        for k in ("dq1", "dq2", "dq3"):
-                            st.session_state.pop(k, None)
-                        st.session_state.diary_mood_sel = None
-                        st.rerun()
-
-                else:
-                    # ── PHẦN 2: CHỌN CẢM XÚC — mood chips ──
-                    st.markdown(
-                        '<div style="font-size:1rem;font-weight:700;color:#C4607F;margin-bottom:10px;">'
-                        '🐑 Hôm nay bạn thế nào?</div>',
-                        unsafe_allow_html=True,
-                    )
-                    mood_cols = st.columns(3)
-                    for i, (emoji, label) in enumerate(DIARY_MOODS_V2):
-                        full_label = f"{emoji} {label}"
-                        is_sel     = (st.session_state.get("diary_mood_sel") == full_label)
-                        if mood_cols[i % 3].button(
-                            full_label,
-                            key=f"dmood_{i}",
-                            use_container_width=True,
-                            type="primary" if is_sel else "secondary",
-                        ):
-                            st.session_state.diary_mood_sel = full_label
-                            st.rerun()
-
-                    current_mood = st.session_state.get("diary_mood_sel") or ""
-
-                    # ── PHẦN 3: 3 KHUNG VIẾT CÓ GỢI MỞ ──
-                    st.markdown(
-                        '<div class="diary-prompt">🐑 Hôm nay điều gì khiến bạn nhớ nhất?</div>',
-                        unsafe_allow_html=True,
-                    )
-                    q1 = st.text_area(
-                        "",
-                        placeholder="Kể cho mình nghe... (không cần viết nhiều)",
-                        height=100, key="dq1", label_visibility="collapsed",
-                    )
-
-                    st.markdown(
-                        '<div class="diary-prompt">🐑 Có điều gì khiến bạn vui, buồn hoặc lo lắng không?</div>',
-                        unsafe_allow_html=True,
-                    )
-                    q2 = st.text_area(
-                        "",
-                        placeholder="Vài dòng thôi cũng được...",
-                        height=100, key="dq2", label_visibility="collapsed",
-                    )
-
-                    st.markdown(
-                        '<div class="diary-prompt">🐑 Có điều gì bạn muốn nhắn cho chính mình trong tương lai?</div>',
-                        unsafe_allow_html=True,
-                    )
-                    q3 = st.text_area(
-                        "",
-                        placeholder="Ghi lại điều bạn muốn nhớ...",
-                        height=100, key="dq3", label_visibility="collapsed",
-                    )
-
-                    # ── PHẦN 4: SAVE CTA ──
-                    has_content = any([q1.strip(), q2.strip(), q3.strip()])
-                    if st.button(
-                        "💾 Lưu vào nhật ký của Cừu",
-                        type="primary",
-                        use_container_width=True,
-                        disabled=not has_content,
-                    ):
-                        combined = "\n\n".join(filter(None, [
-                            f"Điều nhớ nhất: {q1.strip()}"       if q1.strip() else "",
-                            f"Cảm xúc hôm nay: {q2.strip()}"     if q2.strip() else "",
-                            f"Nhắn cho tương lai: {q3.strip()}"   if q3.strip() else "",
-                        ]))
-                        sheep_reply  = "Bê bê~ 🐑 Cừu đã đọc rồi! Cảm ơn bạn đã tin tưởng 💙"
-                        emotion_tag  = "bình_thường"
-                        dream_det    = ""
-                        entry_tags: list[str] = []
-
-                        if st.session_state.api_key:
-                            with st.spinner("Cừu đang đọc nhật ký... 📖"):
-                                r = _call_llm(
-                                    f"Nhật ký hôm nay:\nTâm trạng: {current_mood}\n{combined[:600]}",
-                                    _SYS_DIARY,
-                                )
-                                sheep_reply = r.get("sheep_reply") or sheep_reply
-                                emotion_tag = r.get("emotion", "bình_thường")
-                                dream_det   = r.get("dream_detected", "")
-                                entry_tags  = r.get("tags", [])
-                                if r.get("mood"):
-                                    set_mood(r["mood"])
-
-                        entry = {
-                            "id":       datetime.now().isoformat(),
-                            "date":     datetime.now().strftime("%d/%m/%Y %H:%M"),
-                            "date_raw": datetime.now().isoformat(),
-                            "title":    f"Ngày {datetime.now().strftime('%d/%m')}",
-                            "mood":     current_mood or "🐑 Bình thường",
-                            "content":  combined,
-                            "emotion":  emotion_tag,
-                            "tags":     entry_tags,
-                            "dream":    dream_det,
-                            "reply":    sheep_reply,
-                        }
-                        diary_entries.insert(0, entry)
-                        mem["diary_entries"] = diary_entries
-                        _save()
-
-                        st.session_state.diary_just_saved = True
-                        st.session_state.diary_last_entry = entry
-                        st.rerun()
-
-                    if not has_content:
-                        st.caption("Viết ít nhất một điều để Cừu có thể lưu giúp bạn 🌿")
-
-                    if diary_entries:
-                        dl = json.dumps(diary_entries, ensure_ascii=False, indent=2)
-                        st.download_button(
-                            "⬇️ Tải nhật ký về máy", dl,
-                            "nhat_ky_tam_su.json", "application/json",
-                        )
-
-            # ─────────────────────────────────────────────────────
-            # RIGHT: TIMELINE — PHẦN 5 & 7
-            # ─────────────────────────────────────────────────────
-            with col_history:
-                if not diary_entries:
-                    # Empty state: emotional hook
-                    st.markdown(
-                        '<div style="text-align:center;padding:40px 16px 20px;">'
-                        '<div style="font-size:2.4rem;margin-bottom:8px;">🌱</div>'
-                        '<div style="font-weight:800;color:#5A7A4A;font-size:1.05rem;margin-bottom:10px;">'
-                        'Trang đầu tiên đang chờ bạn.</div>'
-                        '<div style="color:#888;font-size:0.88rem;line-height:1.7;font-style:italic;">'
-                        '"Mọi giấc mơ lớn đều bắt đầu<br/>từ một dòng nhật ký nhỏ."'
-                        '</div>'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown(
-                        '<div style="font-weight:800;color:#4E7DB8;font-size:1.05rem;margin-bottom:6px;">'
-                        '📖 Hành trình trưởng thành</div>',
-                        unsafe_allow_html=True,
-                    )
-                    now = datetime.now()
-                    filter_opt = st.radio(
-                        "Xem:",
-                        ["Hôm nay", "Tuần này", "Tháng này", "Tất cả"],
-                        horizontal=True,
-                        label_visibility="collapsed",
-                        key="d_filter",
-                    )
-                    filtered = diary_entries
-                    if filter_opt == "Hôm nay":
-                        filtered = [e for e in diary_entries
-                                    if e["date_raw"][:10] == now.strftime("%Y-%m-%d")]
-                    elif filter_opt == "Tuần này":
-                        ago = (now - timedelta(days=7)).isoformat()
-                        filtered = [e for e in diary_entries if e["date_raw"] >= ago]
-                    elif filter_opt == "Tháng này":
-                        ms = now.strftime("%Y-%m")
-                        filtered = [e for e in diary_entries if e["date_raw"][:7] == ms]
-
-                    search = st.text_input(
-                        "🔍", placeholder="Tìm kiếm...", key="d_search",
-                        label_visibility="collapsed",
-                    )
-                    if search:
-                        sl = search.lower()
-                        filtered = [e for e in filtered
-                                    if sl in e["content"].lower() or sl in e["title"].lower()]
-
-                    st.caption(f"{len(filtered)} trang nhật ký")
-
-                    for entry in filtered:
-                        preview = entry["content"][:110] + ("..." if len(entry["content"]) > 110 else "")
-                        dream_line = (
-                            f'<div style="color:#5A7A4A;font-size:0.82rem;margin-top:4px;">✨ {entry["dream"]}</div>'
-                            if entry.get("dream") else ""
-                        )
-                        tags_line = " ".join(
-                            LIFE_EVENT_LABELS.get(t, t)
-                            for t in entry.get("tags", [])[:2]
-                        )
-                        reply_preview = ""
-                        if entry.get("reply"):
-                            rp = entry["reply"]
-                            reply_preview = (
-                                f'<div style="color:#C4607F;font-size:0.82rem;'
-                                f'margin-top:6px;font-style:italic;">'
-                                f'🐑 {rp[:55]}{"..." if len(rp)>55 else ""}</div>'
-                            )
-
-                        tags_div = (
-                            f'<div style="font-size:0.76rem;color:#aaa;margin-top:3px;">{tags_line}</div>'
-                            if tags_line else ""
-                        )
-                        st.markdown(
-                            f'<div class="diary-entry-card">'
-                            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
-                            f'<span style="font-weight:700;color:#444;font-size:0.88rem;">{entry["mood"]}</span>'
-                            f'<span style="font-size:0.76rem;color:#bbb;">{entry["date"][:8]}</span>'
-                            f'</div>'
-                            f'<div style="font-size:0.85rem;color:#666;margin:6px 0 2px;line-height:1.55;">'
-                            f'{preview}</div>'
-                            f'{dream_line}'
-                            f'{tags_div}'
-                            f'{reply_preview}'
-                            f'</div>',
-                            unsafe_allow_html=True,
-                        )
-                        if st.button("🗑️", key=f"del_{entry['id']}", help="Xoá trang này"):
-                            mem["diary_entries"] = [e for e in diary_entries if e["id"] != entry["id"]]
-                            _save()
-                            st.rerun()
-
+                diary_entries: list[dict] = mem.get("diary_entries", [])
+                st.markdown("### 📔 Nhật Ký (Legacy Mode)")
+                q1 = st.text_area("Hôm nay điều gì khiến bạn nhớ nhất?", height=100, key="dq1")
+                q2 = st.text_area("Có điều gì khiến bạn vui, buồn hoặc lo lắng không?", height=100, key="dq2")
+                q3 = st.text_area("Nhắn cho chính mình trong tương lai:", height=100, key="dq3")
+                if st.button("💾 Lưu", disabled=not any([q1.strip(), q2.strip(), q3.strip()])):
+                    combined = "\n\n".join(filter(None, [
+                        f"Điều nhớ nhất: {q1.strip()}" if q1.strip() else "",
+                        f"Cảm xúc hôm nay: {q2.strip()}" if q2.strip() else "",
+                        f"Nhắn cho tương lai: {q3.strip()}" if q3.strip() else "",
+                    ]))
+                    entry = {
+                        "id": datetime.now().isoformat(),
+                        "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                        "date_raw": datetime.now().isoformat(),
+                        "title": f"Ngày {datetime.now().strftime('%d/%m')}",
+                        "mood": "🐑 Bình thường",
+                        "content": combined,
+                        "emotion": "binh_thuong",
+                        "tags": [],
+                        "dream": "",
+                        "reply": "Bê bê~ Cừu đã đọc rồi! 💙",
+                    }
+                    diary_entries.insert(0, entry)
+                    mem["diary_entries"] = diary_entries
+                    _save()
+                    st.rerun()
 
         # ═══════════════════════════════════════════════════════
 
@@ -4703,6 +4753,18 @@ def _generate_demo_data():
         "achievements": ["first_chat","streak_7","streak_30","level_4"],
         "daily_quests": {today_str: {"visit":True,"chat":True,"diary":True,"feed":True,"bonus_claimed":True}},
         "wealth_genome": {"risk_type":"medium","personality":"dream_chaser","stage":"accumulation"},
+        # Demo trading data — Linh, sinh viên UI/UX, thận trọng
+        "trading_data": {
+            "cash_balance":        45_000_000,
+            "stock_ratio":         5,
+            "fund_ratio":          3,
+            "bond_ratio":          2,
+            "avg_holding_days":    180,
+            "trade_frequency":     "low",
+            "margin_usage":        False,
+            "favorite_products":   ["Fund"],
+            "last_30d_trade_count": 2,
+        },
     })
     _save()
     st.session_state.demo_mode = True
@@ -5317,107 +5379,267 @@ with tab4:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ════════════════════════════════════════════
-    # WEALTH GENOME CARD
     # ════════════════════════════════════════════
-    _fp   = mem.get("financial_profile", {})
-    _wg_dreams = mem.get("dreams", [])
-    _wg_tags   = mem.get("life_events", [])
+    # 🧠 WEALTH GENOME — 4 DIMENSIONS
+    # ════════════════════════════════════════════
+    _wg4 = build_wealth_genome(mem, st.session_state.messages)
+    _td  = mem.get("trading_data", {})
+    _tr  = _wg4.get("_trading_result", {})
+    _tr_pinfo = _tr.get("personality_info", {})
+    _tr_signals = _tr.get("signals", [])
 
-    # ── 5 chiều Wealth Genome ──
-    _dream_personality = (
-        "🌟 Dream Chaser" if any(d["name"] for d in _wg_dreams) else "🔍 Chưa xác định"
-    )
-    _fin_personality_key = _suggest_personality(mem)
-    _fin_personality = {
-        "TCBF": "🌿 Người Thích Ngủ Ngon",
-        "TCFF": "⚖️ Người Thích Cân Bằng",
-        "TCEF": "🚀 Người Thích Tăng Trưởng",
-    }.get(_fin_personality_key, "💭 Chưa xác định")
+    # ── Trading Data Input Panel ──
+    with st.expander("📊 Trading Data từ TCBS (demo / tuỳ chỉnh)", expanded=False):
+        _tdc1, _tdc2, _tdc3 = st.columns(3)
+        with _tdc1:
+            _td_cash = st.number_input("💰 Cash balance (VND)", value=int(_td.get("cash_balance", 45_000_000)),
+                                       step=1_000_000, key="td_cash")
+            _td_trades = st.number_input("🔁 Trades/tháng", value=int(_td.get("last_30d_trade_count", 2)),
+                                         min_value=0, max_value=200, key="td_trades")
+        with _tdc2:
+            _td_holding = st.number_input("⏳ Avg holding (ngày)", value=int(_td.get("avg_holding_days", 180)),
+                                          min_value=0, max_value=3650, key="td_holding")
+            _td_margin = st.checkbox("⚠️ Margin usage", value=bool(_td.get("margin_usage", False)), key="td_margin")
+        with _tdc3:
+            _td_stock = st.slider("📈 Stock %", 0, 100, int(_td.get("stock_ratio", 5)), key="td_stock")
+            _td_fund  = st.slider("🌿 Fund %",  0, 100, int(_td.get("fund_ratio", 3)),  key="td_fund")
+            _td_bond  = st.slider("📋 Bond %",  0, 100, int(_td.get("bond_ratio", 2)),  key="td_bond")
 
-    _life_goal = (
-        _wg_dreams[0]["name"].title() if _wg_dreams
-        else _fp.get("financial_goal", "Chưa có mục tiêu cụ thể")
-    )
-    _saving_habit = {
-        "none":       "💤 Chưa có thói quen",
-        "occasional": "🌱 Tiết kiệm thỉnh thoảng",
-        "regular":    "🔥 Tích luỹ đều đặn",
-    }.get(_fp.get("saving_habit", "none"), "💤 Chưa có thói quen")
+        if st.button("🔄 Cập nhật Trading Data", key="btn_update_td"):
+            mem["trading_data"] = {
+                "cash_balance":         _td_cash,
+                "stock_ratio":          _td_stock,
+                "fund_ratio":           _td_fund,
+                "bond_ratio":           _td_bond,
+                "avg_holding_days":     _td_holding,
+                "trade_frequency":      "high" if _td_trades >= 20 else ("medium" if _td_trades >= 8 else "low"),
+                "margin_usage":         _td_margin,
+                "favorite_products":    (["Stock"] if _td_stock >= 40 else ["Fund"]),
+                "last_30d_trade_count": _td_trades,
+            }
+            _save()
+            st.rerun()
 
-    _risk_style = {
-        "low":    "🌿 Thích ổn định",
-        "medium": "⚖️ Cân bằng rủi ro",
-        "high":   "⚡ Chấp nhận biến động",
-    }.get(_fp.get("risk_level", ""), "💭 Chưa xác định")
-
-    _wg_stage = {
-        "exploring": "🔍", "learning": "📚", "ready": "✅", "invested": "🚀"
-    }.get(_fp.get("financial_stage", "exploring"), "🔍")
-
-    # ── Goal Plan (nếu có dream) ──
-    _wg_plan_html = ""
-    if _wg_dreams:
-        _wd = _wg_dreams[0]
-        _wp = generate_goal_plan(_wd["name"], _wd.get("amount", 0))
-        if _wd.get("amount", 0) > 0:
-            _wg_plan_html = (
-                f'<div style="border-top:1px solid #FFD6E8;margin:18px 0 12px;"></div>'
-                f'<div style="font-size:.78rem;font-weight:700;color:#888;'
-                f'letter-spacing:.5px;margin-bottom:10px;">🎯 KẾ HOẠCH TÍCH LUỸ — {_wd["name"].upper()}</div>'
-                f'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
-            )
-            for _plan_i, _pl in enumerate(_wp["plans"]):
-                _hl = "background:linear-gradient(135deg,#FFF0F7,#EEF8FF);border:1.5px solid #FF8FAF;" if _plan_i == 1 else "background:#FAFAFA;border:1.5px solid #F0E6F0;"
-                _wg_plan_html += (
-                    f'<div style="{_hl}border-radius:12px;padding:10px 8px;text-align:center;">'
-                    f'<div style="font-size:.78rem;font-weight:900;color:#C4607F;">{fmt(_pl["monthly"])}</div>'
-                    f'<div style="font-size:.68rem;color:#888;margin-top:2px;">/tháng</div>'
-                    f'<div style="font-size:.72rem;font-weight:700;color:#555;margin-top:4px;">{_pl["time_str"]}</div>'
-                    + ('<div style="font-size:.6rem;color:#FF8FAF;font-weight:800;margin-top:3px;">⭐ phổ biến</div>' if _plan_i == 1 else "")
-                    + f'</div>'
-                )
-            _wg_plan_html += f'</div>'
-
-    _genome_rows = [
-        ("Dream Personality", _dream_personality, "Loại người theo đuổi giấc mơ"),
-        ("Financial Personality", _fin_personality, "Phong cách tích luỹ phù hợp"),
-        ("Life Goal", f"🎯 {_life_goal}", "Mục tiêu lớn AI nhận diện được"),
-        ("Saving Habit", _saving_habit, "Thói quen tích luỹ hiện tại"),
-        ("Risk Style", _risk_style, "Khẩu vị rủi ro được suy luận"),
+    # ── 4 Genome Dimensions ──
+    _g_dims = [
+        ("💬", "Chat → Dream",     _wg4["dream_type"],    _wg4["_dream_summary"],   "#7EC8E3"),
+        ("📔", "Journal → Emotion", _wg4["emotional_type"], _wg4["_emo_summary"],    "#FFD93D"),
+        ("📊", "Trading → Style",  _wg4["trading_type"],  _tr.get("behavior_summary",""), "#FF6B6B"),
+        ("🐑", "App → Saving",     _wg4["saving_type"],   _wg4["_saving_summary"],  "#51CF66"),
     ]
-    _genome_html = "".join(
-        f'<div style="display:flex;align-items:center;justify-content:space-between;'
-        f'padding:10px 0;border-bottom:1px solid #F5EAFA;">'
-        f'<div>'
-        f'<div style="font-size:.68rem;font-weight:700;color:#bbb;letter-spacing:.5px;">{lbl}</div>'
-        f'<div style="font-size:.88rem;font-weight:700;color:#888;margin-top:2px;">{sub}</div>'
-        f'</div>'
-        f'<div style="font-size:.92rem;font-weight:800;color:#1a1a2e;text-align:right;max-width:55%;">{val}</div>'
-        f'</div>'
-        for lbl, val, sub in _genome_rows
-    )
+    _dim_cols = st.columns(4)
+    for _ci, (_ico, _src, _lbl, _desc, _col) in enumerate(_g_dims):
+        with _dim_cols[_ci]:
+            st.markdown(f"""
+            <div style="background:#FAFAFA;border:2px solid {_col}22;border-radius:16px;
+                        padding:14px 12px;min-height:130px;text-align:center;">
+              <div style="font-size:1.4rem;">{_ico}</div>
+              <div style="font-size:.62rem;font-weight:700;color:#bbb;letter-spacing:.5px;
+                          margin:4px 0 2px;">{_src}</div>
+              <div style="font-size:.82rem;font-weight:800;color:{_col};line-height:1.3;">
+                {_lbl}
+              </div>
+              <div style="font-size:.68rem;color:#999;margin-top:6px;line-height:1.4;">
+                {_desc[:80]}{'...' if len(_desc)>80 else ''}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="screen-card" style="border-color:#FF8FAF;">
-      <div class="screen-label" style="color:#FF8FAF;">Wealth Genome · AI Companion</div>
-      <div class="screen-title">🧬 AI hiểu bạn như thế nào</div>
-      <div style="margin-top:6px;margin-bottom:4px;">
-        <span style="font-size:.78rem;color:#aaa;">Financial Stage </span>
-        <span style="font-size:.82rem;font-weight:800;color:#C4607F;">{_wg_stage} {_fp.get("financial_stage","exploring").title()}</span>
-        <span style="font-size:.72rem;color:#ccc;margin:0 6px;">·</span>
-        <span style="font-size:.78rem;color:#aaa;">Conversations </span>
-        <span style="font-size:.82rem;font-weight:800;color:#7EC8E3;">{len(st.session_state.messages)//2}</span>
-      </div>
-      <div style="margin:16px 0 4px;">{_genome_html}</div>
-      {_wg_plan_html}
-      <div style="margin-top:14px;padding:11px 16px;background:rgba(255,143,175,.07);
-           border-radius:12px;border-left:3px solid #FF8FAF;">
-        <div style="font-size:.8rem;color:#666;line-height:1.65;">
-          🐑 <em>Wealth Genome được xây dựng từ những gì bạn chia sẻ — không phải từ dữ liệu tài chính. AI suy luận để hiểu bạn tốt hơn mỗi ngày.</em>
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    # ── Wealth Personality + Trading Signals ──
+    _wg_col1, _wg_col2 = st.columns([3, 2])
+    with _wg_col1:
+        st.markdown(f"""
+        <div class="screen-card" style="border-color:#9775FA;">
+          <div class="screen-label" style="color:#9775FA;">Wealth Genome · Kết quả tổng hợp</div>
+          <div class="screen-title">🧬 {_wg4['wealth_personality']}</div>
+          <div style="margin:14px 0;padding:14px;background:#F8F5FF;border-radius:12px;
+                      border-left:3px solid #9775FA;">
+            <div style="font-size:.82rem;color:#444;line-height:1.7;">{_wg4['insight']}</div>
+          </div>
+          <div style="padding:12px 14px;background:linear-gradient(135deg,#E8F5E9,#E3F2FD);
+                      border-radius:12px;border:1.5px solid #51CF6633;">
+            <div style="font-size:.72rem;font-weight:700;color:#888;letter-spacing:.5px;
+                        margin-bottom:6px;">⚡ NEXT BEST ACTION</div>
+            <div style="font-size:.88rem;font-weight:800;color:#2d7a4f;line-height:1.5;">
+              {_wg4['next_best_action']}
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:.72rem;color:#bbb;font-style:italic;">
+            🐑 Insight dựa trên hành vi thực tế — không phải tư vấn đầu tư.
+          </div>
         </div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+    with _wg_col2:
+        _tr_color = _tr_pinfo.get("color", "#9775FA")
+        _tr_label = _tr_pinfo.get("label", _wg4["trading_type"])
+        _tr_desc  = _tr_pinfo.get("desc", "")
+        _signals_html = "".join(
+            f'<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;">'
+            f'<span style="font-size:.85rem;">{s[0]}</span>'
+            f'<span style="font-size:.72rem;color:#555;line-height:1.4;">{s[1]}</span>'
+            f'</div>'
+            for s in _tr_signals[:5]
+        ) or '<div style="font-size:.72rem;color:#bbb;">Chưa có tín hiệu giao dịch.</div>'
+
+        st.markdown(f"""
+        <div class="screen-card" style="border-color:{_tr_color};">
+          <div class="screen-label" style="color:{_tr_color};">Trading Behavior · TCBS Data</div>
+          <div class="screen-title">{_tr_label}</div>
+          <div style="font-size:.78rem;color:#888;margin:8px 0 14px;">{_tr_desc}</div>
+          <div style="font-size:.7rem;font-weight:700;color:#bbb;letter-spacing:.5px;
+                      margin-bottom:8px;">SIGNALS PHÁT HIỆN</div>
+          {_signals_html}
+          <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:#F5F5F5;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:.68rem;color:#aaa;">Trades/tháng</div>
+              <div style="font-size:1.1rem;font-weight:900;color:{_tr_color};">
+                {_td.get('last_30d_trade_count', 0)}
+              </div>
+            </div>
+            <div style="background:#F5F5F5;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:.68rem;color:#aaa;">Avg holding</div>
+              <div style="font-size:1.1rem;font-weight:900;color:{_tr_color};">
+                {_td.get('avg_holding_days', 0)}d
+              </div>
+            </div>
+            <div style="background:#F5F5F5;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:.68rem;color:#aaa;">Margin</div>
+              <div style="font-size:1.1rem;font-weight:900;color:{_tr_color};">
+                {'Có' if _td.get('margin_usage') else 'Không'}
+              </div>
+            </div>
+            <div style="background:#F5F5F5;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:.68rem;color:#aaa;">Cash ratio</div>
+              <div style="font-size:1.1rem;font-weight:900;color:{_tr_color};">
+                {100 - _td.get('stock_ratio',0) - _td.get('fund_ratio',0) - _td.get('bond_ratio',0)}%
+              </div>
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ── CEO Demo: AI Reasoning Chain (full flow) ──
+    with st.expander("🧠 AI suy luận như thế nào? (CEO Demo — Full Flow)", expanded=False):
+        _last_chat = next(
+            (m["content"] for m in reversed(st.session_state.messages) if m["role"] == "user"),
+            "Em muốn mua MacBook"
+        )
+        _dream_show  = mem.get("dreams", [{}])[0].get("name", "Chưa rõ") if mem.get("dreams") else "Chưa rõ"
+        _dream_saved = mem.get("dreams", [{}])[0].get("saved", 0) if mem.get("dreams") else 0
+        _dream_total = mem.get("dreams", [{}])[0].get("amount", 0) if mem.get("dreams") else 0
+
+        st.markdown(f"""
+        <div style="font-family:monospace;font-size:.78rem;line-height:1.8;
+                    background:#0D1117;color:#E6EDF3;border-radius:16px;padding:20px 24px;">
+          <div style="color:#58A6FF;font-weight:700;margin-bottom:12px;font-size:.85rem;">
+            REASONING CHAIN · REAL-TIME
+          </div>
+
+          <div style="color:#3FB950;margin-bottom:4px;">▶ INPUT: Chat</div>
+          <div style="color:#E6EDF3;padding-left:16px;margin-bottom:12px;
+                      border-left:2px solid #30363D;">
+            "{_last_chat[:80]}{'...' if len(_last_chat)>80 else ''}"
+          </div>
+
+          <div style="color:#3FB950;margin-bottom:4px;">▶ INPUT: Journal</div>
+          <div style="color:#E6EDF3;padding-left:16px;margin-bottom:12px;
+                      border-left:2px solid #30363D;">
+            {len(mem.get('diary_entries',[]))} entries · Mood: {_wg4['emotional_type']}
+          </div>
+
+          <div style="color:#3FB950;margin-bottom:4px;">▶ INPUT: Trading Data (TCBS)</div>
+          <div style="color:#E6EDF3;padding-left:16px;margin-bottom:12px;
+                      border-left:2px solid #30363D;">
+            {_td.get('last_30d_trade_count',0)} trades/tháng · Holding {_td.get('avg_holding_days',0)}d
+            · Cash {100-_td.get('stock_ratio',0)-_td.get('fund_ratio',0)-_td.get('bond_ratio',0)}%
+            · Margin: {'Yes' if _td.get('margin_usage') else 'No'}
+          </div>
+
+          <div style="color:#3FB950;margin-bottom:4px;">▶ INPUT: App Behavior</div>
+          <div style="color:#E6EDF3;padding-left:16px;margin-bottom:12px;
+                      border-left:2px solid #30363D;">
+            Streak {mem.get('streak',0)} ngày · Saved {fmt(mem.get('total_saved',0))}
+            · {len(mem.get('feed_log',[]))} lần cho ăn
+          </div>
+
+          <div style="color:#F78166;margin:12px 0 4px;">⚙ WEALTH GENOME ENGINE</div>
+          <div style="padding-left:16px;border-left:2px solid #F7816633;margin-bottom:12px;">
+            <span style="color:#79C0FF;">emotional_type</span>
+            <span style="color:#E6EDF3;"> → </span>
+            <span style="color:#A5F3FC;">{_wg4['emotional_type']}</span><br/>
+            <span style="color:#79C0FF;">dream_type</span>
+            <span style="color:#E6EDF3;"> → </span>
+            <span style="color:#A5F3FC;">{_wg4['dream_type']}</span><br/>
+            <span style="color:#79C0FF;">trading_type</span>
+            <span style="color:#E6EDF3;"> → </span>
+            <span style="color:#A5F3FC;">{_wg4['trading_type']}</span><br/>
+            <span style="color:#79C0FF;">saving_type</span>
+            <span style="color:#E6EDF3;"> → </span>
+            <span style="color:#A5F3FC;">{_wg4['saving_type']}</span>
+          </div>
+
+          <div style="color:#F78166;margin:12px 0 4px;">⚙ INSIGHT ENGINE</div>
+          <div style="color:#3D8B37;padding:10px 14px;background:#0F2A1A;
+                      border-radius:8px;margin-bottom:12px;border-left:2px solid #3FB950;">
+            wealth_personality → <strong style="color:#3FB950;">{_wg4['wealth_personality']}</strong>
+          </div>
+
+          <div style="color:#F78166;margin:12px 0 4px;">⚙ NEXT BEST ACTION ENGINE</div>
+          <div style="color:#FFD700;padding:10px 14px;background:#1A1500;
+                      border-radius:8px;border-left:2px solid #FFD700;">
+            ⚡ {_wg4['next_best_action']}
+          </div>
+
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid #30363D;
+                      font-size:.68rem;color:#586069;">
+            ⚠ Không bán hàng · Không tư vấn đầu tư · Chỉ Insight + Behavioral Coaching
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Summary card bên dưới reasoning chain
+        _dreams_list = mem.get("dreams", [])
+        _d1 = _dreams_list[0] if _dreams_list else {}
+        _rc1, _rc2, _rc3 = st.columns(3)
+        with _rc1:
+            st.markdown(f"""
+            <div style="background:#EFF8FF;border:1.5px solid #7EC8E3;border-radius:12px;
+                        padding:12px;text-align:center;">
+              <div style="font-size:.68rem;font-weight:700;color:#7EC8E3;letter-spacing:.5px;">DREAM</div>
+              <div style="font-size:.9rem;font-weight:800;color:#1a1a2e;margin-top:4px;">
+                {_d1.get('name','Chưa có') if _d1 else 'Chưa có'}
+              </div>
+              <div style="font-size:.72rem;color:#888;margin-top:2px;">
+                {fmt(_d1.get('saved',0))} / {fmt(_d1.get('amount',0))}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with _rc2:
+            st.markdown(f"""
+            <div style="background:#FFF8E1;border:1.5px solid #FFD93D;border-radius:12px;
+                        padding:12px;text-align:center;">
+              <div style="font-size:.68rem;font-weight:700;color:#E6A817;letter-spacing:.5px;">EMOTION</div>
+              <div style="font-size:.9rem;font-weight:800;color:#1a1a2e;margin-top:4px;">
+                {_wg4['emotional_type'].split(' ',1)[-1] if ' ' in _wg4['emotional_type'] else _wg4['emotional_type']}
+              </div>
+              <div style="font-size:.72rem;color:#888;margin-top:2px;">{_wg4['_emo_summary'][:40]}...</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with _rc3:
+            _tr_short = _wg4['trading_type'].split(' ',1)[-1] if ' ' in _wg4['trading_type'] else _wg4['trading_type']
+            st.markdown(f"""
+            <div style="background:#FFF0F0;border:1.5px solid #FF6B6B;border-radius:12px;
+                        padding:12px;text-align:center;">
+              <div style="font-size:.68rem;font-weight:700;color:#FF6B6B;letter-spacing:.5px;">TRADING STYLE</div>
+              <div style="font-size:.9rem;font-weight:800;color:#1a1a2e;margin-top:4px;">{_tr_short}</div>
+              <div style="font-size:.72rem;color:#888;margin-top:2px;">
+                {_td.get('last_30d_trade_count',0)} trades · {_td.get('avg_holding_days',0)}d hold
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # MÀN 8 — COMMUNITY
     # ════════════════════════════════════════════
