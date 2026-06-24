@@ -39,6 +39,7 @@ import re
 import base64
 import glob
 import os
+import math
 from datetime import datetime, timedelta
 from copy import deepcopy
 
@@ -1086,6 +1087,262 @@ def check_momentum(user_text: str, messages: list[dict], m: dict) -> dict | None
     }
 
 
+# ═══════════════════════════════════════════════════════
+# DREAM COST DATABASE + GOAL COACH ENGINE
+# ═══════════════════════════════════════════════════════
+_DREAM_ESTIMATES: dict[str, dict] = {
+    "MacBook":            {"cost": 25_000_000,  "label": "MacBook Air M4",           "icon": "💻", "horizon_months": 24},
+    "iPhone":             {"cost": 30_000_000,  "label": "iPhone 16 Pro",            "icon": "📱", "horizon_months": 18},
+    "Concert":            {"cost": 8_000_000,   "label": "Concert vé + chi phí",     "icon": "🎤", "horizon_months": 6},
+    "Du lịch Nhật Bản":  {"cost": 25_000_000,  "label": "Du lịch Nhật Bản 5 ngày", "icon": "✈️", "horizon_months": 12},
+    "Du lịch":            {"cost": 15_000_000,  "label": "Du lịch",                  "icon": "✈️", "horizon_months": 12},
+    "Mua xe":             {"cost": 150_000_000, "label": "Xe máy / ô tô",            "icon": "🚗", "horizon_months": 60},
+    "Mua nhà":            {"cost": 800_000_000, "label": "Mua nhà / chung cư",       "icon": "🏠", "horizon_months": 120},
+    "Đám cưới":           {"cost": 150_000_000, "label": "Đám cưới",                 "icon": "💍", "horizon_months": 36},
+    "Khởi nghiệp":        {"cost": 100_000_000, "label": "Vốn khởi nghiệp ban đầu", "icon": "🏪", "horizon_months": 36},
+}
+
+def get_dream_estimate(dream_name: str) -> dict | None:
+    """Tra cứu ước tính chi phí theo tên dream đã chuẩn hoá."""
+    for key, val in _DREAM_ESTIMATES.items():
+        if key.lower() in dream_name.lower() or dream_name.lower() in key.lower():
+            return {"dream_key": key, **val}
+    return None
+
+
+def generate_goal_plan(dream_name: str, amount: int) -> dict:
+    """
+    Input:  dream_name, amount (VNĐ)
+    Output: {"dream_name", "amount", "plans": [{monthly, months, time_str}, ...]}
+    """
+    plans = []
+    for monthly in [500_000, 1_000_000, 2_000_000, 5_000_000]:
+        months = math.ceil(amount / monthly)
+        years, rem = divmod(months, 12)
+        if years > 0 and rem > 0:
+            time_str = f"{years} năm {rem} tháng"
+        elif years > 0:
+            time_str = f"{years} năm"
+        else:
+            time_str = f"{months} tháng"
+        plans.append({"monthly": monthly, "months": months, "time_str": time_str})
+    return {"dream_name": dream_name, "amount": amount, "plans": plans}
+
+
+def render_dream_goal_card(dream_name: str, amount: int, saved: int = 0):
+    """
+    Render Dream Goal Card ngay dưới chat bubble của Cừu.
+    Hiển thị: tên dream, goal amount, progress, bảng kế hoạch tháng.
+    """
+    est = get_dream_estimate(dream_name)
+    icon = est["icon"] if est else "🎯"
+    label = est["label"] if est else dream_name
+    plan = generate_goal_plan(dream_name, amount)
+    pct = min(100, int(saved / amount * 100)) if amount > 0 else 0
+
+    rows_html = ""
+    highlights = [0, 1]  # highlight 500k và 1M
+    for i, p in enumerate(plan["plans"]):
+        hl_style = (
+            "background:linear-gradient(90deg,#FFF0F7,#EEF8FF);"
+            "border:1.5px solid #FF8FAF;border-radius:10px;"
+            if i in highlights else "border-radius:8px;"
+        )
+        rows_html += (
+            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+            f'padding:9px 14px;margin:4px 0;{hl_style}">'
+            f'<span style="font-size:.88rem;font-weight:700;color:#333;">'
+            f'{fmt(p["monthly"])}/tháng</span>'
+            f'<span style="font-size:.82rem;color:#888;">→ {p["time_str"]}</span>'
+            + ('<span style="font-size:.7rem;color:#FF8FAF;font-weight:800;">⭐ phổ biến</span>' if i == 1 else "")
+            + f'</div>'
+        )
+
+    prog_bar = (
+        f'<div style="background:#F0F0F0;border-radius:8px;height:8px;margin:10px 0 4px;">'
+        f'<div style="background:linear-gradient(90deg,#FF8FAF,#7EC8E3);'
+        f'width:{pct}%;height:8px;border-radius:8px;transition:width .5s;"></div></div>'
+    )
+
+    st.markdown(
+        f'<div style="background:linear-gradient(135deg,#FFF7FB,#F3F9FF);'
+        f'border:2px solid #FFD6E8;border-radius:20px;padding:20px 22px;margin:8px 0 4px;">'
+        f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+        f'<span style="font-size:1.6rem;">{icon}</span>'
+        f'<div>'
+        f'<div style="font-size:.72rem;font-weight:700;color:#FF8FAF;letter-spacing:.5px;">🎯 DREAM DETECTED</div>'
+        f'<div style="font-size:1.05rem;font-weight:900;color:#1a1a2e;">{label}</div>'
+        f'</div></div>'
+        f'<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+        f'<span style="font-size:.78rem;color:#aaa;font-weight:600;">MỤC TIÊU</span>'
+        f'<span style="font-size:.78rem;color:#aaa;font-weight:600;">TIẾN ĐỘ {pct}%</span>'
+        f'</div>'
+        f'<div style="font-size:1.1rem;font-weight:900;color:#C4607F;">{fmt(amount)}</div>'
+        f'{prog_bar}'
+        f'<div style="border-top:1px solid #FFD6E8;margin:14px 0 10px;"></div>'
+        f'<div style="font-size:.78rem;font-weight:700;color:#888;margin-bottom:8px;letter-spacing:.5px;">'
+        f'🐑 NẾU TÍCH LUỸ MỖI THÁNG</div>'
+        f'{rows_html}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+
+# ═══════════════════════════════════════════════════════
+# FINANCIAL PERSONALITY ENGINE
+# ═══════════════════════════════════════════════════════
+_FIN_PERSONALITIES = {
+    "TCBF": {
+        "emoji": "🌿",
+        "title": "Người Thích Ngủ Ngon",
+        "desc": "Muốn tiền tăng trưởng nhưng không muốn lo lắng khi thị trường biến động. Ưu tiên sự ổn định và yên tâm.",
+        "badge": "Ổn định • Ít biến động • Ngắn-trung hạn",
+        "color": "#4ECDC4",
+        "bg": "#F0FFFE",
+        "fund": "TCBF",
+    },
+    "TCFF": {
+        "emoji": "⚖️",
+        "title": "Người Thích Cân Bằng",
+        "desc": "Muốn tiền tăng trưởng nhưng vẫn muốn yên tâm. Không quá mạo hiểm, không quá thận trọng.",
+        "badge": "Cân bằng • Linh hoạt • Trung hạn",
+        "color": "#A8E6CF",
+        "bg": "#F5FFF8",
+        "fund": "TCFF",
+    },
+    "TCEF": {
+        "emoji": "🚀",
+        "title": "Người Thích Tăng Trưởng",
+        "desc": "Chấp nhận biến động ngắn hạn để hướng tới mục tiêu dài hạn lớn hơn. Kiên nhẫn và tập trung vào tương lai.",
+        "badge": "Tăng trưởng • Dài hạn 3-5 năm • Kiên nhẫn",
+        "color": "#FF6B6B",
+        "bg": "#FFF5F5",
+        "fund": "TCEF",
+    },
+}
+
+def _suggest_personality(m: dict) -> str:
+    """Suy luận Financial Personality từ dreams + tags + financial_profile."""
+    fp = m.get("financial_profile", {})
+    dreams = m.get("dreams", [])
+    tags = m.get("life_events", [])
+
+    # Có mục tiêu dài hạn rõ ràng → TCEF
+    long_term = ["mua nhà", "mua xe", "khởi nghiệp", "đám cưới"]
+    if any(any(lt in d.get("name","").lower() for lt in long_term) for d in dreams):
+        return "TCEF"
+    if fp.get("financial_stage") in ("ready", "invested"):
+        return "TCEF"
+
+    # Stress về tiền, muốn ổn định → TCBF
+    if "cashflow" in tags or "stress" in tags:
+        return "TCBF"
+    if fp.get("risk_level") == "low":
+        return "TCBF"
+
+    # Mặc định → TCFF (an toàn nhất để giới thiệu)
+    return "TCFF"
+
+
+def render_financial_personality(m: dict):
+    """Render Financial Personality card với CTA tìm hiểu thêm."""
+    key = _suggest_personality(m)
+    p = _FIN_PERSONALITIES[key]
+
+    if st.session_state.get(f"_fin_learn_{key}"):
+        # Expanded view — giải thích sâu hơn
+        fund_info = FUNDS.get(p["fund"], {})
+        st.markdown(
+            f'<div style="background:{p["bg"]};border:2px solid {p["color"]}33;'
+            f'border-radius:20px;padding:20px 22px;margin:8px 0;">'
+            f'<div style="font-size:1.2rem;font-weight:900;color:{p["color"]};margin-bottom:10px;">'
+            f'{p["emoji"]} {p["title"]}</div>'
+            f'<div style="font-size:.88rem;color:#555;line-height:1.7;margin-bottom:14px;">'
+            f'{fund_info.get("chi_tiết","")}</div>'
+            f'<div style="font-size:.75rem;color:#aaa;font-style:italic;">'
+            f'Thông tin mang tính tham khảo giáo dục. Không phải khuyến nghị đầu tư.</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f'<div style="background:{p["bg"]};border:2px solid {p["color"]}44;'
+            f'border-radius:20px;padding:18px 22px;margin:8px 0;">'
+            f'<div style="font-size:.72rem;font-weight:700;color:{p["color"]};'
+            f'letter-spacing:.5px;margin-bottom:8px;">🐑 NHÓM TÍCH LUỸ PHÙ HỢP</div>'
+            f'<div style="font-size:1.05rem;font-weight:900;color:#1a1a2e;margin-bottom:6px;">'
+            f'{p["emoji"]} {p["title"]}</div>'
+            f'<div style="font-size:.87rem;color:#555;line-height:1.6;margin-bottom:10px;">'
+            f'{p["desc"]}</div>'
+            f'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">'
+            + "".join(
+                f'<span style="background:{p["color"]}18;color:{p["color"]};'
+                f'border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">{b}</span>'
+                for b in p["badge"].split(" • ")
+            )
+            + f'</div>'
+            f'<div style="font-size:.82rem;color:#888;line-height:1.55;">'
+            f'Một số bạn có tính cách tương tự thường tìm hiểu <strong style="color:{p["color"]};">'
+            f'{p["fund"]}</strong> được quản lý bởi Techcom Capital.</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button(f"Kể mình nghe thêm về nhóm này 👉", key=f"btn_fin_learn_{key}"):
+            st.session_state[f"_fin_learn_{key}"] = True
+            st.rerun()
+
+
+# ═══════════════════════════════════════════════════════
+# AI REASONING CHAIN — CEO DEMO CARD
+# ═══════════════════════════════════════════════════════
+def render_ai_reasoning_chain(user_text: str, llm_result: dict, m: dict):
+    """
+    Card hiển thị chuỗi suy luận của AI — dành cho CEO demo.
+    Chỉ hiện khi có API key (tức có real LLM call).
+    """
+    if not st.session_state.get("api_key"):
+        return
+
+    intent = detect_financial_intent(user_text)
+    dream_kw = _detect_dream_keyword(user_text)
+    tags = llm_result.get("tags", [])
+    action = llm_result.get("next_action_type", "NONE")
+    personality = _suggest_personality(m)
+    fp_stage = m.get("financial_profile", {}).get("financial_stage", "exploring")
+
+    _steps = [
+        ("💬", "User Message",    user_text[:60] + ("..." if len(user_text) > 60 else "")),
+        ("❤️", "Emotion",         llm_result.get("mood", "listening")),
+        ("🎯", "Dream",           dream_kw or (tags[0] if tags else "chưa phát hiện")),
+        ("💡", "Financial Intent", f"{intent['intent_type'] or 'không'} · confidence {int(intent['confidence']*100)}%"
+                                   if intent["is_finance"] else "không phát hiện"),
+        ("🧬", "Wealth Genome",   f"Stage: {fp_stage} · Personality: {personality}"),
+        ("⚡", "Next Action",     action),
+    ]
+
+    rows = "".join(
+        f'<div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;'
+        f'border-bottom:1px solid #F5E8F0;">'
+        f'<div style="font-size:1rem;min-width:24px;">{e}</div>'
+        f'<div style="flex:1;">'
+        f'<div style="font-size:.68rem;font-weight:700;color:#bbb;letter-spacing:.5px;">{label}</div>'
+        f'<div style="font-size:.82rem;color:#333;font-weight:600;margin-top:1px;">{val}</div>'
+        f'</div></div>'
+        for e, label, val in _steps
+    )
+
+    with st.expander("🧠 AI suy luận như thế nào? (CEO Demo)", expanded=False):
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,#FAFAFA,#F3F9FF);'
+            f'border-radius:14px;padding:14px 18px;">'
+            f'<div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;'
+            f'margin-bottom:10px;">REASONING CHAIN · REAL-TIME</div>'
+            f'{rows}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+
 _EMOTION_EXPAND = {
     "mệt": "Mình đang cảm thấy mệt mỏi, cần được lắng nghe.",
     "buồn": "Mình đang buồn, muốn chia sẻ với Cừu.",
@@ -1146,10 +1403,17 @@ def _call_llm(user_text: str, system: str) -> dict:
         for tag in result.get("tags", []):
             if tag and tag not in mem["life_events"]:
                 mem["life_events"].append(tag)
-        if (dn := result.get("dream_name")) and result.get("dream_amount", 0) > 0:
-            if dn not in [d["name"] for d in mem["dreams"]]:
-                mem["dreams"].append({"name": dn, "amount": result["dream_amount"],
-                                       "saved": 0, "tags": result.get("tags", [])})
+        # ── Dream detection: LLM + rule-based keyword scan ──
+        _kw_dream = _detect_dream_keyword(user_text)
+        _kw_est   = get_dream_estimate(_kw_dream) if _kw_dream else None
+        dn = result.get("dream_name") or _kw_dream
+        da = result.get("dream_amount", 0) or (_kw_est["cost"] if _kw_est else 0)
+        if dn and da > 0 and dn not in [d["name"] for d in mem["dreams"]]:
+            mem["dreams"].append({"name": dn, "amount": da,
+                                   "saved": 0, "tags": result.get("tags", [])})
+        # Ghi lại dream đã detect vào result để UI render goal card
+        result["_detected_dream"] = dn or ""
+        result["_detected_amount"] = da
         if m_mood := result.get("mood"):
             set_mood(m_mood)
         # ── Update financial_profile ──
@@ -1659,7 +1923,11 @@ with tab1:
                         "type":  _result_qr.get("next_action_type", "NONE"),
                         "text":  _result_qr.get("next_action_text", ""),
                         "label": _result_qr.get("cta_label", ""),
-                    }
+                    },
+                    "_dream":  _result_qr.get("_detected_dream", ""),
+                    "_amount": _result_qr.get("_detected_amount", 0),
+                    "_user_text": _qr,
+                    "_llm_result": _result_qr,
                 })
                 st.rerun()
 
@@ -1670,23 +1938,50 @@ with tab1:
                     _av = get_avatar_src("listening") if _m["role"] == "assistant" else "🧑"
                     with st.chat_message(_m["role"], avatar=_av):
                         st.markdown(_m["content"])
-                    # Render NBA card dưới reply của Cừu (chỉ tin cuối cùng)
-                    if (_m["role"] == "assistant"
-                            and _m is st.session_state.messages[-1]
-                            and _m.get("_nba", {}).get("type", "NONE") != "NONE"):
-                        _nba = _m["_nba"]
-                        _nba_ico = _NBA_CONFIG.get(_nba["type"], ("💡","",""))[0]
-                        st.markdown(
-                            f'<div class="nba-card">'
-                            f'<div class="nba-icon">{_nba_ico}</div>'
-                            f'<div class="nba-text">{_nba["text"]}</div>'
-                            f'</div>',
-                            unsafe_allow_html=True,
-                        )
-                        if _nba.get("label"):
+
+                    # ── Chỉ xử lý các widget dưới message CUỐI của Cừu ──
+                    if _m["role"] == "assistant" and _m is st.session_state.messages[-1]:
+
+                        # 1) Dream Goal Card — tự động hiện khi detect được dream
+                        _drm = _m.get("_dream", "")
+                        _amt = _m.get("_amount", 0)
+                        if _drm and _amt > 0:
+                            _saved_amt = next(
+                                (d.get("saved", 0) for d in mem.get("dreams", [])
+                                 if _drm.lower() in d.get("name","").lower()),
+                                0
+                            )
+                            render_dream_goal_card(_drm, _amt, _saved_amt)
+
+                        # 2) NBA card
+                        _nba = _m.get("_nba", {})
+                        if _nba.get("type", "NONE") != "NONE" and not (_drm and _amt > 0):
+                            _nba_ico = _NBA_CONFIG.get(_nba["type"], ("💡","",""))[0]
+                            st.markdown(
+                                f'<div class="nba-card">'
+                                f'<div class="nba-icon">{_nba_ico}</div>'
+                                f'<div class="nba-text">{_nba["text"]}</div>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                        # 3) Financial Personality — hiện khi có dream hoặc financial intent
+                        if _drm or (_nba.get("type", "NONE") in
+                                    ("EXPLORE_TCEF", "EXPLORE_TCBF", "EXPLORE_TCFF", "LEARN_INVESTING")):
+                            render_financial_personality(mem)
+
+                        # 4) CTA button
+                        if _nba.get("label") and _nba.get("type") not in (
+                                "EXPLORE_TCEF", "EXPLORE_TCBF", "EXPLORE_TCFF"):
                             if st.button(_nba["label"], key="nba_cta", type="primary"):
                                 st.session_state._nba_action = _nba["type"]
                                 st.rerun()
+
+                        # 5) AI Reasoning Chain — CEO demo expander
+                        _ut = _m.get("_user_text", "")
+                        _lr = _m.get("_llm_result", {})
+                        if _ut and _lr:
+                            render_ai_reasoning_chain(_ut, _lr, mem)
 
             # ── Chat input ──
             _user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
@@ -1700,7 +1995,10 @@ with tab1:
                 st.session_state.messages.append({"role": "user", "content": _user_msg})
 
                 if _momentum:
-                    # Momentum override: Cừu nhận ra pattern
+                    # Momentum override — với dream goal card
+                    _mom_dream = _momentum.get("dream_name", "")
+                    _mom_est   = get_dream_estimate(_mom_dream)
+                    _mom_amt   = _mom_est["cost"] if _mom_est else 0
                     st.session_state.messages.append({
                         "role": "assistant",
                         "content": _momentum["message"],
@@ -1708,7 +2006,11 @@ with tab1:
                             "type":  _momentum["action_type"],
                             "text":  "",
                             "label": _momentum["cta_label"],
-                        }
+                        },
+                        "_dream":  _mom_dream,
+                        "_amount": _mom_amt,
+                        "_user_text": _user_msg,
+                        "_llm_result": {},
                     })
                     st.rerun()
                 else:
@@ -1722,7 +2024,11 @@ with tab1:
                             "type":  _result_msg.get("next_action_type", "NONE"),
                             "text":  _result_msg.get("next_action_text", ""),
                             "label": _result_msg.get("cta_label", ""),
-                        }
+                        },
+                        "_dream":  _result_msg.get("_detected_dream", ""),
+                        "_amount": _result_msg.get("_detected_amount", 0),
+                        "_user_text": _user_msg,
+                        "_llm_result": _result_msg,
                     })
                     st.rerun()
 
@@ -5010,94 +5316,103 @@ with tab4:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ════════════════════════════════════════════
+    # WEALTH GENOME CARD
     # ════════════════════════════════════════════
-    # FINANCIAL INSIGHT CARD
-    # ════════════════════════════════════════════
-    _fp = mem.get("financial_profile", {})
-    _stage_label = {
-        "exploring": ("🔍", "Đang khám phá", "#7EC8E3"),
-        "learning":  ("📚", "Đang tìm hiểu",  "#FF8FAF"),
-        "ready":     ("✅", "Sẵn sàng hành động", "#34C759"),
-        "invested":  ("🚀", "Đã đầu tư",       "#FFD700"),
-    }.get(_fp.get("financial_stage", "exploring"), ("🔍", "Đang khám phá", "#7EC8E3"))
+    _fp   = mem.get("financial_profile", {})
+    _wg_dreams = mem.get("dreams", [])
+    _wg_tags   = mem.get("life_events", [])
 
-    _risk_label = {
-        "low":    ("🌿", "Ổn định là chính"),
-        "medium": ("⚖️", "Cân bằng"),
-        "high":   ("⚡", "Chấp nhận biến động"),
-    }.get(_fp.get("risk_level", ""), ("💭", "Chưa xác định"))
+    # ── 5 chiều Wealth Genome ──
+    _dream_personality = (
+        "🌟 Dream Chaser" if any(d["name"] for d in _wg_dreams) else "🔍 Chưa xác định"
+    )
+    _fin_personality_key = _suggest_personality(mem)
+    _fin_personality = {
+        "TCBF": "🌿 Người Thích Ngủ Ngon",
+        "TCFF": "⚖️ Người Thích Cân Bằng",
+        "TCEF": "🚀 Người Thích Tăng Trưởng",
+    }.get(_fin_personality_key, "💭 Chưa xác định")
 
-    _dream_goal = _fp.get("financial_goal") or (
-        mem["dreams"][0]["name"] if mem.get("dreams") else "Chưa có mục tiêu cụ thể"
+    _life_goal = (
+        _wg_dreams[0]["name"].title() if _wg_dreams
+        else _fp.get("financial_goal", "Chưa có mục tiêu cụ thể")
+    )
+    _saving_habit = {
+        "none":       "💤 Chưa có thói quen",
+        "occasional": "🌱 Tiết kiệm thỉnh thoảng",
+        "regular":    "🔥 Tích luỹ đều đặn",
+    }.get(_fp.get("saving_habit", "none"), "💤 Chưa có thói quen")
+
+    _risk_style = {
+        "low":    "🌿 Thích ổn định",
+        "medium": "⚖️ Cân bằng rủi ro",
+        "high":   "⚡ Chấp nhận biến động",
+    }.get(_fp.get("risk_level", ""), "💭 Chưa xác định")
+
+    _wg_stage = {
+        "exploring": "🔍", "learning": "📚", "ready": "✅", "invested": "🚀"
+    }.get(_fp.get("financial_stage", "exploring"), "🔍")
+
+    # ── Goal Plan (nếu có dream) ──
+    _wg_plan_html = ""
+    if _wg_dreams:
+        _wd = _wg_dreams[0]
+        _wp = generate_goal_plan(_wd["name"], _wd.get("amount", 0))
+        if _wd.get("amount", 0) > 0:
+            _wg_plan_html = (
+                f'<div style="border-top:1px solid #FFD6E8;margin:18px 0 12px;"></div>'
+                f'<div style="font-size:.78rem;font-weight:700;color:#888;'
+                f'letter-spacing:.5px;margin-bottom:10px;">🎯 KẾ HOẠCH TÍCH LUỸ — {_wd["name"].upper()}</div>'
+                f'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+            )
+            for _plan_i, _pl in enumerate(_wp["plans"]):
+                _hl = "background:linear-gradient(135deg,#FFF0F7,#EEF8FF);border:1.5px solid #FF8FAF;" if _plan_i == 1 else "background:#FAFAFA;border:1.5px solid #F0E6F0;"
+                _wg_plan_html += (
+                    f'<div style="{_hl}border-radius:12px;padding:10px 8px;text-align:center;">'
+                    f'<div style="font-size:.78rem;font-weight:900;color:#C4607F;">{fmt(_pl["monthly"])}</div>'
+                    f'<div style="font-size:.68rem;color:#888;margin-top:2px;">/tháng</div>'
+                    f'<div style="font-size:.72rem;font-weight:700;color:#555;margin-top:4px;">{_pl["time_str"]}</div>'
+                    + ('<div style="font-size:.6rem;color:#FF8FAF;font-weight:800;margin-top:3px;">⭐ phổ biến</div>' if _plan_i == 1 else "")
+                    + f'</div>'
+                )
+            _wg_plan_html += f'</div>'
+
+    _genome_rows = [
+        ("Dream Personality", _dream_personality, "Loại người theo đuổi giấc mơ"),
+        ("Financial Personality", _fin_personality, "Phong cách tích luỹ phù hợp"),
+        ("Life Goal", f"🎯 {_life_goal}", "Mục tiêu lớn AI nhận diện được"),
+        ("Saving Habit", _saving_habit, "Thói quen tích luỹ hiện tại"),
+        ("Risk Style", _risk_style, "Khẩu vị rủi ro được suy luận"),
+    ]
+    _genome_html = "".join(
+        f'<div style="display:flex;align-items:center;justify-content:space-between;'
+        f'padding:10px 0;border-bottom:1px solid #F5EAFA;">'
+        f'<div>'
+        f'<div style="font-size:.68rem;font-weight:700;color:#bbb;letter-spacing:.5px;">{lbl}</div>'
+        f'<div style="font-size:.88rem;font-weight:700;color:#888;margin-top:2px;">{sub}</div>'
+        f'</div>'
+        f'<div style="font-size:.92rem;font-weight:800;color:#1a1a2e;text-align:right;max-width:55%;">{val}</div>'
+        f'</div>'
+        for lbl, val, sub in _genome_rows
     )
 
-    _learn_topic = {
-        "exploring": "Tại sao tiền nhàn rỗi nên được đặt đúng chỗ?",
-        "learning":  "DCA — đầu tư đều đặn không cần đoán thị trường",
-        "ready":     "Lựa chọn quỹ phù hợp với thời gian & mục tiêu",
-        "invested":  "Đa dạng hóa và kiên nhẫn dài hạn",
-    }.get(_fp.get("financial_stage", "exploring"), "Bắt đầu từ đâu khi muốn tích luỹ?")
-
     st.markdown(f"""
-    <div class="screen-card" style="border-color:#7EC8E3;">
-      <div class="screen-label" style="color:#7EC8E3;">Financial Insight · AI Companion</div>
-      <div class="screen-title">🧠 Hiểu về tài chính của bạn</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;">
-
-        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
-          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
-            FINANCIAL STAGE
-          </div>
-          <div style="font-size:1rem;font-weight:800;color:{_stage_label[2]};">
-            {_stage_label[0]} {_stage_label[1]}
-          </div>
-          <div style="font-size:.78rem;color:#888;margin-top:4px;">
-            Dựa trên các cuộc trò chuyện với Cừu
-          </div>
-        </div>
-
-        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
-          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
-            RISK APPETITE
-          </div>
-          <div style="font-size:1rem;font-weight:800;color:#555;">
-            {_risk_label[0]} {_risk_label[1]}
-          </div>
-          <div style="font-size:.78rem;color:#888;margin-top:4px;">
-            Được suy luận từ ngữ cảnh chia sẻ
-          </div>
-        </div>
-
-        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
-          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
-            DREAM GOAL
-          </div>
-          <div style="font-size:1rem;font-weight:800;color:#FF8FAF;">
-            🎯 {_dream_goal}
-          </div>
-          <div style="font-size:.78rem;color:#888;margin-top:4px;">
-            Mục tiêu tài chính AI nhận diện được
-          </div>
-        </div>
-
-        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
-          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
-            SUGGESTED LEARNING
-          </div>
-          <div style="font-size:.9rem;font-weight:700;color:#333;line-height:1.5;">
-            💡 {_learn_topic}
-          </div>
-          <div style="font-size:.78rem;color:#888;margin-top:4px;">
-            Nội dung phù hợp giai đoạn hiện tại
-          </div>
-        </div>
-
+    <div class="screen-card" style="border-color:#FF8FAF;">
+      <div class="screen-label" style="color:#FF8FAF;">Wealth Genome · AI Companion</div>
+      <div class="screen-title">🧬 AI hiểu bạn như thế nào</div>
+      <div style="margin-top:6px;margin-bottom:4px;">
+        <span style="font-size:.78rem;color:#aaa;">Financial Stage </span>
+        <span style="font-size:.82rem;font-weight:800;color:#C4607F;">{_wg_stage} {_fp.get("financial_stage","exploring").title()}</span>
+        <span style="font-size:.72rem;color:#ccc;margin:0 6px;">·</span>
+        <span style="font-size:.78rem;color:#aaa;">Conversations </span>
+        <span style="font-size:.82rem;font-weight:800;color:#7EC8E3;">{len(st.session_state.messages)//2}</span>
       </div>
-      <div style="margin-top:16px;padding:12px 16px;background:rgba(126,200,227,.08);
-           border-radius:12px;border-left:3px solid #7EC8E3;">
-        <div style="font-size:.8rem;color:#555;line-height:1.6;">
-          🐑 <em>Cừu không hiện "sản phẩm nên mua" vì điều quan trọng hơn là
-          bạn hiểu mình cần gì — khi đó quyết định sẽ tốt hơn nhiều.</em>
+      <div style="margin:16px 0 4px;">{_genome_html}</div>
+      {_wg_plan_html}
+      <div style="margin-top:14px;padding:11px 16px;background:rgba(255,143,175,.07);
+           border-radius:12px;border-left:3px solid #FF8FAF;">
+        <div style="font-size:.8rem;color:#666;line-height:1.65;">
+          🐑 <em>Wealth Genome được xây dựng từ những gì bạn chia sẻ — không phải từ dữ liệu tài chính. AI suy luận để hiểu bạn tốt hơn mỗi ngày.</em>
         </div>
       </div>
     </div>
