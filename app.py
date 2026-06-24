@@ -335,6 +335,95 @@ def recommend_fund(years: int, risk: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════
+# FINANCIAL INTENT DETECTOR
+# ═══════════════════════════════════════════════════════
+_FINANCE_KEYWORDS: dict[str, list[str]] = {
+    "saving": [
+        "tiết kiệm", "tích luỹ", "tích lũy", "để dành", "dành dụm",
+        "tiền nhàn rỗi", "sinh lời", "lãi suất",
+    ],
+    "investing": [
+        "đầu tư", "quỹ mở", "quỹ", "chứng chỉ quỹ", "tcef", "tcbf", "tcff",
+        "cổ phiếu", "trái phiếu", "danh mục", "dca",
+    ],
+    "goal_gadget": [
+        "iphone", "macbook", "laptop", "điện thoại", "máy tính",
+    ],
+    "goal_experience": [
+        "concert", "vé concert", "du lịch", "travel", "đi nhật", "đi hàn",
+        "đi châu âu", "đi nước ngoài",
+    ],
+    "goal_life": [
+        "mua xe", "mua nhà", "cưới", "đám cưới", "sinh con", "nhà riêng",
+        "chung cư", "mục tiêu tài chính", "kế hoạch tài chính",
+    ],
+}
+
+_INTENT_LABELS: dict[str, str] = {
+    "saving":            "tích_luỹ",
+    "investing":         "đầu_tư",
+    "goal_gadget":       "mục_tiêu_gadget",
+    "goal_experience":   "mục_tiêu_trải_nghiệm",
+    "goal_life":         "mục_tiêu_cuộc_sống",
+}
+
+
+def detect_financial_intent(text: str) -> dict:
+    """
+    Phát hiện ý định tài chính trong tin nhắn của user.
+    Returns: {"is_finance": bool, "intent_type": str, "confidence": float}
+    """
+    t = text.lower()
+    hits: dict[str, int] = {}
+    for category, keywords in _FINANCE_KEYWORDS.items():
+        count = sum(1 for kw in keywords if kw in t)
+        if count:
+            hits[category] = count
+
+    if not hits:
+        return {"is_finance": False, "intent_type": "", "confidence": 0.0}
+
+    top_cat = max(hits, key=lambda c: hits[c])
+    total_hits = sum(hits.values())
+    confidence = min(0.95, 0.55 + total_hits * 0.12)
+
+    return {
+        "is_finance":   True,
+        "intent_type":  _INTENT_LABELS.get(top_cat, top_cat),
+        "confidence":   round(confidence, 2),
+    }
+
+
+def _update_financial_profile(fp: dict, intent: dict, llm_result: dict) -> dict:
+    """Cập nhật financial_profile dựa trên intent + phản hồi LLM."""
+    if not intent.get("is_finance"):
+        return fp
+
+    intent_type = intent.get("intent_type", "")
+
+    # financial_stage progression
+    if fp["financial_stage"] == "exploring" and intent_type in ("tích_luỹ", "đầu_tư"):
+        fp["financial_stage"] = "learning"
+
+    # Đặt financial_goal từ dream hoặc intent
+    if not fp["financial_goal"]:
+        if intent_type == "mục_tiêu_gadget":
+            fp["financial_goal"] = "mua thiết bị công nghệ"
+        elif intent_type == "mục_tiêu_trải_nghiệm":
+            fp["financial_goal"] = "trải nghiệm / du lịch"
+        elif intent_type == "mục_tiêu_cuộc_sống":
+            fp["financial_goal"] = "mục tiêu cuộc sống lớn"
+        elif intent_type == "đầu_tư":
+            fp["financial_stage"] = "ready"
+
+    # saving_habit
+    if intent_type == "tích_luỹ" and fp["saving_habit"] == "none":
+        fp["saving_habit"] = "occasional"
+
+    return fp
+
+
+# ═══════════════════════════════════════════════════════
 # MEMORY ENGINE
 # ═══════════════════════════════════════════════════════
 LIFE_EVENT_LABELS = {
@@ -383,6 +472,14 @@ MEMORY_DEFAULT: dict = {
     "market_mood":      "normal",
     "new_level_name":   "",
     "new_level_tickets": 0,
+    # ── Financial Companion Engine ──
+    "financial_profile": {
+        "risk_level":      "",          # low | medium | high
+        "saving_habit":    "",          # none | occasional | regular
+        "financial_goal":  "",          # tên mục tiêu chính
+        "preferred_fund":  "",          # TCEF | TCBF | TCFF
+        "financial_stage": "exploring", # exploring | learning | ready | invested
+    },
 }
 
 MICRO_AMOUNTS = [10_000, 20_000, 50_000, 100_000]
@@ -734,17 +831,14 @@ def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
 # ═══════════════════════════════════════════════════════
 # LLM ENGINE
 # ═══════════════════════════════════════════════════════
-_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc.
-KHÔNG phải chatbot tư vấn đầu tư. KHÔNG phải CSKH.
-
-XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em".
-TUYỆT ĐỐI KHÔNG: nhắc cổ phiếu, NAV, lợi nhuận cụ thể, khuyến nghị mua bán.
+_BASE_PERSONALITY_PROMPT = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc.
+KHÔNG phải chatbot tư vấn đầu tư. KHÔNG phải CSKH. KHÔNG xưng "em".
+XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn.
 TONE: Ấm áp 🌸 Nhẹ nhàng 🌿 Thỉnh thoảng "bê bê~". Không phán xét.
 
 QUY TẮC BẮT BUỘC:
-1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress/buồn ngủ):
+1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress):
    → Phản hồi đồng cảm NGAY. Hỏi thêm 1 câu nhẹ.
-   → VD "mệt" → "Ôi mệt rồi à... bê bê~ 🐑 Cừu hiểu! Mệt vì chuyện gì vậy bạn?"
 2. TUYỆT ĐỐI KHÔNG nói: "bị lạc", "nói lại được không", "không hiểu".
    → Luôn hỏi mở: "Bê bê~ 🐑 Kể thêm cho mình nghe đi!"
 3. Nhớ thông tin KH đã kể → nhắc lại khi phù hợp.
@@ -764,6 +858,41 @@ OUTPUT (JSON hợp lệ, KHÔNG text ngoài):
   "dream_amount": 0,
   "mood": "listening|happy|sad|goal|celebrate|determined|default"
 }"""
+
+_FINANCIAL_PROMPT = """
+═══ FINANCIAL COMPANION MODE ═══
+Bạn phát hiện chủ đề tài chính. Áp dụng thêm các quy tắc sau:
+
+MÔ HÌNH XỬ LÝ:
+  Cảm xúc → Hiểu giấc mơ → Hiểu hoàn cảnh → Giáo dục tài chính → Chỉ đề cập sản phẩm nếu thực sự phù hợp
+
+TUYỆT ĐỐI KHÔNG:
+  - "Bạn nên mua TCEF/TCBF/TCFF"
+  - "Hãy mở tài khoản ngay"
+  - "Đây là cơ hội đầu tư"
+  - Nêu lợi nhuận/NAV cụ thể
+
+CHỈ được đề cập sản phẩm khi:
+  a) Khách hỏi trực tiếp tên quỹ (TCEF/TCBF/TCFF)
+  b) Khách hỏi "nên làm gì với tiền nhàn rỗi"
+  c) Khách có mục tiêu tài chính rõ ràng + hỏi giải pháp
+
+KIẾN THỨC SẴN SÀNG CHIA SẺ (nếu phù hợp tự nhiên):
+  - TCEF: "Giống trồng cây — cần thời gian nhưng hướng tới tăng trưởng dài hạn 🌱"
+  - TCBF: "Giống xe chạy đều — không quá nhanh nhưng khá ổn định 🚌"
+  - TCFF: "Vừa có nhạc chill vừa có nhạc quẩy — cân bằng linh hoạt 🎵"
+  - Luôn: "Quan trọng nhất là thói quen tích luỹ đều đặn"
+
+VÍ DỤ PHẢN HỒI ĐúNG:
+User: "Em muốn mua MacBook"
+→ "MacBook là mục tiêu thú vị đó 🐑 Nếu còn vài năm nữa, nhiều người chọn tích luỹ dài hạn để tiền không nằm yên. Có những quỹ như TCEF thiết kế cho mục tiêu tăng trưởng — nhưng quan trọng nhất vẫn là duy trì thói quen tích luỹ đều đặn nhé!"
+
+OUTPUT JSON giữ nguyên cấu trúc cũ, thêm field:
+  "financial_insight": "1 câu ngắn về tài chính phù hợp ngữ cảnh (rỗng nếu không cần)"
+"""
+
+# Alias ngược để không vỡ code cũ nếu có nơi nào còn dùng _SYS_EMOTION
+_SYS_EMOTION = _BASE_PERSONALITY_PROMPT
 
 _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
 Phân tích: cảm xúc, giấc mơ ẩn, áp lực, mục tiêu.
@@ -821,23 +950,34 @@ def _call_llm(user_text: str, system: str) -> dict:
             "dream_name": "", "dream_amount": 0, "mood": "listening",
             "emotion": "bình_thường", "dream_detected": "",
         }
+    # ── Financial Intent Detection ──
+    intent = detect_financial_intent(user_text)
+    active_system = system
+    max_tok = 600
+    if intent["is_finance"] and system == _BASE_PERSONALITY_PROMPT:
+        active_system = _BASE_PERSONALITY_PROMPT + _FINANCIAL_PROMPT
+        max_tok = 750   # financial replies cần thêm chút không gian
+
     try:
         hist = st.session_state.messages[-8:]
         hist_ctx = "\n".join(
             f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:120]}"
             for m in hist
         )
+        fp = mem.get("financial_profile", {})
         mem_ctx = (
             f"Tên: {mem['name'] or 'chưa biết'}. "
             f"Tags: {', '.join(mem['life_events'][-6:]) or 'chưa có'}. "
-            f"Ghi chú: {'; '.join(mem['notes'][-3:]) or 'chưa có'}."
+            f"Ghi chú: {'; '.join(mem['notes'][-3:]) or 'chưa có'}. "
+            f"Giai đoạn tài chính: {fp.get('financial_stage', 'exploring')}. "
+            f"Mục tiêu: {fp.get('financial_goal', 'chưa rõ')}."
         )
         prompt = f"[Memory: {mem_ctx}]\n[Lịch sử:\n{hist_ctx}]\n\nKH: {user_text}"
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
         resp   = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=600,
-            system=system,
+            max_tokens=max_tok,
+            system=active_system,
             messages=[{"role": "user", "content": prompt}],
         )
         result = _parse(resp.content[0].text)
@@ -854,6 +994,11 @@ def _call_llm(user_text: str, system: str) -> dict:
                                        "saved": 0, "tags": result.get("tags", [])})
         if m_mood := result.get("mood"):
             set_mood(m_mood)
+        # ── Update financial_profile ──
+        if intent["is_finance"]:
+            mem["financial_profile"] = _update_financial_profile(
+                mem.get("financial_profile", {}), intent, result
+            )
         _save()
         return result
     except Exception as e:
@@ -4619,6 +4764,99 @@ with tab4:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ════════════════════════════════════════════
+    # ════════════════════════════════════════════
+    # FINANCIAL INSIGHT CARD
+    # ════════════════════════════════════════════
+    _fp = mem.get("financial_profile", {})
+    _stage_label = {
+        "exploring": ("🔍", "Đang khám phá", "#7EC8E3"),
+        "learning":  ("📚", "Đang tìm hiểu",  "#FF8FAF"),
+        "ready":     ("✅", "Sẵn sàng hành động", "#34C759"),
+        "invested":  ("🚀", "Đã đầu tư",       "#FFD700"),
+    }.get(_fp.get("financial_stage", "exploring"), ("🔍", "Đang khám phá", "#7EC8E3"))
+
+    _risk_label = {
+        "low":    ("🌿", "Ổn định là chính"),
+        "medium": ("⚖️", "Cân bằng"),
+        "high":   ("⚡", "Chấp nhận biến động"),
+    }.get(_fp.get("risk_level", ""), ("💭", "Chưa xác định"))
+
+    _dream_goal = _fp.get("financial_goal") or (
+        mem["dreams"][0]["name"] if mem.get("dreams") else "Chưa có mục tiêu cụ thể"
+    )
+
+    _learn_topic = {
+        "exploring": "Tại sao tiền nhàn rỗi nên được đặt đúng chỗ?",
+        "learning":  "DCA — đầu tư đều đặn không cần đoán thị trường",
+        "ready":     "Lựa chọn quỹ phù hợp với thời gian & mục tiêu",
+        "invested":  "Đa dạng hóa và kiên nhẫn dài hạn",
+    }.get(_fp.get("financial_stage", "exploring"), "Bắt đầu từ đâu khi muốn tích luỹ?")
+
+    st.markdown(f"""
+    <div class="screen-card" style="border-color:#7EC8E3;">
+      <div class="screen-label" style="color:#7EC8E3;">Financial Insight · AI Companion</div>
+      <div class="screen-title">🧠 Hiểu về tài chính của bạn</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;">
+
+        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
+          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
+            FINANCIAL STAGE
+          </div>
+          <div style="font-size:1rem;font-weight:800;color:{_stage_label[2]};">
+            {_stage_label[0]} {_stage_label[1]}
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-top:4px;">
+            Dựa trên các cuộc trò chuyện với Cừu
+          </div>
+        </div>
+
+        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
+          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
+            RISK APPETITE
+          </div>
+          <div style="font-size:1rem;font-weight:800;color:#555;">
+            {_risk_label[0]} {_risk_label[1]}
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-top:4px;">
+            Được suy luận từ ngữ cảnh chia sẻ
+          </div>
+        </div>
+
+        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
+          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
+            DREAM GOAL
+          </div>
+          <div style="font-size:1rem;font-weight:800;color:#FF8FAF;">
+            🎯 {_dream_goal}
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-top:4px;">
+            Mục tiêu tài chính AI nhận diện được
+          </div>
+        </div>
+
+        <div class="insight-card-light" style="height:auto;text-align:left;padding:16px 18px;">
+          <div style="font-size:.72rem;font-weight:700;color:#aaa;letter-spacing:.5px;margin-bottom:6px;">
+            SUGGESTED LEARNING
+          </div>
+          <div style="font-size:.9rem;font-weight:700;color:#333;line-height:1.5;">
+            💡 {_learn_topic}
+          </div>
+          <div style="font-size:.78rem;color:#888;margin-top:4px;">
+            Nội dung phù hợp giai đoạn hiện tại
+          </div>
+        </div>
+
+      </div>
+      <div style="margin-top:16px;padding:12px 16px;background:rgba(126,200,227,.08);
+           border-radius:12px;border-left:3px solid #7EC8E3;">
+        <div style="font-size:.8rem;color:#555;line-height:1.6;">
+          🐑 <em>Cừu không hiện "sản phẩm nên mua" vì điều quan trọng hơn là
+          bạn hiểu mình cần gì — khi đó quyết định sẽ tốt hơn nhiều.</em>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     # MÀN 8 — COMMUNITY
     # ════════════════════════════════════════════
     st.markdown("""
