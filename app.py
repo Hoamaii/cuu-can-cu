@@ -544,39 +544,34 @@ def render_entry_card(entry: dict, expanded: bool = False):
     color   = ecfg["color"]
     emoji   = ecfg["emoji"]
 
-    st.markdown(
-        f"""<div style='background:white;border-left:4px solid {color};
+    import streamlit.components.v1 as _components
+    card_html = f"""<div style='background:white;border-left:4px solid {color};
             border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:10px;
-            box-shadow:0 1px 4px rgba(0,0,0,0.06)'>
+            box-shadow:0 1px 4px rgba(0,0,0,0.06);font-family:sans-serif'>
             <div style='display:flex;align-items:center;margin-bottom:8px'>
                 <span style='font-size:20px'>{emoji}</span>
                 <span style='margin-left:8px;font-weight:600;color:#333;font-size:14px'>{title}</span>
                 <span style='margin-left:8px;color:#999;font-size:12px'>{date}</span>
                 {dream_badge}
             </div>
-            <div style='color:#555;font-size:13px;line-height:1.6;margin-bottom:8px'>
-                {content}
-            </div>
+            <div style='color:#555;font-size:13px;line-height:1.6;margin-bottom:8px'>{content}</div>
             <div style='background:{color}22;border-radius:8px;padding:8px 12px;
                         font-size:13px;color:#333;font-style:italic;margin-bottom:8px'>
                 🐑 {reply}
             </div>
             <div>{tags_html}</div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
+        </div>"""
+    _components.html(card_html, height=170, scrolling=False)
 
     # Show richer insight if available
     if entry.get("pattern_insight") and expanded:
         pi = _html.escape(entry["pattern_insight"])
         ss = _html.escape(entry.get("secret_signal", ""))
-        st.markdown(
-            f"""<div style='background:#F0F9FF;border-radius:8px;padding:10px 14px;font-size:13px;color:#0369A1'>
-            {pi}<br>
-            <span style='color:#666'>{ss}</span>
-            </div>""",
-            unsafe_allow_html=True,
-        )
+        insight_html = f"""<div style='background:#F0F9FF;border-radius:8px;padding:10px 14px;
+                font-size:13px;color:#0369A1;font-family:sans-serif'>
+            {pi}<br><span style='color:#666'>{ss}</span>
+        </div>"""
+        _components.html(insight_html, height=80, scrolling=False)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
