@@ -1241,8 +1241,91 @@ def _call_llm(user_text: str, system: str) -> dict:
             _ie.save_insight(mem, insight)
             _ce.update_journey(mem, insight)
 
-            # Store for debug panel
+            # Store for AI Intelligence Panel
+            _emotion_vn = {
+                "stress": "Đang căng thẳng, áp lực",
+                "buồn":   "Tâm trạng không tốt",
+                "lo_lắng": "Đang lo lắng",
+                "vui":    "Đang vui, tích cực",
+                "quyết_tâm": "Đang có quyết tâm cao",
+                "mệt_mỏi": "Cảm thấy mệt mỏi",
+                "tự_hào": "Đang tự hào về bản thân",
+                "bình_thường": "",
+            }
+            _pain_vn = {
+                "cashflow_poor":     "Hay hết tiền trước cuối tháng",
+                "stress_spending":   "Chi tiêu theo cảm xúc, khó kiểm soát",
+                "investment_fear":   "Chưa sẵn sàng với đầu tư",
+                "saving_difficulty": "Khó duy trì thói quen tiết kiệm",
+                "fomo":              "Dễ bị ảnh hưởng bởi xu thế",
+                "income_low":        "Thu nhập còn hạn chế",
+            }
+            _sig_vn = {
+                "salary_received":  "Vừa nhận lương hoặc thu nhập mới",
+                "bonus_received":   "Vừa nhận thưởng",
+                "idle_cash":        "Đang có tiền chưa sử dụng",
+                "micro_saving":     "Vừa thực hiện tiết kiệm nhỏ",
+                "investment_ready": "Sẵn sàng tìm hiểu đầu tư",
+            }
+            _why_map = {
+                "continue_relationship": "Khách hàng đang xây dựng niềm tin với app. Chưa phải lúc giới thiệu sản phẩm.",
+                "celebrate_progress":    "Khách hàng vừa đạt cột mốc quan trọng. Đây là khoảnh khắc củng cố thói quen.",
+                "ask_reflection":        "Chia sẻ cảm xúc giúp khách hàng gắn kết sâu hơn và hiểu bản thân hơn.",
+                "ask_financial_goal":    "Khách hàng đã sẵn sàng về mặt cảm xúc. Đây là thời điểm phù hợp để định hướng.",
+                "recommend_micro_saving":"Khách hàng đã có mục tiêu. Một bước tiết kiệm nhỏ sẽ tạo ra thói quen lâu dài.",
+                "recommend_iPower":      "Khách hàng đã có thói quen tiết kiệm. iPower giúp tiền sinh lãi mà không mất linh hoạt.",
+                "recommend_fund":        "Khách hàng đã sẵn sàng đầu tư. Quỹ phù hợp giúp bắt đầu đúng hướng.",
+                "recommend_learning":    "Khách hàng cần hiểu trước khi đầu tư. Kiến thức là bước đầu tiên.",
+                "recommend_referral":    "Khách hàng đã có hành trình thành công. Chia sẻ sẽ củng cố cam kết của họ.",
+                "no_action":             "Không có tín hiệu rõ ràng. Duy trì kết nối tự nhiên là ưu tiên.",
+            }
+            _nba_map = {
+                "return_tomorrow":      "Mời quay lại ngày mai",
+                "start_chat":           "Khuyến khích bắt đầu trò chuyện",
+                "write_diary":          "Gợi ý viết nhật ký",
+                "define_goal":          "Khám phá mục tiêu tài chính",
+                "first_saving":         "Thực hiện tiết kiệm lần đầu",
+                "repeat_saving":        "Duy trì streak tiết kiệm hôm nay",
+                "learn_investment":     "Đọc bài học đầu tư đầu tiên",
+                "recurring_investment": "Đặt lịch đầu tư định kỳ",
+                "referral":             "Giới thiệu một người bạn",
+                "ambassador":           "Tiếp tục chia sẻ hành trình",
+            }
+            # Build insight bullets (CEO-friendly)
+            _ib = []
+            _e = insight.get("emotion", "")
+            if _e and _e != "bình_thường":
+                _ib.append(_emotion_vn.get(_e, f"Cảm xúc: {_e}"))
+            _p = insight.get("pain", "")
+            if _p:
+                _ib.append(_pain_vn.get(_p, _p))
+            _s = insight.get("financial_signal", "")
+            if _s:
+                _ib.append(_sig_vn.get(_s, _s))
+            if insight.get("dream"):
+                _ib.append(f"Đang mơ về: {insight['dream']}")
+            if not _ib:
+                _ib = ["Đang xây dựng niềm tin với app", "Chưa có tín hiệu tài chính rõ ràng"]
+
+            # Journey steps for progress display
+            _jlvl = journey["level"]
+            _jsteps = [
+                (1, "Mở App"),
+                (2, "Quay Lại"),
+                (3, "Trò Chuyện"),
+                (4, "Nhật Ký"),
+                (5, "Mục Tiêu"),
+                (6, "Tiết Kiệm"),
+                (7, "Thói Quen"),
+            ]
+            _journey_steps = [
+                {"label": lbl,
+                 "status": "done" if lvl < _jlvl else ("current" if lvl == _jlvl else "pending")}
+                for lvl, lbl in _jsteps
+            ]
+
             st.session_state["_ai_debug"] = {
+                # Raw data (kept for backward compat)
                 "level":                  journey["level"],
                 "level_label":            journey.get("label_vn", ""),
                 "level_emoji":            journey.get("emoji", ""),
@@ -1257,10 +1340,17 @@ def _call_llm(user_text: str, system: str) -> dict:
                 "investment_readiness":   decision.get("investment_readiness", 0),
                 "estimated_tokens":       decision.get("estimated_tokens", 650),
                 "top_insights": {
-                    "emotion":            insight.get("emotion", ""),
-                    "pain":               insight.get("pain", ""),
-                    "signal":             insight.get("financial_signal", ""),
+                    "emotion": insight.get("emotion", ""),
+                    "pain":    insight.get("pain", ""),
+                    "signal":  insight.get("financial_signal", ""),
                 },
+                # Human-readable fields for AI Intelligence Panel
+                "last_user_message":  user_text,
+                "insight_bullets":    _ib,
+                "why_reason":         _why_map.get(decision.get("decision", ""), "Đây là quyết định phù hợp nhất với hành vi hiện tại của khách hàng."),
+                "journey_steps":      _journey_steps,
+                "next_action_label":  _nba_map.get(behavior.get("target_behavior", ""), behavior.get("target_label", "")),
+                "level_short":        journey.get("label", ""),
             }
             system = _SYS_EMOTION_V4
 
@@ -1662,6 +1752,190 @@ with st.sidebar:
 
 
 # ═══════════════════════════════════════════════════════
+# AI INTELLIGENCE PANEL — Business Stakeholder View
+# Only shown in Demo Mode. Never exposed to customers.
+# ═══════════════════════════════════════════════════════
+
+def _render_ai_panel(dbg: dict | None) -> None:
+    """
+    Render the AI Intelligence Panel for CEO/business stakeholder demos.
+    Apple-style cards. Human-readable. No JSON, no scores, no prompts.
+    """
+    if not dbg:
+        st.markdown(
+            '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
+            'padding:24px;text-align:center;color:#999;font-size:.85rem;">'
+            '🧠 Bắt đầu trò chuyện để xem AI phân tích theo thời gian thực.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    # ── Decision color map ──
+    _dec_colors = {
+        "continue_relationship":  ("#E8F5E9", "#2E7D32", "🤝"),
+        "celebrate_progress":     ("#FFF8E1", "#F57F17", "🎉"),
+        "ask_reflection":         ("#E3F2FD", "#1565C0", "💭"),
+        "ask_financial_goal":     ("#EDE7F6", "#4527A0", "🎯"),
+        "recommend_micro_saving": ("#E8F5E9", "#2E7D32", "🐑"),
+        "recommend_iPower":       ("#E0F2F1", "#00695C", "💰"),
+        "recommend_fund":         ("#E8EAF6", "#283593", "📈"),
+        "recommend_learning":     ("#FFF3E0", "#E65100", "📚"),
+        "recommend_referral":     ("#FCE4EC", "#880E4F", "🌟"),
+        "no_action":              ("#F5F5F5", "#757575", "⏸"),
+    }
+    _dec_key  = dbg.get("decision", "no_action")
+    _dec_bg, _dec_color, _dec_icon = _dec_colors.get(_dec_key, ("#F5F5F5", "#757575", "⚙"))
+
+    # ── Journey steps HTML ──
+    _steps_html = ""
+    for step in dbg.get("journey_steps", []):
+        s = step["status"]
+        if s == "done":
+            _steps_html += (
+                f'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">'
+                f'<span style="font-size:14px;">✅</span>'
+                f'<span style="font-size:.78rem;color:#1B5E20;font-weight:600;">{step["label"]}</span>'
+                f'</div>'
+            )
+        elif s == "current":
+            _steps_html += (
+                f'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">'
+                f'<span style="font-size:14px;">▶️</span>'
+                f'<span style="font-size:.78rem;color:#1565C0;font-weight:700;">{step["label"]}</span>'
+                f'<span style="font-size:.65rem;background:#1565C0;color:white;'
+                f'padding:1px 7px;border-radius:99px;margin-left:2px;">Hiện tại</span>'
+                f'</div>'
+            )
+        else:
+            _steps_html += (
+                f'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">'
+                f'<span style="font-size:14px;opacity:.35;">⬜</span>'
+                f'<span style="font-size:.78rem;color:#BDBDBD;">{step["label"]}</span>'
+                f'</div>'
+            )
+
+    # ── Insight bullets HTML ──
+    _bullets_html = "".join(
+        f'<div style="display:flex;align-items:flex-start;gap:8px;margin:5px 0;">'
+        f'<span style="color:#1565C0;font-size:.85rem;margin-top:1px;">✓</span>'
+        f'<span style="font-size:.82rem;color:#333;line-height:1.45;">{b}</span>'
+        f'</div>'
+        for b in dbg.get("insight_bullets", [])
+    )
+
+    # ── Shared card style ──
+    _card = (
+        "background:white;border-radius:14px;padding:14px 16px;"
+        "margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07),"
+        "0 0 0 1px rgba(0,0,0,.04);overflow:hidden;"
+    )
+    _lbl = (
+        "font-size:.65rem;font-weight:700;letter-spacing:.08em;"
+        "text-transform:uppercase;color:#999;margin-bottom:8px;"
+    )
+
+    # ── Quote for last user message ──
+    _last_msg = dbg.get("last_user_message", "")
+    _quote_html = (
+        f'<div style="font-size:.88rem;color:#1a1a1a;font-style:italic;'
+        f'line-height:1.5;padding:6px 10px;background:#F8F9FF;'
+        f'border-left:3px solid #90CAF9;border-radius:0 8px 8px 0;">'
+        f'"{_last_msg[:120]}{"…" if len(_last_msg) > 120 else ""}"</div>'
+    ) if _last_msg else '<div style="color:#ccc;font-size:.8rem;">—</div>'
+
+    # ── Product badge ──
+    _product = dbg.get("product_name", "")
+    _product_badge = (
+        f'<span style="display:inline-block;margin-top:6px;font-size:.7rem;'
+        f'background:#E3F2FD;color:#1565C0;padding:2px 10px;border-radius:99px;'
+        f'font-weight:600;">→ {_product}</span>'
+    ) if _product else ""
+
+    html = f"""
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            padding:4px 0;max-width:420px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 2px;">
+    <span style="font-size:16px;">🧠</span>
+    <span style="font-size:.95rem;font-weight:700;color:#1a1a1a;">AI Intelligence</span>
+    <span style="margin-left:auto;font-size:.65rem;background:#E8F5E9;color:#2E7D32;
+                 padding:2px 8px;border-radius:99px;font-weight:600;">LIVE</span>
+  </div>
+
+  <!-- 1. Customer Said -->
+  <div style="{_card}">
+    <div style="{_lbl}">👤 Khách hàng vừa nói</div>
+    {_quote_html}
+  </div>
+
+  <!-- 2. AI Understands -->
+  <div style="{_card}">
+    <div style="{_lbl}">🧠 AI hiểu được gì</div>
+    {_bullets_html}
+  </div>
+
+  <!-- 3. Journey + Behavior (2 columns) -->
+  <div style="{_card}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="{_lbl}">📍 Vị trí hành trình</div>
+        <div style="font-size:1.35rem;line-height:1;">{dbg.get("level_emoji","")}</div>
+        <div style="font-size:.92rem;font-weight:700;color:#1a1a1a;margin-top:4px;">
+          Level {dbg.get("level",1)}</div>
+        <div style="font-size:.75rem;color:#666;margin-top:2px;">
+          {dbg.get("level_short","")}</div>
+      </div>
+      <div style="border-left:1px solid #F0F0F0;padding-left:14px;">
+        <div style="{_lbl}">🎯 Mục tiêu hôm nay</div>
+        <div style="font-size:.85rem;font-weight:700;color:#1565C0;line-height:1.3;margin-top:4px;">
+          {dbg.get("target_label","")}</div>
+        <div style="font-size:.7rem;color:#888;margin-top:4px;line-height:1.4;">
+          {dbg.get("measurable_outcome","")}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. AI Decision -->
+  <div style="{_card}">
+    <div style="{_lbl}">⚙ AI đã quyết định</div>
+    <div style="display:inline-flex;align-items:center;gap:6px;
+                background:{_dec_bg};color:{_dec_color};
+                padding:5px 12px;border-radius:99px;
+                font-size:.82rem;font-weight:700;margin-bottom:10px;">
+      <span>{_dec_icon}</span>
+      <span>{dbg.get("decision_label","")}</span>
+    </div>
+    {_product_badge}
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
+      <div style="{_lbl}">💬 Tại sao?</div>
+      <div style="font-size:.82rem;color:#444;line-height:1.55;">
+        {dbg.get("why_reason","")}</div>
+    </div>
+  </div>
+
+  <!-- 5. Customer Growth Journey -->
+  <div style="{_card}">
+    <div style="{_lbl}">📈 Hành trình khách hàng</div>
+    {_steps_html}
+  </div>
+
+  <!-- 6. Next Best Action -->
+  <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+              border-radius:14px;padding:14px 16px;margin-bottom:4px;">
+    <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;
+                text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px;">
+      💡 Hành động tiếp theo</div>
+    <div style="font-size:.92rem;font-weight:700;color:white;">
+      {dbg.get("next_action_label","—")}</div>
+  </div>
+
+</div>
+"""
+    st.markdown(html, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════
 # 3 TABS NAVIGATION
 # Vision: Finch × Duolingo × Character AI × TCBS
 # 💬 Tâm sự · 🐑 Cừu của tôi · 👥 Cộng đồng
@@ -1696,6 +1970,16 @@ with tab1:
         # ══════════════════════════════════════════════
         # CHAT VIEW — Cừu lắng nghe
         # ══════════════════════════════════════════════
+
+        # ── Demo Mode: split into chat (left) + AI panel (right) ──────────────
+        _show_ai_panel = _COMPANION_V4 and st.session_state.get("demo_mode", False)
+        if _show_ai_panel:
+            __col_chat, __col_panel = st.columns([3, 2], gap="large")
+            __chat_ctx = __col_chat
+        else:
+            __chat_ctx = st.container()
+
+        with __chat_ctx:
 
             # ── Detect returning user ──
             _today_str   = datetime.now().strftime("%Y-%m-%d")
@@ -1904,30 +2188,6 @@ with tab1:
                     with st.chat_message(_m["role"], avatar=_av):
                         st.markdown(_m["content"])
 
-            # ── 🧠 AI Intelligence Debug Panel (V4, collapsible) ─────────────────
-            if _COMPANION_V4 and st.session_state.get("_ai_debug"):
-                _dbg = st.session_state["_ai_debug"]
-                with st.expander("🧠 AI Intelligence", expanded=False):
-                    _c1, _c2, _c3 = st.columns(3)
-                    _c1.metric("Journey Level",
-                               f"{_dbg['level_emoji']} {_dbg['level']}")
-                    _c2.metric("Trust Score",   f"{_dbg['trust_score']}/100")
-                    _c3.metric("Saving Score",  f"{_dbg['saving_score']}/100")
-
-                    _c4, _c5, _c6 = st.columns(3)
-                    _c4.metric("Invest Ready",  f"{_dbg['investment_readiness']}/100")
-                    _c5.metric("Est. Tokens",   _dbg['estimated_tokens'])
-                    _c6.metric("Decision",      _dbg['decision_label'])
-
-                    st.caption(f"**Level:** {_dbg['level_label']}")
-                    st.caption(f"**Target Behavior:** {_dbg['target_label']} → _{_dbg['measurable_outcome']}_")
-                    if _dbg.get("product_name"):
-                        st.caption(f"**Product:** {_dbg['product_name']}")
-                    _ins = _dbg.get("top_insights", {})
-                    _ins_parts = [f"{k}={v}" for k, v in _ins.items() if v]
-                    if _ins_parts:
-                        st.caption(f"**Insights:** {' | '.join(_ins_parts)}")
-
             # ── Chat input ──
             _user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
             if _user_msg:
@@ -1938,6 +2198,11 @@ with tab1:
                 _reply_msg = _result_msg.get("message", "Bê bê~ 🐑 Cừu đang lắng nghe nè!")
                 st.session_state.messages.append({"role": "assistant", "content": _reply_msg})
                 st.rerun()
+
+        # ── AI Intelligence Panel (Demo Mode only, right column) ──────────────
+        if _show_ai_panel:
+            with __col_panel:
+                _render_ai_panel(st.session_state.get("_ai_debug"))
 
 
 
