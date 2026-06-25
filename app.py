@@ -811,6 +811,122 @@ _EMOTION_EXPAND = {
 }
 
 
+def _build_customer_context(mem: dict) -> str:
+    """
+    Customer Context Engine — builds a rich, structured context block
+    injected into every LLM prompt so the Sheep can give deeply personalised replies.
+
+    Layers:
+      1. IDENTITY     — name, growth stage, EXP level, streak
+      2. FINANCIAL    — total saved, dreams with progress %, last feeding
+      3. LIFE CONTEXT — all life-event tags + full notes history
+      4. BEHAVIOR     — hunger state, diary patterns, level-up signal, sentiment
+    """
+    ctx: list[str] = []
+
+    # ── 1. IDENTITY ───────────────────────────────────────────────
+    name        = mem.get("name", "").strip() or "chưa biết"
+    streak      = mem.get("streak", 0)
+    total_saved = mem.get("total_saved", 0)
+    user_exp    = mem.get("user_exp", 0)
+    lv          = get_exp_level(user_exp)
+    _, stage_name, _, _, _ = get_growth_stage(total_saved)
+
+    ctx.append(
+        f"[NGƯỜI DÙNG] Tên: {name} | "
+        f"Giai đoạn Cừu: {stage_name} (Level {lv}) | "
+        f"Streak: {streak} ngày | "
+        f"Tích lũy: {fmt(total_saved)}"
+    )
+
+    # ── 2. FINANCIAL ──────────────────────────────────────────────
+    dreams = mem.get("dreams", [])
+    if dreams:
+        parts = []
+        for d in dreams[:4]:
+            dname  = d.get("name", "").strip()
+            amount = d.get("amount", 0)
+            saved  = d.get("saved", 0)
+            if not dname:
+                continue
+            if amount > 0:
+                pct = min(100, saved / amount * 100)
+                parts.append(f"{dname} (mục tiêu {fmt(amount)}, đã {pct:.0f}%)")
+            else:
+                parts.append(dname)
+        if parts:
+            ctx.append(f"[GIẤC MƠ] {' | '.join(parts)}")
+
+    last_fed_date   = mem.get("last_fed_date", "")
+    last_fed_food   = mem.get("last_fed_food", "")
+    last_fed_amount = mem.get("last_fed_amount", 0)
+    if last_fed_date:
+        try:
+            days_since = (
+                datetime.now().date()
+                - datetime.strptime(last_fed_date, "%Y-%m-%d").date()
+            ).days
+            feed_str = f"lần cuối cho ăn: {days_since} ngày trước"
+            if last_fed_food:
+                feed_str += f" ({last_fed_food}, {fmt(last_fed_amount)})"
+            ctx.append(f"[TIẾT KIỆM] {feed_str}")
+        except Exception:
+            pass
+
+    # ── 3. LIFE CONTEXT ───────────────────────────────────────────
+    life_events = mem.get("life_events", [])
+    if life_events:
+        unique_tags = list(dict.fromkeys(life_events))          # deduplicated, ordered
+        tag_labels  = [LIFE_EVENT_LABELS.get(t, t) for t in unique_tags[-12:]]
+        ctx.append(f"[CONTEXT ĐỜI SỐNG] {', '.join(tag_labels)}")
+
+    notes = mem.get("notes", [])
+    if notes:
+        ctx.append(f"[GHI NHỚ QUAN TRỌNG] {'; '.join(n[:90] for n in notes[-8:])}")
+
+    # ── 4. BEHAVIOR SIGNALS ───────────────────────────────────────
+    signals: list[str] = []
+
+    hunger_pct, hunger_state, _ = _get_hunger(mem)
+    if hunger_state == "miss_you":
+        signals.append("đã lâu không cho Cừu ăn — cần chào đón ấm áp")
+    elif hunger_state == "lonely":
+        signals.append("vắng rất lâu — chào đón không trách móc, vui mừng khi quay lại")
+    elif hunger_state == "fed":
+        signals.append("vừa cho ăn hôm nay — đang tích cực")
+
+    diary_entries = mem.get("diary_entries", [])
+    if diary_entries:
+        d_count      = len(diary_entries)
+        d_streak_val = _diary_streak(diary_entries)
+        top_theme    = _top_diary_theme(diary_entries)
+        top_dream    = _top_diary_dream(diary_entries)
+        sig = f"có {d_count} trang nhật ký"
+        if d_streak_val > 1:
+            sig += f", streak nhật ký {d_streak_val} ngày"
+        if top_theme:
+            sig += f", hay tâm sự về '{LIFE_EVENT_LABELS.get(top_theme, top_theme)}'"
+        if top_dream:
+            sig += f", giấc mơ lặp lại: '{top_dream}'"
+        last_entry = diary_entries[0] if diary_entries else {}
+        if last_entry.get("mood"):
+            sig += f". Tâm trạng nhật ký gần nhất: {last_entry['mood']}"
+        signals.append(sig)
+
+    if mem.get("just_leveled_up"):
+        new_name = mem.get("new_level_name", "")
+        signals.append(f"VỪA LÊN CẤP → {new_name} — hãy ăn mừng cùng người dùng!")
+
+    sentiment = mem.get("sentiment", "neutral")
+    if sentiment and sentiment != "neutral":
+        signals.append(f"tâm trạng tổng thể: {sentiment}")
+
+    if signals:
+        ctx.append(f"[TÍN HIỆU HÀNH VI] {' | '.join(signals)}")
+
+    return "\n".join(ctx)
+
+
 def _call_llm(user_text: str, system: str) -> dict:
     if not st.session_state.api_key:
         return {
@@ -825,12 +941,12 @@ def _call_llm(user_text: str, system: str) -> dict:
             f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:120]}"
             for m in hist
         )
-        mem_ctx = (
-            f"Tên: {mem['name'] or 'chưa biết'}. "
-            f"Tags: {', '.join(mem['life_events'][-6:]) or 'chưa có'}. "
-            f"Ghi chú: {'; '.join(mem['notes'][-3:]) or 'chưa có'}."
+        mem_ctx = _build_customer_context(mem)
+        prompt = (
+            f"[CUSTOMER CONTEXT]\n{mem_ctx}\n\n"
+            f"[LỊCH SỬ HỘI THOẠI]\n{hist_ctx}\n\n"
+            f"KH: {user_text}"
         )
-        prompt = f"[Memory: {mem_ctx}]\n[Lịch sử:\n{hist_ctx}]\n\nKH: {user_text}"
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
         resp   = client.messages.create(
             model="claude-haiku-4-5-20251001",
