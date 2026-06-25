@@ -344,152 +344,213 @@ def _html_card(html_body: str, height: int = 120) -> None:
 # SHEEP HEADER — luôn hiện diện
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SHEEP HEADER — Hero, luôn hiện ở đầu trang nhật ký
+# ─────────────────────────────────────────────────────────────────────────────
+
 def render_sheep_header(mem: dict):
     greeting = get_sheep_greeting(mem)
-    total = len(mem.get("diary_entries", []))
-    streak = mem.get("streak", 0)
-    jg = mem.get("journal_genome", {})
+    total    = len(mem.get("diary_entries", []))
+    streak   = mem.get("streak", 0)
+    jg       = mem.get("journal_genome", {})
     top_theme = _get_dominant_dict(jg.get("theme_counts", {}))
 
-    # Badge line
-    badges = []
+    # Stat pills
+    stats = []
     if streak > 0:
-        badges.append(f"🔥 {streak} ngày")
+        stats.append(("🔥", f"{streak} ngày streak"))
     if total > 0:
-        badges.append(f"📔 {total} entries")
+        stats.append(("📔", f"{total} entries"))
     if top_theme:
-        badges.append(f"💡 {top_theme}")
-    badges_html = " ".join(
-        f"<span style='background:#F1F5F9;color:#475569;padding:3px 10px;border-radius:20px;font-size:11px'>{b}</span>"
-        for b in badges
+        stats.append(("💡", top_theme))
+
+    stat_html = "".join(
+        f"<span style='display:inline-flex;align-items:center;gap:5px;"
+        f"background:rgba(255,255,255,0.18);backdrop-filter:blur(6px);"
+        f"border:1px solid rgba(255,255,255,0.3);"
+        f"border-radius:20px;padding:4px 12px;"
+        f"font-size:12px;color:#fff;font-weight:600;margin:3px 3px 0 0'>"
+        f"{ico} {_html.escape(lbl)}</span>"
+        for ico, lbl in stats
     )
 
+    card_height = 150 if stats else 120
+
     _html_card(f"""
-    <div style='background:linear-gradient(135deg,#667eea18,#764ba218);
-        border-radius:20px;padding:18px 20px;margin-bottom:4px'>
-      <div style='display:flex;align-items:center;gap:12px;margin-bottom:10px'>
-        <div style='font-size:36px;line-height:1'>🐑</div>
-        <div style='flex:1'>
-          <div style='font-size:15px;color:#333;font-weight:500;line-height:1.5'>
+    <div style='
+        background: linear-gradient(135deg,#5B4FCF 0%,#7C3AED 45%,#C4607F 100%);
+        border-radius: 22px;
+        padding: 22px 24px 18px;
+        position: relative;
+        overflow: hidden;
+    '>
+      <!-- decorative circle -->
+      <div style='position:absolute;top:-30px;right:-30px;width:120px;height:120px;
+          border-radius:50%;background:rgba(255,255,255,0.07);'></div>
+      <div style='position:absolute;bottom:-20px;right:60px;width:80px;height:80px;
+          border-radius:50%;background:rgba(255,255,255,0.05);'></div>
+
+      <div style='display:flex;align-items:flex-start;gap:14px;position:relative;z-index:1'>
+        <div style='font-size:42px;line-height:1;flex-shrink:0;margin-top:2px'>🐑</div>
+        <div style='flex:1;min-width:0'>
+          <div style='font-size:15px;color:rgba(255,255,255,0.95);
+              font-weight:600;line-height:1.55;'>
             {_html.escape(greeting)}
           </div>
+          {f'<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:0">{stat_html}</div>' if stats else ''}
         </div>
       </div>
-      <div style='display:flex;flex-wrap:wrap;gap:6px'>{badges_html}</div>
     </div>
-    """, height=130)
+    """, height=card_height)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# QUICK PROMPTS — clickable chips
+# QUICK PROMPTS — Horizontal chip rows với full text
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_quick_prompts() -> str:
     """Render quick prompt chips. Returns selected text or empty string."""
+    # Label
     st.markdown(
-        "<div style='font-size:13px;color:#666;margin:8px 0 6px;font-weight:500'>"
-        "Chọn nhanh hoặc viết tự do bên dưới:</div>",
+        "<div style='font-size:12px;color:#888;margin:10px 0 8px;"
+        "font-weight:600;letter-spacing:0.3px;text-transform:uppercase'>"
+        "Bắt đầu nhanh →</div>",
         unsafe_allow_html=True,
     )
 
     selected = ""
-    # Chia thành 2 hàng, 5 mỗi hàng
-    row1 = QUICK_PROMPTS[:5]
-    row2 = QUICK_PROMPTS[5:]
 
-    cols1 = st.columns(5)
-    for i, (col, p) in enumerate(zip(cols1, row1)):
-        with col:
-            if st.button(f"{p['emoji']}", key=f"qp_{i}", help=p["text"], use_container_width=True):
-                selected = p["text"]
+    # Màu chip theo tag
+    _TAG_COLORS = {
+        "goal":       ("#EDE9FE", "#7C3AED"),
+        "dream":      ("#FDF2F8", "#BE185D"),
+        "life_event": ("#EFF6FF", "#2563EB"),
+        "career":     ("#FFF7ED", "#C2410C"),
+        "income":     ("#F0FDF4", "#15803D"),
+        "spending":   ("#FEF2F2", "#DC2626"),
+        "investing":  ("#EFF6FF", "#1D4ED8"),
+        "risk":       ("#FFF7ED", "#EA580C"),
+        "opportunity":("#F0FDF4", "#16A34A"),
+    }
 
-    cols2 = st.columns(5)
-    for i, (col, p) in enumerate(zip(cols2, row2)):
-        with col:
-            if st.button(f"{p['emoji']}", key=f"qp_{i+5}", help=p["text"], use_container_width=True):
-                selected = p["text"]
-
-    # Hiển thị labels nhỏ bên dưới
-    _html_card(f"""
-    <div style='display:flex;flex-wrap:wrap;gap:4px;padding:4px 0'>
-      {''.join(f"<span style='font-size:10px;color:#888'>{p['emoji']} {_html.escape(p['text'])[:20]}{'...' if len(p['text'])>20 else ''}</span>" for p in QUICK_PROMPTS[:5])}
-    </div>
-    <div style='display:flex;flex-wrap:wrap;gap:4px;padding:2px 0'>
-      {''.join(f"<span style='font-size:10px;color:#888'>{p['emoji']} {_html.escape(p['text'])[:20]}{'...' if len(p['text'])>20 else ''}</span>" for p in QUICK_PROMPTS[5:])}
-    </div>
-    """, height=55)
+    # Render chips theo hàng
+    prompts_per_row = 5
+    for row_start in range(0, len(QUICK_PROMPTS), prompts_per_row):
+        row = QUICK_PROMPTS[row_start: row_start + prompts_per_row]
+        cols = st.columns(len(row))
+        for i, (col, p) in enumerate(zip(cols, row)):
+            tag = p.get("tag", "goal")
+            bg, fg = _TAG_COLORS.get(tag, ("#F3F4F6", "#374151"))
+            with col:
+                label = f"{p['emoji']} {p['text'][:22]}{'…' if len(p['text'])>22 else ''}"
+                btn_key = f"qp_{row_start + i}"
+                # Custom styled button via markdown + key
+                if st.button(
+                    label,
+                    key=btn_key,
+                    use_container_width=True,
+                    help=p["text"],
+                ):
+                    selected = p["text"]
 
     return selected
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SAVE ANIMATION — 4 steps
+# SAVE ANIMATION — 4 steps, polished
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_save_animation(placeholder):
     """Step 1: 3-stage loading animation."""
     steps = [
-        ("🐑", "Đang đọc nhật ký của bạn..."),
-        ("🧠", "Đang cập nhật trí nhớ..."),
-        ("✨", "Đang tìm hiểu thêm về bạn..."),
+        ("🐑", "#7C3AED", "Đang đọc nhật ký của bạn..."),
+        ("🧠", "#0EA5E9", "Cừu đang cập nhật trí nhớ..."),
+        ("✨", "#10B981", "Tổng hợp thông tin xong rồi!"),
     ]
-    for emoji, text in steps:
+    for emoji, color, text in steps:
         placeholder.empty()
         with placeholder.container():
             _html_card(f"""
-            <div style='background:#F8F9FF;border-radius:16px;padding:20px;text-align:center'>
-              <div style='font-size:36px;margin-bottom:8px'>{emoji}</div>
-              <div style='font-size:15px;color:#5A67D8;font-weight:500'>{text}</div>
-              <div style='margin-top:12px;height:4px;background:#E8EAF6;border-radius:4px;overflow:hidden'>
-                <div style='height:4px;background:linear-gradient(90deg,#667eea,#764ba2);
-                    border-radius:4px;animation:slide 1s ease-in-out infinite;width:60%'></div>
+            <div style='
+                background: white;
+                border-radius: 20px;
+                padding: 28px 24px;
+                text-align: center;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+                border: 1.5px solid {color}33;
+            '>
+              <div style='font-size:48px;margin-bottom:12px;line-height:1'>{emoji}</div>
+              <div style='font-size:15px;color:{color};font-weight:700;margin-bottom:16px'>{text}</div>
+              <div style='height:5px;background:#F1F5F9;border-radius:5px;overflow:hidden;max-width:280px;margin:0 auto'>
+                <div style='height:5px;background:linear-gradient(90deg,{color},{color}88);
+                    border-radius:5px;animation:prog 0.9s ease-in-out infinite alternate;width:55%'>
+                </div>
               </div>
-              <style>@keyframes slide{{0%{{margin-left:-60%}}100%{{margin-left:100%}}}}</style>
+              <style>@keyframes prog{{from{{width:30%}}to{{width:80%}}}}</style>
             </div>
-            """, height=120)
-        time.sleep(0.9)
+            """, height=165)
+        time.sleep(0.85)
 
 
 def render_memory_update(placeholder, ai_result: dict, mem: dict):
     """Step 2: Memory Update card."""
     memory_update = _html.escape(ai_result.get("memory_update", "Mình vừa hiểu thêm về bạn!"))
-    top_theme = _html.escape(ai_result.get("top_theme", ""))
-    main_goal = _html.escape(ai_result.get("main_goal_detected", ""))
-    dream = _html.escape(ai_result.get("dream_detected", ""))
+    top_theme     = _html.escape(ai_result.get("top_theme", ""))
+    main_goal     = _html.escape(ai_result.get("main_goal_detected", ""))
+    dream         = _html.escape(ai_result.get("dream_detected", ""))
 
-    # Goal mention count
     jg = mem.get("journal_genome", {})
     goal_count = jg.get("goal_mentions", {}).get(ai_result.get("main_goal_detected", ""), 0)
 
-    detail_lines = []
+    rows = []
     if main_goal and goal_count > 1:
-        detail_lines.append(f"<div style='margin:4px 0'>🎯 Bạn đã nhắc tới '{main_goal}' {goal_count} lần</div>")
+        rows.append(f"<div style='margin:5px 0;display:flex;align-items:center;gap:8px'>"
+                    f"<span style='font-size:16px'>🎯</span>"
+                    f"<span>Bạn đã nhắc '<strong>{main_goal}</strong>' <strong>{goal_count} lần</strong></span></div>")
     elif main_goal:
-        detail_lines.append(f"<div style='margin:4px 0'>🎯 Phát hiện mục tiêu: <strong>{main_goal}</strong></div>")
+        rows.append(f"<div style='margin:5px 0;display:flex;align-items:center;gap:8px'>"
+                    f"<span style='font-size:16px'>🎯</span>"
+                    f"<span>Phát hiện mục tiêu: <strong>{main_goal}</strong></span></div>")
     if dream:
-        detail_lines.append(f"<div style='margin:4px 0'>🌟 Phát hiện ước mơ: <strong>{dream}</strong></div>")
+        rows.append(f"<div style='margin:5px 0;display:flex;align-items:center;gap:8px'>"
+                    f"<span style='font-size:16px'>🌟</span>"
+                    f"<span>Ước mơ được nhắc đến: <strong>{dream}</strong></span></div>")
     if top_theme:
-        detail_lines.append(f"<div style='margin:4px 0'>💡 Chủ đề hôm nay: <strong>{top_theme}</strong></div>")
-    detail_lines.append("<div style='margin:6px 0;color:#10B981;font-size:12px'>✅ Đã lưu vào trí nhớ của Cừu</div>")
+        rows.append(f"<div style='margin:5px 0;display:flex;align-items:center;gap:8px'>"
+                    f"<span style='font-size:16px'>💡</span>"
+                    f"<span>Chủ đề hôm nay: <strong>{top_theme}</strong></span></div>")
+    rows.append("<div style='margin-top:10px;display:flex;align-items:center;gap:6px;"
+                "color:#10B981;font-size:12px;font-weight:600'>"
+                "<span>✅</span><span>Đã lưu vào trí nhớ của Cừu</span></div>")
 
     placeholder.empty()
     with placeholder.container():
         _html_card(f"""
-        <div style='background:linear-gradient(135deg,#EEF2FF,#F5F3FF);border-radius:16px;
-            padding:18px;border:1px solid #C7D2FE'>
-          <div style='display:flex;align-items:center;gap:10px;margin-bottom:10px'>
-            <span style='font-size:28px'>🐑</span>
+        <div style='background:white;border-radius:20px;padding:22px 24px;
+            box-shadow:0 8px 32px rgba(124,58,237,0.10);
+            border:1.5px solid #EDE9FE'>
+          <div style='display:flex;align-items:center;gap:12px;margin-bottom:14px'>
+            <div style='width:44px;height:44px;border-radius:50%;
+                background:linear-gradient(135deg,#7C3AED,#C4607F);
+                display:flex;align-items:center;justify-content:center;
+                font-size:22px;flex-shrink:0'>🐑</div>
             <div>
-              <div style='font-size:12px;color:#6366F1;font-weight:700;letter-spacing:0.5px'>MEMORY UPDATE</div>
-              <div style='font-size:14px;color:#333;font-weight:500;margin-top:2px'>{memory_update}</div>
+              <div style='font-size:10px;color:#7C3AED;font-weight:800;
+                  letter-spacing:1px;text-transform:uppercase;margin-bottom:3px'>
+                MEMORY UPDATE
+              </div>
+              <div style='font-size:14px;color:#1E1B4B;font-weight:600;line-height:1.4'>
+                {memory_update}
+              </div>
             </div>
           </div>
-          <div style='font-size:13px;color:#555;border-top:1px solid #E0E7FF;padding-top:10px'>
-            {''.join(detail_lines)}
+          <div style='background:#FAF8FF;border-radius:12px;padding:12px 14px;
+              font-size:13px;color:#374151;line-height:1.7'>
+            {''.join(rows)}
           </div>
         </div>
-        """, height=180)
-    time.sleep(1.5)
+        """, height=220)
+    time.sleep(1.4)
 
 
 def render_insight_card(placeholder, ai_result: dict, mem: dict):
@@ -500,89 +561,95 @@ def render_insight_card(placeholder, ai_result: dict, mem: dict):
     top_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:3]
 
     top_theme_all = _get_dominant_dict(jg.get("theme_counts", {}))
-    motivation_map = {"security": "An toàn tài chính", "growth": "Tăng trưởng",
-                      "status": "Địa vị/Chất lượng sống", "freedom": "Tự do tài chính"}
-    motivation = motivation_map.get(jg.get("motivation_history", [])[-1] if jg.get("motivation_history") else "", "")
+    motivation_map = {
+        "security": "🔐 An toàn tài chính",
+        "growth":   "📈 Tăng trưởng",
+        "status":   "✨ Địa vị / Chất lượng sống",
+        "freedom":  "🕊️ Tự do tài chính",
+    }
+    mot_list = jg.get("motivation_history", [])
+    motivation = motivation_map.get(mot_list[-1] if mot_list else "", "")
 
-    def _pill1(t, c):
+    def _pill(t, c):
         cfg = WG_TAGS.get(t, {})
         col = cfg.get("color", "#888")
         lbl = cfg.get("label", t)
-        return (f"<span style='background:{col}22;color:{col};"
-                f"border:1px solid {col}44;"
-                f"padding:2px 8px;border-radius:10px;font-size:11px;margin:2px'>"
-                f"{lbl} ×{c}</span>")
-    tag_pills = "".join(_pill1(t, c) for t, c in top_tags)
+        return (f"<span style='background:{col}18;color:{col};"
+                f"border:1.5px solid {col}44;"
+                f"padding:3px 10px;border-radius:12px;font-size:11px;"
+                f"font-weight:700;margin:2px;display:inline-block'>{lbl} ×{c}</span>")
 
-    rows = []
+    tag_pills = "".join(_pill(t, c) for t, c in top_tags)
+
+    meta_rows = []
     if top_theme_all:
-        rows.append(f"<div style='margin:3px 0'>📊 Chủ đề nhiều nhất: <strong>{_html.escape(top_theme_all)}</strong></div>")
+        meta_rows.append(f"<div style='margin:4px 0'>📊 Chủ đề nhiều nhất: <strong>{_html.escape(top_theme_all)}</strong></div>")
     if motivation:
-        rows.append(f"<div style='margin:3px 0'>💡 Động lực lớn nhất: <strong>{_html.escape(motivation)}</strong></div>")
+        meta_rows.append(f"<div style='margin:4px 0'>💡 Động lực: <strong>{_html.escape(motivation)}</strong></div>")
 
     placeholder.empty()
     with placeholder.container():
         _html_card(f"""
-        <div style='background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border-radius:16px;
-            padding:18px;border:1px solid #A7F3D0'>
-          <div style='font-size:12px;color:#059669;font-weight:700;letter-spacing:0.5px;margin-bottom:8px'>
+        <div style='background:white;border-radius:20px;padding:20px 24px;
+            box-shadow:0 8px 32px rgba(16,185,129,0.10);
+            border:1.5px solid #A7F3D0'>
+          <div style='font-size:10px;color:#059669;font-weight:800;
+              letter-spacing:1px;text-transform:uppercase;margin-bottom:10px'>
             🧠 AI NHẬN THẤY
           </div>
-          {f'<div style="font-size:13px;color:#065F46;margin-bottom:10px">{ai_insight}</div>' if ai_insight else ''}
-          <div style='font-size:13px;color:#374151'>{''.join(rows)}</div>
-          <div style='margin-top:10px;display:flex;flex-wrap:wrap;gap:4px'>{tag_pills}</div>
+          {f'<div style="font-size:14px;color:#065F46;font-weight:500;line-height:1.6;margin-bottom:12px">{ai_insight}</div>' if ai_insight else ''}
+          <div style='font-size:13px;color:#374151;margin-bottom:12px'>{''.join(meta_rows)}</div>
+          <div style='display:flex;flex-wrap:wrap;gap:4px'>{tag_pills}</div>
         </div>
-        """, height=200)
+        """, height=210)
     time.sleep(1.2)
 
 
 def render_reward_card(placeholder, mem: dict, is_new_streak: bool = False):
     """Step 4: Reward card — Streak, XP, iXu."""
-    streak = mem.get("streak", 0)
-    exp = mem.get("user_exp", 0)
-    tickets = mem.get("ilucky_tickets", 0)
+    streak        = mem.get("streak", 0)
+    tickets       = mem.get("ilucky_tickets", 0)
     total_entries = len(mem.get("diary_entries", []))
 
-    # Milestones
-    milestone_msg = ""
-    if total_entries in (3, 7, 14, 30, 50, 100):
-        milestone_msgs = {3:"🎉 3 ngày đầu tiên!", 7:"🔥 1 tuần liên tiếp!", 14:"⭐ 2 tuần rồi!",
-                          30:"🏆 1 tháng kiên trì!", 50:"👑 50 entries!", 100:"🌟 100 entries huyền thoại!"}
-        milestone_msg = milestone_msgs.get(total_entries, "")
+    milestone_map = {
+        3: "🎉 3 ngày đầu tiên!", 7: "🔥 1 tuần liên tiếp!",
+        14: "⭐ 2 tuần rồi!", 30: "🏆 1 tháng kiên trì!",
+        50: "👑 50 entries!", 100: "🌟 100 entries huyền thoại!",
+    }
+    milestone_msg = milestone_map.get(total_entries, "")
+
+    reward_items = [
+        ("🔥", str(streak), "Streak"),
+        ("⭐", "+15",       "XP"),
+        ("🪙", "+5",        "iXu"),
+        ("🐑", "+1",        "Cừu vui"),
+    ]
+    items_html = "".join(
+        f"<div style='text-align:center;flex:1'>"
+        f"  <div style='font-size:32px;margin-bottom:4px'>{ico}</div>"
+        f"  <div style='font-size:20px;font-weight:800;color:#D97706'>{val}</div>"
+        f"  <div style='font-size:10px;color:#92400E;font-weight:600;text-transform:uppercase;letter-spacing:0.5px'>{lbl}</div>"
+        f"</div>"
+        for ico, val, lbl in reward_items
+    )
 
     placeholder.empty()
     with placeholder.container():
         _html_card(f"""
-        <div style='background:linear-gradient(135deg,#FFF7ED,#FFFBEB);border-radius:16px;
-            padding:18px;border:1px solid #FDE68A'>
-          <div style='font-size:12px;color:#D97706;font-weight:700;letter-spacing:0.5px;margin-bottom:12px'>
+        <div style='background:linear-gradient(135deg,#FFF8EE,#FFFBF0);
+            border-radius:20px;padding:22px 24px;
+            box-shadow:0 8px 32px rgba(217,119,6,0.12);
+            border:1.5px solid #FDE68A;text-align:center'>
+          <div style='font-size:10px;color:#D97706;font-weight:800;
+              letter-spacing:1px;text-transform:uppercase;margin-bottom:14px'>
             🎁 PHẦN THƯỞNG HÔM NAY
           </div>
-          <div style='display:flex;gap:16px;justify-content:center;margin-bottom:10px'>
-            <div style='text-align:center'>
-              <div style='font-size:28px'>🔥</div>
-              <div style='font-size:18px;font-weight:700;color:#D97706'>{streak}</div>
-              <div style='font-size:11px;color:#92400E'>Streak</div>
-            </div>
-            <div style='text-align:center'>
-              <div style='font-size:28px'>⭐</div>
-              <div style='font-size:18px;font-weight:700;color:#D97706'>+15</div>
-              <div style='font-size:11px;color:#92400E'>XP</div>
-            </div>
-            <div style='text-align:center'>
-              <div style='font-size:28px'>🪙</div>
-              <div style='font-size:18px;font-weight:700;color:#D97706'>+5</div>
-              <div style='font-size:11px;color:#92400E'>iXu</div>
-            </div>
-            <div style='text-align:center'>
-              <div style='font-size:28px'>🐑</div>
-              <div style='font-size:18px;font-weight:700;color:#D97706'>+1</div>
-              <div style='font-size:11px;color:#92400E'>Cừu vui</div>
-            </div>
+          <div style='display:flex;justify-content:center;gap:8px;margin-bottom:12px'>
+            {items_html}
           </div>
-          {f'<div style="text-align:center;font-size:14px;color:#D97706;font-weight:600">{milestone_msg}</div>' if milestone_msg else ''}
+          {f'<div style="font-size:15px;color:#D97706;font-weight:700;margin-top:6px">{milestone_msg}</div>' if milestone_msg else ''}
         </div>
-        """, height=175)
+        """, height=185)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -590,203 +657,329 @@ def render_reward_card(placeholder, mem: dict, is_new_streak: bool = False):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_dream_progress(mem: dict, detected_goal: str):
-    """Hiển thị tiến độ hiểu biết AI về mục tiêu — KHÔNG bán sản phẩm."""
     if not detected_goal:
         return
-    jg = mem.get("journal_genome", {})
+    jg         = mem.get("journal_genome", {})
     goal_count = jg.get("goal_mentions", {}).get(detected_goal, 1)
-    # AI understanding progress: mỗi lần nhắc ~10%, cap 95%
-    ai_pct = min(95, goal_count * 10 + random.randint(2, 8))
+    ai_pct     = min(95, goal_count * 10 + random.randint(2, 8))
 
     _html_card(f"""
-    <div style='background:#F8FAFF;border-radius:16px;padding:16px;border:1px solid #DBEAFE'>
-      <div style='font-size:12px;color:#3B82F6;font-weight:700;margin-bottom:8px'>🎯 MỤC TIÊU CỦA BẠN</div>
-      <div style='font-size:14px;font-weight:600;color:#1E3A5F;margin-bottom:10px'>
-        {_html.escape(detected_goal)}
+    <div style='background:white;border-radius:18px;padding:18px 22px;
+        box-shadow:0 4px 16px rgba(59,130,246,0.10);
+        border:1.5px solid #BFDBFE'>
+      <div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px'>
+        <div>
+          <div style='font-size:10px;color:#3B82F6;font-weight:800;
+              letter-spacing:1px;text-transform:uppercase;margin-bottom:4px'>
+            🎯 MỤC TIÊU CỦA BẠN
+          </div>
+          <div style='font-size:15px;font-weight:700;color:#1E3A5F'>
+            {_html.escape(detected_goal)}
+          </div>
+        </div>
+        <div style='text-align:center;margin-left:16px'>
+          <div style='font-size:26px;font-weight:800;color:#3B82F6'>{ai_pct}%</div>
+          <div style='font-size:10px;color:#93C5FD;font-weight:600'>Cừu hiểu</div>
+        </div>
       </div>
-      <div style='font-size:12px;color:#6B7280;margin-bottom:6px'>
-        Tiến độ hiểu biết của Cừu: <strong style='color:#3B82F6'>{ai_pct}%</strong>
+      <div style='background:#EFF6FF;border-radius:6px;height:8px;overflow:hidden'>
+        <div style='background:linear-gradient(90deg,#3B82F6,#7C3AED);
+            height:8px;border-radius:6px;width:{ai_pct}%'></div>
       </div>
-      <div style='background:#E0E7FF;border-radius:4px;height:6px;overflow:hidden'>
-        <div style='background:linear-gradient(90deg,#667eea,#764ba2);height:6px;
-            border-radius:4px;width:{ai_pct}%'></div>
-      </div>
-      <div style='font-size:11px;color:#9CA3AF;margin-top:6px'>
-        🐑 Em đang dần hiểu mục tiêu này của bạn hơn ({goal_count} lần nhắc đến)
+      <div style='font-size:11px;color:#93C5FD;margin-top:7px;font-weight:500'>
+        🐑 Cừu đang dần hiểu mục tiêu này ({goal_count} lần bạn nhắc đến)
       </div>
     </div>
-    """, height=145)
+    """, height=150)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# "CỪU NHỚ GÌ VỀ BẠN" SCREEN
+# "CỪU NHỚ GÌ VỀ BẠN" — AI Profile Screen
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_memory_screen(mem: dict):
-    """Màn hình 🧠 Cừu nhớ gì về bạn — AI profile được cập nhật liên tục."""
     profile = build_genome_profile(mem)
 
-    st.markdown("### 🧠 Cừu nhớ gì về bạn")
+    # Hero header
+    _html_card(f"""
+    <div style='background:linear-gradient(135deg,#1E1B4B,#4C1D95,#7C3AED);
+        border-radius:22px;padding:24px;text-align:center;color:white'>
+      <div style='font-size:44px;margin-bottom:8px'>🧠</div>
+      <div style='font-size:18px;font-weight:800;margin-bottom:4px'>Cừu nhớ gì về bạn</div>
+      <div style='font-size:13px;opacity:0.75'>
+        Dựa trên {profile["total_entries"]} entries · cập nhật mỗi khi bạn viết
+      </div>
+    </div>
+    """, height=155)
 
     if profile["total_entries"] == 0:
         _html_card("""
-        <div style='text-align:center;padding:30px;color:#9CA3AF'>
-          <div style='font-size:48px'>🐑</div>
-          <div style='font-size:14px;margin-top:8px'>Hãy viết vài dòng đầu tiên<br>để Cừu bắt đầu hiểu bạn nhé~</div>
+        <div style='text-align:center;padding:40px 20px;color:#9CA3AF'>
+          <div style='font-size:52px;margin-bottom:12px'>📔</div>
+          <div style='font-size:15px;font-weight:600;color:#6B7280;margin-bottom:6px'>
+            Chưa có dữ liệu
+          </div>
+          <div style='font-size:13px'>
+            Hãy viết vài dòng đầu tiên để Cừu bắt đầu hiểu bạn nhé~
+          </div>
         </div>
-        """, height=120)
+        """, height=160)
         return
 
-    # Row 1: Top Goal + Top Dream
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # Row 1: Mục tiêu + Ước mơ
     c1, c2 = st.columns(2)
     with c1:
-        goal_text = profile["top_goal"] or "Chưa xác định"
+        goal_text  = profile["top_goal"] or "Chưa xác định"
         goal_count = profile["top_goal_count"]
         _html_card(f"""
-        <div style='background:#EFF6FF;border-radius:14px;padding:14px;height:100%'>
-          <div style='font-size:11px;color:#3B82F6;font-weight:700;margin-bottom:6px'>🎯 MỤC TIÊU LỚN NHẤT</div>
-          <div style='font-size:14px;font-weight:600;color:#1E3A5F'>{_html.escape(goal_text)}</div>
-          {f'<div style="font-size:11px;color:#6B7280;margin-top:4px">Nhắc đến {goal_count} lần</div>' if goal_count > 0 else ''}
+        <div style='background:linear-gradient(135deg,#EDE9FE,#F5F3FF);
+            border-radius:16px;padding:16px;height:100%;
+            border:1.5px solid #DDD6FE'>
+          <div style='font-size:10px;color:#7C3AED;font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>🎯 Mục tiêu lớn nhất</div>
+          <div style='font-size:14px;font-weight:700;color:#3B0764;line-height:1.4'>
+            {_html.escape(goal_text)}
+          </div>
+          {f'<div style="font-size:11px;color:#A78BFA;margin-top:6px;font-weight:600">Nhắc đến {goal_count} lần</div>' if goal_count > 0 else ''}
         </div>
-        """, height=100)
+        """, height=115)
 
     with c2:
         dream_text = profile["top_dream"] or "Chưa khám phá"
         _html_card(f"""
-        <div style='background:#FAF5FF;border-radius:14px;padding:14px;height:100%'>
-          <div style='font-size:11px;color:#9333EA;font-weight:700;margin-bottom:6px'>🌟 ƯỚC MƠ</div>
-          <div style='font-size:14px;font-weight:600;color:#4C1D95'>{_html.escape(dream_text)}</div>
+        <div style='background:linear-gradient(135deg,#FDF2F8,#FDF4FF);
+            border-radius:16px;padding:16px;height:100%;
+            border:1.5px solid #FBCFE8'>
+          <div style='font-size:10px;color:#BE185D;font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>🌟 Ước mơ</div>
+          <div style='font-size:14px;font-weight:700;color:#831843;line-height:1.4'>
+            {_html.escape(dream_text)}
+          </div>
         </div>
-        """, height=100)
+        """, height=115)
 
     st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-    # Row 2: Motivation + Financial Stage
+    # Row 2: Động lực + Hành trình
     c3, c4 = st.columns(2)
     with c3:
         mot_label = profile["motivation_label"] or "Đang khám phá"
-        mot_desc = profile["motivation_desc"] or "Viết thêm để Cừu hiểu bạn hơn~"
+        mot_desc  = profile["motivation_desc"]  or "Viết thêm để Cừu hiểu bạn hơn~"
         _html_card(f"""
-        <div style='background:#F0FDF4;border-radius:14px;padding:14px'>
-          <div style='font-size:11px;color:#16A34A;font-weight:700;margin-bottom:6px'>💰 ĐỘNG LỰC TÀI CHÍNH</div>
-          <div style='font-size:14px;font-weight:600;color:#14532D'>{_html.escape(mot_label)}</div>
-          <div style='font-size:11px;color:#6B7280;margin-top:4px'>{_html.escape(mot_desc)}</div>
+        <div style='background:linear-gradient(135deg,#F0FDF4,#ECFDF5);
+            border-radius:16px;padding:16px;
+            border:1.5px solid #A7F3D0'>
+          <div style='font-size:10px;color:#059669;font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>💰 Động lực tài chính</div>
+          <div style='font-size:14px;font-weight:700;color:#064E3B'>{_html.escape(mot_label)}</div>
+          <div style='font-size:11px;color:#6B7280;margin-top:5px;line-height:1.5'>{_html.escape(mot_desc)}</div>
         </div>
-        """, height=110)
+        """, height=120)
 
     with c4:
         stage_map = {
-            "exploring": ("🌱", "Đang khám phá", "#D1FAE5"),
-            "learning":  ("📚", "Đang học hỏi",  "#DBEAFE"),
-            "ready":     ("🚀", "Sẵn sàng",       "#EDE9FE"),
-            "invested":  ("📈", "Đang đầu tư",    "#FEF3C7"),
+            "exploring": ("🌱", "Đang khám phá", "#D1FAE5", "#065F46"),
+            "learning":  ("📚", "Đang học hỏi",  "#DBEAFE", "#1E3A8A"),
+            "ready":     ("🚀", "Sẵn sàng",       "#EDE9FE", "#3B0764"),
+            "invested":  ("📈", "Đang đầu tư",    "#FEF3C7", "#78350F"),
         }
-        stage_key = profile["financial_stage"]
-        s_ico, s_label, s_bg = stage_map.get(stage_key, ("🌱", "Đang khám phá", "#D1FAE5"))
+        s_ico, s_label, s_bg, s_fg = stage_map.get(
+            profile["financial_stage"], ("🌱", "Đang khám phá", "#D1FAE5", "#065F46")
+        )
         _html_card(f"""
-        <div style='background:{s_bg};border-radius:14px;padding:14px'>
-          <div style='font-size:11px;color:#374151;font-weight:700;margin-bottom:6px'>📍 HÀNH TRÌNH TÀI CHÍNH</div>
-          <div style='font-size:24px'>{s_ico}</div>
-          <div style='font-size:14px;font-weight:600;color:#111827'>{s_label}</div>
+        <div style='background:{s_bg};border-radius:16px;padding:16px;
+            border:1.5px solid {s_bg}'>
+          <div style='font-size:10px;color:{s_fg};font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>📍 Hành trình tài chính</div>
+          <div style='font-size:32px;margin-bottom:4px'>{s_ico}</div>
+          <div style='font-size:14px;font-weight:700;color:{s_fg}'>{s_label}</div>
         </div>
-        """, height=110)
+        """, height=120)
 
     st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-    # Wealth Genome Tags
+    # Wealth DNA
     top_tags = profile["top_tags"]
     if top_tags:
         def _pill2(t, c):
             cfg = WG_TAGS.get(t, {})
             col = cfg.get("color", "#888")
             lbl = cfg.get("label", t)
-            return (f"<span style='background:{col}22;color:{col};"
-                    f"border:1px solid {col}55;"
-                    f"padding:4px 12px;border-radius:20px;font-size:12px;margin:3px;display:inline-block'>"
-                    f"{lbl} ×{c}</span>")
-        tag_pills = "".join(_pill2(t, c) for t, c in top_tags)
+            pct = min(100, c * 12)
+            return (
+                f"<div style='margin:5px 0'>"
+                f"  <div style='display:flex;justify-content:space-between;"
+                f"      font-size:12px;font-weight:600;margin-bottom:4px'>"
+                f"    <span style='color:#374151'>{lbl}</span>"
+                f"    <span style='color:{col}'>{c}×</span>"
+                f"  </div>"
+                f"  <div style='background:{col}18;border-radius:6px;height:6px'>"
+                f"    <div style='background:{col};border-radius:6px;height:6px;width:{pct}%'></div>"
+                f"  </div>"
+                f"</div>"
+            )
+        bars = "".join(_pill2(t, c) for t, c in top_tags)
         _html_card(f"""
-        <div style='background:#F9FAFB;border-radius:14px;padding:14px'>
-          <div style='font-size:11px;color:#6B7280;font-weight:700;margin-bottom:8px'>🏷️ WEALTH DNA CỦA BẠN</div>
-          <div>{tag_pills}</div>
+        <div style='background:#FAFAFA;border-radius:16px;padding:16px 18px;
+            border:1.5px solid #E5E7EB'>
+          <div style='font-size:10px;color:#6B7280;font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:12px'>
+            🏷️ Wealth DNA của bạn
+          </div>
+          {bars}
         </div>
-        """, height=90)
+        """, height=max(100, len(top_tags) * 42 + 55))
+
+    # AI Insight
+    ai_insights = profile["ai_insights"]
+    if ai_insights:
+        latest = ai_insights[0]
+        _html_card(f"""
+        <div style='background:white;border-radius:16px;padding:16px 18px;
+            border-left:4px solid #10B981;
+            box-shadow:0 4px 16px rgba(16,185,129,0.08)'>
+          <div style='font-size:10px;color:#059669;font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>
+            🧠 Insight gần nhất
+          </div>
+          <div style='font-size:13px;color:#065F46;line-height:1.6'>
+            {_html.escape(latest['text'])}
+          </div>
+          <div style='font-size:10px;color:#9CA3AF;margin-top:6px'>{latest['date']}</div>
+        </div>
+        """, height=115)
 
     # Life Events
     if profile["life_events"]:
         events_html = "".join(
-            f"<div style='background:white;border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#374151'>"
-            f"🌊 {_html.escape(str(e))}</div>"
+            f"<div style='display:flex;align-items:center;gap:10px;"
+            f"background:white;border-radius:10px;padding:8px 12px;"
+            f"margin:5px 0;box-shadow:0 1px 4px rgba(0,0,0,0.05)'>"
+            f"  <span style='font-size:16px'>🌊</span>"
+            f"  <span style='font-size:13px;color:#374151'>{_html.escape(str(e))}</span>"
+            f"</div>"
             for e in profile["life_events"]
         )
         _html_card(f"""
-        <div style='background:#EFF6FF;border-radius:14px;padding:14px'>
-          <div style='font-size:11px;color:#3B82F6;font-weight:700;margin-bottom:6px'>🌊 SỰ KIỆN CUỘC SỐNG</div>
+        <div style='background:#EFF6FF;border-radius:16px;padding:14px 16px;
+            border:1.5px solid #BFDBFE'>
+          <div style='font-size:10px;color:#2563EB;font-weight:800;
+              text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>
+            🌊 Sự kiện cuộc sống
+          </div>
           {events_html}
         </div>
-        """, height=max(90, len(profile["life_events"]) * 36 + 50))
-
-    # AI Insights
-    if profile["ai_insights"]:
-        latest = profile["ai_insights"][0]
-        _html_card(f"""
-        <div style='background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border-radius:14px;padding:14px;
-            border-left:4px solid #10B981'>
-          <div style='font-size:11px;color:#059669;font-weight:700;margin-bottom:6px'>🧠 INSIGHT GẦN NHẤT</div>
-          <div style='font-size:13px;color:#065F46'>{_html.escape(latest['text'])}</div>
-          <div style='font-size:10px;color:#9CA3AF;margin-top:4px'>{latest['date']}</div>
-        </div>
-        """, height=110)
+        """, height=max(100, len(profile["life_events"]) * 44 + 55))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HISTORY VIEW — entries dạng card gọn
+# ENTRY CARD — Timeline style với left-border màu theo tag
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_entry_card_v3(entry: dict):
-    """Render entry card — dùng components.v1.html để tránh HTML sanitize bug."""
     import html as _h
-    top_theme = _h.escape(entry.get("top_theme", entry.get("emotion", "binh_thuong")))
-    date = _h.escape(entry.get("date", ""))
-    content = _h.escape(entry.get("content", "")[:180])
-    if len(entry.get("content", "")) > 180:
-        content += "..."
-    reply = _h.escape(entry.get("reply", ""))
-    dream = _h.escape(entry.get("dream_detected", entry.get("dream", "")))
-    goal = _h.escape(entry.get("main_goal_detected", ""))
+
+    top_theme = _h.escape(entry.get("top_theme", entry.get("emotion", "")))
+    date      = _h.escape(entry.get("date", ""))
+    content   = _h.escape(entry.get("content", "")[:200])
+    if len(entry.get("content", "")) > 200:
+        content += "…"
+    reply  = _h.escape(entry.get("reply", ""))
+    dream  = _h.escape(entry.get("dream_detected", entry.get("dream", "")))
+    goal   = _h.escape(entry.get("main_goal_detected", ""))
 
     tags = entry.get("wg_tags", entry.get("tags", []))
-    def _small_pill(t):
+    if not isinstance(tags, list):
+        tags = []
+
+    # Dominant tag color for left border
+    border_color = "#7C3AED"
+    if tags:
+        first_cfg    = WG_TAGS.get(tags[0], {})
+        border_color = first_cfg.get("color", "#7C3AED")
+
+    def _spill(t):
         cfg = WG_TAGS.get(t, {})
         col = cfg.get("color", "#888")
         lbl = cfg.get("label", t)
-        return f"<span style='background:{col}22;color:{col};padding:1px 7px;border-radius:8px;font-size:10px;margin:1px'>{lbl}</span>"
-    tag_pills = "".join(_small_pill(t) for t in (tags[:3] if isinstance(tags, list) else []))
+        return (f"<span style='background:{col}15;color:{col};"
+                f"border:1px solid {col}44;"
+                f"padding:2px 8px;border-radius:10px;"
+                f"font-size:10px;font-weight:700;margin:1px 2px'>{lbl}</span>")
+    tag_pills = "".join(_spill(t) for t in tags[:3])
 
-    badges = ""
+    badges_html = ""
     if dream:
-        badges += f"<span style='background:#FAF5FF;color:#9333EA;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:6px'>🌟 {dream}</span>"
+        badges_html += (f"<span style='background:#FDF2F8;color:#BE185D;"
+                        f"padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600'>"
+                        f"🌟 {dream}</span> ")
     if goal:
-        badges += f"<span style='background:#EFF6FF;color:#3B82F6;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:4px'>🎯 {goal}</span>"
+        badges_html += (f"<span style='background:#EFF6FF;color:#2563EB;"
+                        f"padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600'>"
+                        f"🎯 {goal}</span>")
+
+    has_reply  = bool(reply)
+    has_badges = bool(badges_html)
+    has_tags   = bool(tag_pills)
+
+    # Estimate card height
+    content_lines = max(1, len(entry.get("content", "")) // 60)
+    h = 90 + content_lines * 18
+    if has_reply:  h += 50
+    if has_badges: h += 26
+    if has_tags:   h += 24
 
     _c.html(f"""
-    <style>*{{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}}</style>
-    <div style='background:white;border-radius:14px;padding:14px 16px;margin-bottom:8px;
-        box-shadow:0 2px 8px rgba(0,0,0,0.07);border:1px solid #F1F5F9'>
-      <div style='display:flex;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:4px'>
-        <span style='font-size:13px;font-weight:700;color:#333'>📔 {top_theme}</span>
-        <span style='font-size:11px;color:#9CA3AF;margin-left:8px'>{date}</span>
-        {badges}
+    <style>
+      * {{ box-sizing: border-box; margin: 0; padding: 0;
+           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }}
+    </style>
+    <div style='
+        background: white;
+        border-radius: 16px;
+        padding: 14px 16px 14px 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        border: 1px solid #F1F5F9;
+        border-left: 4px solid {border_color};
+        position: relative;
+    '>
+      <!-- Header -->
+      <div style='display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px'>
+        <div style='font-size:13px;font-weight:700;color:#111827;
+            display:flex;align-items:center;gap:6px;flex:1;min-width:0'>
+          <span style='background:{border_color}18;color:{border_color};
+              padding:1px 8px;border-radius:8px;font-size:11px;
+              font-weight:700;white-space:nowrap'>
+            {top_theme if top_theme else "📔 Nhật ký"}
+          </span>
+        </div>
+        <span style='font-size:11px;color:#9CA3AF;white-space:nowrap;margin-left:8px;flex-shrink:0'>
+          {date}
+        </span>
       </div>
-      <div style='font-size:13px;color:#4B5563;line-height:1.6;margin-bottom:8px'>{content}</div>
-      {f'<div style="background:#F0FDF4;border-radius:8px;padding:8px 12px;font-size:12px;color:#065F46;font-style:italic;margin-bottom:8px">🐑 {reply}</div>' if reply else ''}
-      <div style='display:flex;flex-wrap:wrap;gap:4px'>{tag_pills}</div>
+
+      <!-- Content -->
+      <div style='font-size:13px;color:#4B5563;line-height:1.65;margin-bottom:{'10px' if (has_reply or has_badges or has_tags) else '0'}'>
+        {content}
+      </div>
+
+      <!-- Sheep reply -->
+      {f'<div style="background:#F0FDF4;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#065F46;font-style:italic;display:flex;gap:6px"><span>🐑</span><span>{reply}</span></div>' if has_reply else ''}
+
+      <!-- Badges -->
+      {f'<div style="margin-bottom:6px">{badges_html}</div>' if has_badges else ''}
+
+      <!-- Tags -->
+      {f'<div style="display:flex;flex-wrap:wrap;gap:2px">{tag_pills}</div>' if has_tags else ''}
     </div>
-    """, height=190, scrolling=False)
+    """, height=h, scrolling=False)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN RENDER FUNCTION — render_diary_v3
+# MAIN RENDER FUNCTION — render_diary_v3  (logic 100% giữ nguyên)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_diary_v3(mem: dict, save_fn, call_llm_fn):
@@ -799,9 +992,9 @@ def render_diary_v3(mem: dict, save_fn, call_llm_fn):
         call_llm_fn: function(user_text: str, system: str) -> dict
     """
     diary_entries = mem.get("diary_entries", [])
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str     = datetime.now().strftime("%Y-%m-%d")
 
-    # ── Toggle: Write / Memory Screen ──────────────────────────────────────
+    # ── Toggle: Write / Memory ──────────────────────────────────────────────
     view_mode = st.radio(
         "",
         ["✍️ Viết nhật ký", "🧠 Cừu nhớ gì về bạn"],
@@ -810,176 +1003,171 @@ def render_diary_v3(mem: dict, save_fn, call_llm_fn):
         label_visibility="collapsed",
     )
 
-    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════════════════
     # VIEW A: MEMORY SCREEN
-    # ══════════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════════════════
     if view_mode == "🧠 Cừu nhớ gì về bạn":
         render_memory_screen(mem)
         return
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════════════════
     # VIEW B: WRITE JOURNAL
-    # ══════════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════════════════
 
-    # ── Sheep Header ──────────────────────────────────────────────────────
+    # ── Sheep Hero ────────────────────────────────────────────────────────────
     render_sheep_header(mem)
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-    # ── Layout: Write | History ───────────────────────────────────────────
-    left_col, right_col = st.columns([3, 2], gap="large")
+    # ── Quick Prompts ─────────────────────────────────────────────────────────
+    selected_prompt = render_quick_prompts()
 
-    with left_col:
-        # ── Quick Prompts ─────────────────────────────────────────────────
-        selected_prompt = render_quick_prompts()
+    # ── Text Area ─────────────────────────────────────────────────────────────
+    prefill_key = "journal_prefill"
+    if selected_prompt:
+        st.session_state[prefill_key] = selected_prompt
 
-        # ── Text Area ─────────────────────────────────────────────────────
-        # Pre-fill with selected quick prompt
-        prefill_key = "journal_prefill"
-        if selected_prompt:
-            st.session_state[prefill_key] = selected_prompt
+    prefill_val = st.session_state.get(prefill_key, "")
 
-        prefill_val = st.session_state.get(prefill_key, "")
+    answer = st.text_area(
+        "Chia sẻ tự do:",
+        value=prefill_val,
+        height=180,
+        placeholder=(
+            "Viết tự do, không cần hoàn hảo.\n"
+            "Cừu sẽ đọc hết và nhớ cho bạn 🐑\n\n"
+            "Ví dụ: Tuần này tôi đang nghĩ đến việc..."
+        ),
+        key="journal_v3_answer",
+        label_visibility="collapsed",
+    )
 
-        answer = st.text_area(
-            "Chia sẻ tự do:",
-            value=prefill_val,
-            height=160,
-            placeholder="Viết tự do, không cần hoàn hảo. Cừu sẽ đọc hết 🐑\n\nVí dụ: Tuần này tôi đang nghĩ đến việc...",
-            key="journal_v3_answer",
-            label_visibility="collapsed",
+    if answer != prefill_val:
+        st.session_state[prefill_key] = ""
+
+    # ── Save Button ───────────────────────────────────────────────────────────
+    can_save = bool(answer.strip())
+
+    if not can_save:
+        st.markdown(
+            "<div style='font-size:12px;color:#9CA3AF;margin:4px 0 8px'>"
+            "⬆️ Viết gì đó để Cừu có thể hiểu bạn hơn</div>",
+            unsafe_allow_html=True,
         )
 
-        # Clear prefill after user starts typing
-        if answer != prefill_val:
-            st.session_state[prefill_key] = ""
+    save_clicked = st.button(
+        "🐑 Chia sẻ với Cừu",
+        disabled=not can_save,
+        type="primary",
+        use_container_width=True,
+        key="journal_v3_save",
+    )
 
-        # ── Save Button ───────────────────────────────────────────────────
-        can_save = bool(answer.strip())
+    # ── SAVE FLOW (logic giữ nguyên 100%) ─────────────────────────────────────
+    if save_clicked and can_save:
+        anim_placeholder = st.empty()
+        render_save_animation(anim_placeholder)
+        anim_placeholder.empty()
 
-        if not can_save:
+        ai_result = {
+            "sheep_reply":          "Cừu đã đọc rồi! 🐑",
+            "memory_update":        "Mình vừa hiểu thêm một điều về bạn.",
+            "top_theme":            "",
+            "wg_tags":              [],
+            "dominant_motivation":  "unknown",
+            "main_goal_detected":   "",
+            "dream_detected":       "",
+            "life_event_detected":  "",
+            "financial_readiness":  "not_ready",
+            "follow_up_question":   "",
+            "ai_insight":           "",
+            "wealth_signal":        "unknown",
+        }
+
+        if st.session_state.get("api_key"):
+            try:
+                r = call_llm_fn(answer.strip(), _SYS_JOURNAL_V3)
+                ai_result.update({k: v for k, v in r.items() if v is not None})
+            except Exception:
+                pass
+
+        entry = {
+            "id":                   datetime.now().isoformat(),
+            "date":                 datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "date_raw":             datetime.now().isoformat(),
+            "title":                f"Ngày {datetime.now().strftime('%d/%m')}",
+            "content":              answer.strip(),
+            "reply":                ai_result.get("sheep_reply", ""),
+            "top_theme":            ai_result.get("top_theme", ""),
+            "wg_tags":              ai_result.get("wg_tags", []),
+            "tags":                 ai_result.get("wg_tags", []),
+            "dream_detected":       ai_result.get("dream_detected", ""),
+            "dream":                ai_result.get("dream_detected", ""),
+            "main_goal_detected":   ai_result.get("main_goal_detected", ""),
+            "life_event_detected":  ai_result.get("life_event_detected", ""),
+            "ai_insight":           ai_result.get("ai_insight", ""),
+            "follow_up":            ai_result.get("follow_up_question", ""),
+            "emotion":              "binh_thuong",
+        }
+
+        diary_entries.insert(0, entry)
+        mem["diary_entries"] = diary_entries
+        update_wealth_genome(mem, ai_result)
+
+        last_diary_date = mem.get("last_diary_date", "")
+        if last_diary_date != today_str:
+            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            if last_diary_date == yesterday:
+                mem["streak"] = mem.get("streak", 0) + 1
+            elif last_diary_date != today_str:
+                mem["streak"] = 1
+            mem["last_diary_date"] = today_str
+
+        mem["ilucky_tickets"] = mem.get("ilucky_tickets", 0) + 5
+        save_fn()
+        st.session_state[prefill_key] = ""
+
+        step2 = st.empty()
+        render_memory_update(step2, ai_result, mem)
+
+        step3 = st.empty()
+        render_insight_card(step3, ai_result, mem)
+
+        step4 = st.empty()
+        render_reward_card(step4, mem)
+        time.sleep(1.0)
+
+        detected_goal = ai_result.get("main_goal_detected", "") or ai_result.get("dream_detected", "")
+        if detected_goal:
+            render_dream_progress(mem, detected_goal)
+
+        st.rerun()
+
+    # ── Divider ───────────────────────────────────────────────────────────────
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+
+    # ── History ───────────────────────────────────────────────────────────────
+    if not diary_entries:
+        _html_card("""
+        <div style='text-align:center;padding:36px 20px;color:#9CA3AF'>
+          <div style='font-size:48px;margin-bottom:12px'>📔</div>
+          <div style='font-size:14px;font-weight:600;color:#6B7280;margin-bottom:4px'>
+            Chưa có entry nào
+          </div>
+          <div style='font-size:12px'>Kể cho Cừu nghe điều đầu tiên nhé 🐑</div>
+        </div>
+        """, height=155)
+    else:
+        # Header row
+        hdr_c1, hdr_c2 = st.columns([2, 1])
+        with hdr_c1:
             st.markdown(
-                "<div style='font-size:12px;color:#9CA3AF;margin:4px 0'>⬆️ Viết gì đó để Cừu có thể hiểu bạn hơn</div>",
+                "<div style='font-size:15px;font-weight:700;color:#111827;padding:6px 0'>"
+                "📚 Nhật ký của bạn</div>",
                 unsafe_allow_html=True,
             )
-
-        save_clicked = st.button(
-            "🐑 Chia sẻ với Cừu",
-            disabled=not can_save,
-            type="primary",
-            use_container_width=True,
-            key="journal_v3_save",
-        )
-
-        # ── SAVE FLOW ─────────────────────────────────────────────────────
-        if save_clicked and can_save:
-            anim_placeholder = st.empty()
-
-            # Step 1: Animation
-            render_save_animation(anim_placeholder)
-            anim_placeholder.empty()
-
-            # Call AI
-            ai_result = {
-                "sheep_reply": "Cừu đã đọc rồi! 🐑",
-                "memory_update": "Mình vừa hiểu thêm một điều về bạn.",
-                "top_theme": "",
-                "wg_tags": [],
-                "dominant_motivation": "unknown",
-                "main_goal_detected": "",
-                "dream_detected": "",
-                "life_event_detected": "",
-                "financial_readiness": "not_ready",
-                "follow_up_question": "",
-                "ai_insight": "",
-                "wealth_signal": "unknown",
-            }
-
-            if st.session_state.get("api_key"):
-                try:
-                    r = call_llm_fn(answer.strip(), _SYS_JOURNAL_V3)
-                    ai_result.update({k: v for k, v in r.items() if v is not None})
-                except Exception:
-                    pass
-
-            # Save entry to memory
-            entry = {
-                "id": datetime.now().isoformat(),
-                "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                "date_raw": datetime.now().isoformat(),
-                "title": f"Ngày {datetime.now().strftime('%d/%m')}",
-                "content": answer.strip(),
-                "reply": ai_result.get("sheep_reply", ""),
-                "top_theme": ai_result.get("top_theme", ""),
-                "wg_tags": ai_result.get("wg_tags", []),
-                "tags": ai_result.get("wg_tags", []),
-                "dream_detected": ai_result.get("dream_detected", ""),
-                "dream": ai_result.get("dream_detected", ""),
-                "main_goal_detected": ai_result.get("main_goal_detected", ""),
-                "life_event_detected": ai_result.get("life_event_detected", ""),
-                "ai_insight": ai_result.get("ai_insight", ""),
-                "follow_up": ai_result.get("follow_up_question", ""),
-                "emotion": "binh_thuong",
-            }
-
-            diary_entries.insert(0, entry)
-            mem["diary_entries"] = diary_entries
-
-            # Update Wealth Genome
-            update_wealth_genome(mem, ai_result)
-
-            # Update streak
-            last_diary_date = mem.get("last_diary_date", "")
-            if last_diary_date != today_str:
-                yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-                if last_diary_date == yesterday:
-                    mem["streak"] = mem.get("streak", 0) + 1
-                elif last_diary_date != today_str:
-                    mem["streak"] = 1
-                mem["last_diary_date"] = today_str
-
-            # Add iXu reward (+5)
-            mem["ilucky_tickets"] = mem.get("ilucky_tickets", 0) + 5
-
-            save_fn()
-
-            # Clear prefill
-            st.session_state[prefill_key] = ""
-
-            # Step 2: Memory Update
-            step2 = st.empty()
-            render_memory_update(step2, ai_result, mem)
-
-            # Step 3: AI Insight
-            step3 = st.empty()
-            render_insight_card(step3, ai_result, mem)
-
-            # Step 4: Reward
-            step4 = st.empty()
-            render_reward_card(step4, mem)
-            time.sleep(1.0)
-
-            # Dream Progress (no investment CTA)
-            detected_goal = ai_result.get("main_goal_detected", "") or ai_result.get("dream_detected", "")
-            if detected_goal:
-                render_dream_progress(mem, detected_goal)
-
-            st.rerun()
-
-    # ── RIGHT COLUMN: History ─────────────────────────────────────────────
-    with right_col:
-        st.markdown("### 📚 Nhật ký của bạn")
-
-        if not diary_entries:
-            _html_card("""
-            <div style='text-align:center;padding:30px;color:#9CA3AF'>
-              <div style='font-size:44px'>📔</div>
-              <div style='font-size:13px;margin-top:8px'>Chưa có entry nào<br>
-              <small>Kể cho Cừu nghe điều đầu tiên nhé 🐑</small></div>
-            </div>
-            """, height=130)
-        else:
-            # Filter
+        with hdr_c2:
             time_filter = st.selectbox(
                 "",
                 ["Tất cả", "Hôm nay", "Tuần này", "Tháng này"],
@@ -987,31 +1175,33 @@ def render_diary_v3(mem: dict, save_fn, call_llm_fn):
                 label_visibility="collapsed",
             )
 
-            now = datetime.now()
-            filtered = diary_entries
-            if time_filter == "Hôm nay":
-                filtered = [e for e in filtered if e.get("date_raw", "")[:10] == today_str]
-            elif time_filter == "Tuần này":
-                week_ago = (now - timedelta(days=7)).isoformat()
-                filtered = [e for e in filtered if e.get("date_raw", "") >= week_ago]
-            elif time_filter == "Tháng này":
-                month_ago = (now - timedelta(days=30)).isoformat()
-                filtered = [e for e in filtered if e.get("date_raw", "") >= month_ago]
+        now = datetime.now()
+        filtered = diary_entries
+        if time_filter == "Hôm nay":
+            filtered = [e for e in filtered if e.get("date_raw", "")[:10] == today_str]
+        elif time_filter == "Tuần này":
+            week_ago = (now - timedelta(days=7)).isoformat()
+            filtered = [e for e in filtered if e.get("date_raw", "") >= week_ago]
+        elif time_filter == "Tháng này":
+            month_ago = (now - timedelta(days=30)).isoformat()
+            filtered = [e for e in filtered if e.get("date_raw", "") >= month_ago]
 
+        st.markdown(
+            f"<div style='font-size:11px;color:#9CA3AF;margin:2px 0 10px'>"
+            f"{len(filtered)} entries</div>",
+            unsafe_allow_html=True,
+        )
+
+        for entry in filtered[:8]:
+            render_entry_card_v3(entry)
+
+        if len(filtered) > 8:
             st.markdown(
-                f"<div style='font-size:11px;color:#9CA3AF;margin:4px 0'>{len(filtered)} entries</div>",
+                f"<div style='text-align:center;color:#9CA3AF;font-size:12px;margin-top:6px'>"
+                f"+ {len(filtered)-8} entries nữa</div>",
                 unsafe_allow_html=True,
             )
 
-            for entry in filtered[:8]:
-                render_entry_card_v3(entry)
-
-            if len(filtered) > 8:
-                st.markdown(
-                    f"<div style='text-align:center;color:#9CA3AF;font-size:12px;margin-top:4px'>"
-                    f"+ {len(filtered)-8} entries nữa</div>",
-                    unsafe_allow_html=True,
-                )
 
 st.set_page_config(
     page_title="Cừu Cần Cù 🐑",
