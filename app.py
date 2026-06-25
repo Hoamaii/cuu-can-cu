@@ -3329,7 +3329,7 @@ with tab1:
             def _call_llm_diary(user_text: str, system_prompt: str) -> dict:
                 return _call_llm(user_text, system_prompt)
 
-            render_diary_v2(mem, _save, _call_llm_diary)
+            render_diary_v3(mem, _save, _call_llm_diary)
 
             # Quest completion: nếu vừa lưu entry mới hôm nay
             diary_entries_v2 = mem.get("diary_entries", [])
