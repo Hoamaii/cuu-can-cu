@@ -2223,7 +2223,7 @@ OUTPUT JSON giữ nguyên cấu trúc cũ, thêm field:
 # Alias ngược để không vỡ code cũ nếu có nơi nào còn dùng _SYS_EMOTION
 _SYS_EMOTION = _BASE_PERSONALITY_PROMPT
 
-_SYS_DIARY = _SYS_DIARY_V2  # Rich 6-layer Wealth Genome extraction
+_SYS_DIARY = _SYS_JOURNAL_V3  # Rich 6-layer Wealth Genome extraction
 
 
 def _parse(raw: str) -> dict:
