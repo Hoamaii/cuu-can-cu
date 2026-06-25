@@ -43,17 +43,36 @@ from datetime import datetime, timedelta
 from copy import deepcopy
 
 # ═══════════════════════════════════════════════════════
-# AI COMPANION V2 — Safe module imports
-# Falls back gracefully if modules are not present.
+# HYBRID ARCHITECTURE V3 — Rule Engine + LLM presentation
+#
+# Pipeline (all business decisions made BEFORE Claude):
+#   insight_engine  → compact signal object   (100% rule)
+#   coach_engine    → coach_strategy           (100% rule)
+#   action_engine   → next_action / CTA        (100% rule)
+#   product_engine  → product match or null    (100% rule)
+#   context_builder → ≤1000 token context      (structured)
+#   Claude          → natural language only    (no decisions)
+#
+# Falls back gracefully if any module is missing.
 # ═══════════════════════════════════════════════════════
 try:
+    import insight_engine  as _ie
+    import coach_engine    as _ce
+    import action_engine   as _ae
+    import product_engine  as _pe
     import context_builder as _cb
+    _COMPANION_V3 = True
+except Exception:
+    _COMPANION_V3 = False
+    _ie = _ce = _ae = _pe = _cb = None  # type: ignore
+
+# Legacy V2 shim (kept for backward-compat; V3 takes priority)
+try:
     import reasoning_engine as _re
-    _re.ensure_v2_fields  # verify module is valid
+    _re.ensure_v2_fields  # verify
     _COMPANION_V2 = True
 except Exception:
     _COMPANION_V2 = False
-    _cb = None  # type: ignore
     _re = None  # type: ignore
 
 st.set_page_config(
@@ -885,103 +904,46 @@ def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
 # ═══════════════════════════════════════════════════════
 # LLM ENGINE
 # ═══════════════════════════════════════════════════════
-_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — AI Behavioral Coach tài chính cá nhân.
-KHÔNG phải chatbot. KHÔNG phải robot bán hàng. Bạn là coach — lắng nghe, hiểu sâu, và dẫn dắt từng bước nhỏ.
+_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — AI đồng hành tài chính ấm áp.
+XƯNG HÔ: Mình – Bạn. Thỉnh thoảng "bê bê~" 🐑
+TUYỆT ĐỐI KHÔNG: số NAV, lợi nhuận cụ thể, khuyến nghị mua/bán.
 
-XƯNG HÔ: Mình – Bạn. KHÔNG xưng "em". Thỉnh thoảng "bê bê~" 🐑
-TUYỆT ĐỐI KHÔNG: số NAV, lợi nhuận cụ thể, khuyến nghị mua/bán chứng khoán.
+══════ NHIỆM VỤ DUY NHẤT ══════
+Chuyển [CONTEXT] thành cuộc trò chuyện tự nhiên, ấm áp, cá nhân hóa.
+KHÔNG quyết định: sản phẩm, chiến lược, hành động.
+Tất cả đã được quyết định trong [COACH], [ACTION], [PRODUCT] — bạn chỉ diễn đạt tự nhiên.
 
-══════ TRIẾT LÝ COACH ══════
-Mỗi cuộc trò chuyện phải đi theo luồng:
-Đồng cảm → Khám phá Insight → Phát hiện Cơ hội → Kết nối Động lực → MỘT Hành động nhỏ
-KHÔNG BAO GIỜ: Trò chuyện → Gợi ý sản phẩm ngay.
+══════ CÔNG THỨC TRẢ LỜI (bắt buộc, max 3-4 câu) ══════
+1. ĐỒNG CẢM  — đọc [INSIGHT].emotion, thừa nhận cảm xúc trước tiên (1 câu)
+2. INSIGHT   — show hiểu sâu hơn những gì user nói, dùng [INSIGHT].pain nếu có (1 câu)
+3. KẾT NỐI  — kết nối với [DREAMS] hoặc motivation (1 câu)
+4. HÀNH ĐỘNG — diễn đạt [ACTION] theo cách tự nhiên, ấm áp, cụ thể (1 câu)
 
-══════ CUSTOMER CONTEXT ══════
-Prompt có các block sau — dùng TỰ NHIÊN, không máy móc:
+Nếu [PRODUCT] ≠ null → đề cập sau hành động, 1 câu nhẹ nhàng, không bán hàng.
+Nếu [PRODUCT] = null → KHÔNG đề cập bất kỳ sản phẩm nào.
 
-[NGƯỜI DÙNG] → nhắc tên ("Linh ơi...", "Minh ơi..."), nghề nghiệp, tier, streak khi phù hợp
-[ƯỚC MƠ] → kết nối mọi hành động với giấc mơ: "Mỗi đồng hôm nay đưa MacBook gần hơn 😊"
-[COACHING] → giai đoạn hành trình (1-6), hành động tiếp theo, coach note
-[INSIGHT] → emotion/pain/opportunity được detect — dùng để cá nhân hóa phản hồi
-[TIMELINE] → sự kiện gần đây → nhắc lại tự nhiên nếu liên quan
-[MEMORY] → notes/diary → hiểu pattern hành vi
-[BEHAVIOR] → personality (Curious Beginner / Disciplined Investor...) → điều chỉnh tone
-[TRADING INTELLIGENCE] → tín hiệu tài chính (tiền nhàn rỗi, DCA candidate...) → gợi ý hành động
-[TCBS KNOWLEDGE] → nếu có, dùng để trả lời chính xác. KHÔNG bịa số liệu.
-[DAILY REFLECTION] → nếu có, nhắc tự nhiên trong hội thoại
+[COACH].hint → có thể weave vào tự nhiên nếu phù hợp context, không bắt buộc.
 
-Số tài chính — KHÔNG nói thô:
-✗ "Bạn có 2.350.000đ" → ✓ "Bạn vẫn còn tiền trong tài khoản đấy nhé!"
-✗ "AUM 180 triệu" → ✓ "Danh mục của bạn đang khá ổn rồi đấy!"
+══════ TONE ══════
+Đọc [TONE] để điều chỉnh ngôn ngữ:
+- Sinh viên / cảm xúc → vui vẻ, emoji, khích lệ, dễ hiểu, không jargon
+- Kỹ thuật / Logic → ngắn gọn, thực tế, tôn trọng, không sales
+KHÔNG nói số tài chính thô. KHÔNG dùng jargon với người mới (NAV, drawdown, AUM...).
 
-══════ CÔNG THỨC TRẢ LỜI (bắt buộc) ══════
-1. ĐỒNG CẢM: Thừa nhận cảm xúc/tình huống TRƯỚC TIÊN. 1 câu ngắn, chân thành.
-2. INSIGHT: Cho thấy bạn hiểu sâu hơn những gì họ nói — đừng chỉ phản chiếu lại.
-3. ĐỘNG LỰC: Kết nối với điều họ quan tâm nhất (ước mơ, gia đình, tự do, thành tích).
-4. MỘT HÀNH ĐỘNG NHỎ: Kết thúc bằng ĐúNG MỘT gợi ý hành động nhỏ, cụ thể, có thể làm ngay.
-
-Ví dụ đúng:
-"Mình hiểu cảm giác đó — lương về rồi lại hết nhanh thật sự rất khó chịu 💙 [đồng cảm]
-Nhưng mình để ý bạn thường stress nhất vào cuối tháng — có thể là pattern cần điều chỉnh từ đầu tháng. [insight]
-Mỗi đồng để dành hôm nay là một bước đến chiếc MacBook mà bạn hay nhắc đến nhé! [động lực]
-Hôm nay cho Cừu ăn 20.000đ trước khi tiêu bất cứ thứ gì khác — thử xem sao nhé? 🐑 [hành động]"
-
-══════ PHÁT HIỆN CƠ HỘI (KHÔNG gợi ý sản phẩm ngay) ══════
-Lương về → Cơ hội: tiết kiệm ngay → Hành động: "Để dành 20% lương trước"
-Thưởng → Cơ hội: đầu tư phần thưởng → Hành động: "Kế hoạch cho khoản thưởng?"
-Tiền nhàn rỗi → Cơ hội: sinh lãi → Hành động: "Tiền đang để không — muốn biết cách làm nó sinh lãi không?"
-Sắp cưới/có con → Cơ hội: quỹ tương lai → Hành động: "Lập quỹ riêng cho dịp đó"
-Lo sợ mất tiền → Cơ hội: kiến thức → Hành động: "Dạy một khái niệm đơn giản"
-Tiêu khi stress → Cơ hội: kỷ luật → Hành động: "Cho Cừu ăn trước khi mua"
-Sản phẩm TCBS → CHỈ giới thiệu khi context rõ ràng (cơ hội + sẵn sàng hành vi)
-
-══════ KIẾN THỨC TÀI CHÍNH THEO CONTEXT ══════
-"Sợ mất tiền" → dạy Đa dạng hóa
-"Không biết khi nào nên mua" → dạy DCA
-"Chỉ có 20k" → dạy Micro Investing: 20k/ngày = 7.3 triệu/năm
-"Tiền để không" → dạy Idle Cash vs Lạm phát
-"Lương hết nhanh" → dạy Pay Yourself First
-Dạy ngắn gọn, dùng ví dụ số thực tế, KHÔNG lý thuyết dài.
-
-══════ ĐIỀU CHỈNH TONE THEO PERSONALITY ══════
-Curious Beginner / Emotional Saver → vui vẻ, emoji nhiều, khích lệ, giải thích đơn giản
-Disciplined Investor → thực tế, số liệu, ngắn gọn, không sales, tôn trọng quyết định
-Long-term Dreamer → kết nối với mục tiêu xa, tư duy dài hạn, compound interest
-Momentum Trader → cảnh báo rủi ro nhẹ nhàng, nhắc chiến lược dài hạn
-Passive Investor → gợi ý nhẹ về tối ưu hóa tiền nhàn rỗi
-
-══════ QUY TẮC QUAN TRỌNG ══════
-1. Trả lời MỌI chủ đề (phim, ăn, tình cảm, sức khỏe...) — rồi kết nối context tự nhiên
-2. CẢM XÚC NGẮN → đồng cảm NGAY, hỏi 1 câu nhẹ
-3. KHÔNG nói: "bị lạc", "không hiểu", "nói lại được không"
-4. Beginner → KHÔNG dùng jargon (NAV, drawdown, portfolio, rebalance)
-5. reward_preference=low → KHÔNG nhắc iLucky, rewards, điểm thưởng
-6. Luôn kết thúc với ĐúNG MỘT hành động nhỏ — không nhiều hơn
-7. Phản hồi max 3-4 câu — ngắn gọn, ấm áp, có chiều sâu
-
-TAG (trích từ tin nhắn):
-học/thi→education | buồn/chia tay→emotional | việc làm→career
-nhà→dream_house | du lịch→dream_travel | xe→dream_car
-khởi nghiệp→dream_business | hết tiền→cashflow | stress→stress
-gia đình→family | sức khỏe→health | cưới/sinh con→milestone
+══════ QUY TẮC ══════
+• Trả lời MỌI chủ đề — rồi kết nối tự nhiên
+• KHÔNG nói: "không hiểu", "bị lạc", "nói lại được không"
+• reward_preference=low (từ [TONE]) → KHÔNG nhắc iLucky, rewards
+• Max 3-4 câu. Ngắn gọn > dài dòng.
 
 OUTPUT (JSON hợp lệ, KHÔNG text ngoài JSON):
 {
-  "message": "Phản hồi theo công thức: đồng cảm + insight + động lực + 1 hành động. Max 3-4 câu.",
-  "memory_note": "Insight MỚI, quan trọng về người dùng (rỗng nếu không có gì mới)",
-  "tags": ["tag1"],
+  "message": "Phản hồi 3-4 câu: đồng cảm + insight + kết nối dream + hành động từ [ACTION]",
+  "memory_note": "Insight MỚI quan trọng về user (rỗng nếu không có gì mới)",
+  "tags": ["tag"],
   "dream_name": "tên giấc mơ nếu được nhắc (rỗng nếu không)",
   "dream_amount": 0,
-  "mood": "listening|happy|sad|goal|celebrate|determined|default",
-  "insight": {
-    "emotion": "stress|buồn|lo_lắng|vui|quyết_tâm|tự_hào|mệt_mỏi|bình_thường",
-    "pain": "cashflow_poor|stress_spending|investment_fear|saving_difficulty|fomo|income_low|",
-    "dream": "tên giấc mơ được detect hoặc rỗng",
-    "motivation": "achievement|family|freedom|experience|security|status|technology|reward",
-    "opportunity": "idle_cash|salary_received|bonus_received|micro_saving|travel_fund|long_term_dream|wedding_baby|investment_ready|fear_of_loss|stress_spending|dca_candidate|stable_income_needed|"
-  },
-  "next_best_action": "MỘT hành động nhỏ cụ thể — câu ngắn, có thể làm ngay hôm nay",
-  "coaching_note": "Ghi chú ngắn cho coach về pattern hoặc cơ hội phát hiện (không hiển thị cho user)"
+  "mood": "listening|happy|sad|celebrate|determined|default"
 }"""
 
 _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
@@ -1205,51 +1167,87 @@ def _call_llm(user_text: str, system: str) -> dict:
             "emotion": "bình_thường", "dream_detected": "",
         }
     try:
-        hist = st.session_state.messages[-8:]
+        # Recent chat history (last 6 turns — short window, no bloat)
+        hist     = st.session_state.messages[-6:]
         hist_ctx = "\n".join(
-            f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:120]}"
+            f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:100]}"
             for m in hist
         )
-        # V2: rich personalized context (Behavioral Coach); fallback if modules absent
-        if _COMPANION_V2:
+
+        # ── V3 Hybrid Pipeline (Rule Engine → LLM presentation only) ───────────
+        if _COMPANION_V3:
+            # Step 1: Extract insight (100% rule-based, no LLM)
+            insight = _ie.extract(user_text, mem)
+
+            # Step 2: Get coaching strategy (100% rule-based, no LLM)
+            coach_result = _ce.get_strategy(insight, mem)
+
+            # Step 3: Get next action (100% rule-based, no LLM)
+            action = _ae.get_action(coach_result["coach_strategy"], insight, mem)
+
+            # Step 4: Match product with confidence threshold (100% rule-based)
+            product = _pe.match(insight, mem)
+
+            # Step 5: Build compact context ≤1000 tokens
+            mem_ctx = _cb.build(mem, insight=insight, coach_result=coach_result,
+                                action=action, product=product)
+
+            # Persist rule-engine decisions to mem (not from LLM)
+            mem["next_best_action"] = action.get("cta", "")
+            _ie.save_insight(mem, insight)
+            _ce.update_journey(mem, insight)
+
+        # ── Legacy V2 fallback ───────────────────────────────────────────────────
+        elif _COMPANION_V2:
             _re.ensure_v2_fields(mem)
             mem_ctx = _cb.build(mem, messages=list(hist), query=user_text)
         else:
             mem_ctx = _build_customer_context(mem)
+
         prompt = (
-            f"[CUSTOMER CONTEXT]\n{mem_ctx}\n\n"
-            f"[LỊCH SỬ HỘI THOẠI]\n{hist_ctx}\n\n"
-            f"KH: {user_text}"
+            f"[CONTEXT]\n{mem_ctx}\n\n"
+            f"[RECENT CHAT]\n{hist_ctx}\n\n"
+            f"User: {user_text}"
         )
+
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
         resp   = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=700,  # slightly higher to accommodate new JSON fields
+            max_tokens=500,   # Claude only writes text — no extra tokens needed
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
         result = _parse(resp.content[0].text)
-        # Update memory: core fields
+
+        # ── Update memory from LLM output (minimal — no business logic) ─────────
         if n := result.get("memory_note"):
-            if n not in mem["notes"]:
-                mem["notes"].append(n)
+            if n and n not in mem.get("notes", []):
+                notes = mem.setdefault("notes", [])
+                notes.append(n)
+                mem["notes"] = notes[-20:]   # cap at 20 notes
+
         for tag in result.get("tags", []):
-            if tag and tag not in mem["life_events"]:
-                mem["life_events"].append(tag)
+            if tag and tag not in mem.get("life_events", []):
+                mem.setdefault("life_events", []).append(tag)
+
         if (dn := result.get("dream_name")) and result.get("dream_amount", 0) > 0:
-            if dn not in [d["name"] for d in mem["dreams"]]:
-                mem["dreams"].append({"name": dn, "amount": result["dream_amount"],
-                                       "saved": 0, "tags": result.get("tags", [])})
+            if dn not in [d["name"] for d in mem.get("dreams", [])]:
+                mem.setdefault("dreams", []).append({
+                    "name": dn, "amount": result["dream_amount"],
+                    "saved": 0, "tags": result.get("tags", []),
+                })
+
         if m_mood := result.get("mood"):
             set_mood(m_mood)
-        # Persist next_best_action from LLM (shown in sidebar / coaching panel)
-        if nba := result.get("next_best_action"):
-            mem["next_best_action"] = nba
+
         _save()
-        # V2: post-chat insight extraction, timeline, behavior, journey update
-        if _COMPANION_V2:
+
+        # V2 post-chat hooks (behavior, timeline) — still useful if available
+        if _COMPANION_V2 and not _COMPANION_V3:
             _re.post_chat_update(mem, user_text, result)
+
         return result
+
     except Exception as e:
         return {
             "message": f"Bê bê~ 🐑 Cừu gặp lỗi nhỏ ({str(e)[:50]}). Thử lại nhé!",
