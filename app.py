@@ -42,6 +42,20 @@ import os
 from datetime import datetime, timedelta
 from copy import deepcopy
 
+# ═══════════════════════════════════════════════════════
+# AI COMPANION V2 — Safe module imports
+# Falls back gracefully if modules are not present.
+# ═══════════════════════════════════════════════════════
+try:
+    import context_builder as _cb
+    import reasoning_engine as _re
+    _re.ensure_v2_fields  # verify module is valid
+    _COMPANION_V2 = True
+except Exception:
+    _COMPANION_V2 = False
+    _cb = None  # type: ignore
+    _re = None  # type: ignore
+
 st.set_page_config(
     page_title="Cừu Cần Cù 🐑",
     page_icon="🐑",
@@ -878,16 +892,22 @@ XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em". Thỉnh thoản
 TUYỆT ĐỐI KHÔNG: nhắc số NAV, lợi nhuận cụ thể, khuyến nghị mua bán chứng khoán.
 
 ══════ SỬ DỤNG CUSTOMER CONTEXT ══════
-Prompt luôn có [CUSTOMER CONTEXT]. Dùng TỰ NHIÊN — không máy móc, không liệt kê.
-• Nhắc tên: "Linh ơi..." / "Minh ơi..." khi bắt đầu hoặc muốn nhấn mạnh.
-• Nhắc giấc mơ tự nhiên: "Mình vẫn nhớ bạn đang để dành cho MacBook 😊"
-• Nhắc thói quen: "Mình biết bạn hay đầu tư mỗi tháng — habit đó tốt lắm đấy!"
+Prompt có [CUSTOMER CONTEXT] với các block: [NGƯỜI DÙNG], [TIMELINE], [MEMORY], [BEHAVIOR], [TRADING INTELLIGENCE], [TCBS KNOWLEDGE].
+Dùng TỰ NHIÊN — không máy móc, không liệt kê.
+• [NGƯỜI DÙNG]: nhắc tên, nghề nghiệp, tier, streak khi phù hợp.
+• [ƯỚC MƠ]: nhắc tiến độ tự nhiên: "Mình vẫn nhớ bạn đang để dành cho MacBook 😊"
+• [TIMELINE]: sự kiện gần đây → nhắc lại nếu liên quan đến tin nhắn hiện tại.
+• [MEMORY]: dùng notes và diary để hiểu sâu hơn về người dùng.
+• [BEHAVIOR]: theo personality → điều chỉnh tone và cách giải thích.
+• [TRADING INTELLIGENCE]: dùng để gợi ý hành động tối ưu hóa (iPower, DCA, v.v.)
+• [TCBS KNOWLEDGE]: khi được cung cấp, dùng để trả lời chính xác về sản phẩm TCBS. KHÔNG bịa số liệu.
 • Tài chính — KHÔNG nói số thô. Dùng ngôn ngữ tự nhiên:
   ✗ "Bạn có 2.350.000đ" → ✓ "Bạn vẫn còn tiền trong tài khoản đấy nhé!"
   ✗ "AUM của bạn là 180 triệu" → ✓ "Danh mục của bạn đang khá ổn rồi đấy!"
-• Điều chỉnh TONE theo personality trong context:
-  → Beginner / sinh viên / lạc quan: vui vẻ, emoji nhiều, khích lệ, dễ thương
-  → Growing Investor / kỷ luật: thực tế, ngắn gọn, không sales, tôn trọng quyết định
+• Điều chỉnh TONE theo [BEHAVIOR] personality:
+  → Curious Beginner / Emotional Saver: vui vẻ, emoji nhiều, khích lệ, dễ thương
+  → Disciplined Investor / Long-term Dreamer: thực tế, ngắn gọn, không sales, tôn trọng
+  → Passive Investor: gợi ý kích hoạt iPower / quỹ mở nhẹ nhàng
 
 ══════ TRẢ LỜI MỌI CÂU HỎI ══════
 TUYỆT ĐỐI KHÔNG từ chối hoặc nói "mình chỉ hỗ trợ tài chính".
@@ -1148,7 +1168,12 @@ def _call_llm(user_text: str, system: str) -> dict:
             f"{'KH' if m['role']=='user' else 'Cừu'}: {m['content'][:120]}"
             for m in hist
         )
-        mem_ctx = _build_customer_context(mem)
+        # V2: rich personalized context; fallback to legacy if modules absent
+        if _COMPANION_V2:
+            _re.ensure_v2_fields(mem)
+            mem_ctx = _cb.build(mem, messages=list(hist), query=user_text)
+        else:
+            mem_ctx = _build_customer_context(mem)
         prompt = (
             f"[CUSTOMER CONTEXT]\n{mem_ctx}\n\n"
             f"[LỊCH SỬ HỘI THOẠI]\n{hist_ctx}\n\n"
@@ -1176,6 +1201,9 @@ def _call_llm(user_text: str, system: str) -> dict:
         if m_mood := result.get("mood"):
             set_mood(m_mood)
         _save()
+        # V2: post-chat timeline + behavior update
+        if _COMPANION_V2:
+            _re.post_chat_update(mem, user_text, result)
         return result
     except Exception as e:
         return {
@@ -1995,6 +2023,9 @@ with tab1:
                         diary_entries.insert(0, entry)
                         mem["diary_entries"] = diary_entries
                         _save()
+                        # V2: timeline + behavior update after diary save
+                        if _COMPANION_V2:
+                            _re.post_diary_update(mem, entry)
 
                         st.session_state.diary_just_saved = True
                         st.session_state.diary_last_entry = entry
@@ -2467,6 +2498,9 @@ with tab2:
                 st.session_state.feeding_celebration = True
                 st.session_state.feeding_refused = False
                 _save()
+                # V2: timeline update after feeding
+                if _COMPANION_V2:
+                    _re.post_feeding_update_with_levelup(mem, amt, food_name, mem.get("just_leveled_up", False))
                 st.rerun()
             _feed_cols[i].markdown(
                 f'<div class="feed-translate">{_FOOD_TRANSLATE.get(_flabel,"")}</div>',
@@ -2494,6 +2528,9 @@ with tab2:
                 set_mood("happy")
                 st.session_state.feeding_celebration = True
                 _save()
+                # V2: timeline update after custom feeding
+                if _COMPANION_V2:
+                    _re.post_feeding_update_with_levelup(mem, int(custom), "Tuỳ chọn", mem.get("just_leveled_up", False))
                 st.rerun()
 
         # ── DREAM CARDS ──────────────────────────────────────────────────────
@@ -2523,6 +2560,9 @@ with tab2:
                                 set_mood("celebrate" if d["saved"] >= d["amount"] else "happy")
                                 st.session_state.feeding_celebration = True
                                 _save()
+                                # V2: timeline update after dream contribution
+                                if _COMPANION_V2:
+                                    _re.post_feeding_update(mem, 50_000, f"❤️ {d['name'].title()}")
                                 st.rerun()
                         elif d["amount"] > 0:
                             st.success("🎉 Hoàn thành!")
