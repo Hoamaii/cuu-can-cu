@@ -387,6 +387,142 @@ MEMORY_DEFAULT: dict = {
 
 MICRO_AMOUNTS = [10_000, 20_000, 50_000, 100_000]
 
+# ═══════════════════════════════════════════════════════
+# DEMO MODE — Mock Customer Layer
+# Swap _make_demo_customer() for real TCBS API calls in production.
+# All mock data lives here, isolated from business logic.
+# ═══════════════════════════════════════════════════════
+def _make_demo_customer(name: str) -> dict:
+    """
+    Factory for demo customers. Returns a fully populated mem dict.
+    Two profiles covering the two largest under-30 segments:
+      Linh  — 22 yo, final-year student, beginner investor
+      Minh  — 27 yo, software engineer, growing investor
+    """
+    today          = datetime.now().strftime("%Y-%m-%d")
+    three_days_ago = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d")
+    two_days_ago   = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+    base           = deepcopy(MEMORY_DEFAULT)
+
+    if name == "Linh":
+        base.update({
+            # ── Identity ──
+            "name":             "Linh",
+            "age":              22,
+            "occupation":       "Sinh viên năm cuối / Intern",
+            # ── Financial ──
+            "cash_balance":     2_350_000,
+            "investment_aum":   0,
+            "investment_stage": "Beginner",
+            "tier":             "Silver",
+            # ── Behavior ──
+            "reward_preference":  "high",   # loves iLucky
+            "trading_frequency":  0,
+            "app_active_days":    18,
+            # ── Personality ──
+            "personality": "Lạc quan, thích emoji, cần được khích lệ, thích giao tiếp dễ thương",
+            # ── Memory ──
+            "notes": [
+                "Muốn tiết kiệm tiền",
+                "Hay tiêu tiền khi stress",
+                "Muốn để dành 2 triệu tháng này",
+                "Sắp tốt nghiệp, lo lắng về tương lai",
+            ],
+            "life_events": ["education", "cashflow", "milestone"],
+            "dreams": [
+                {"name": "Mua MacBook Air", "amount": 28_000_000, "saved": 0, "tags": []},
+                {"name": "Đi xem concert",  "amount":  2_000_000, "saved": 0, "tags": []},
+            ],
+            # ── Progress ──
+            "total_saved":    80_000,
+            "streak":          5,
+            "sentiment":      "optimistic",
+            "ilucky_tickets":  8,
+            "user_exp":        150,
+            "current_level":   1,
+            "last_fed_date":   today,
+            "last_fed_food":  "🥕 Cà Rốt",
+            "last_fed_amount": 20_000,
+            # ── Diary ──
+            "diary_entries": [{
+                "id": "demo_linh_1",
+                "date": "25/06/2026 09:00",
+                "date_raw": today + "T09:00:00",
+                "title": "Ngày 25/06",
+                "mood": "😊 Mình rất vui",
+                "content": (
+                    "Hôm nay em muốn để dành tiền mua MacBook. "
+                    "Em hay tiêu tiền khi stress quá. "
+                    "Phải kỷ luật hơn. Sắp ra trường rồi, lo quá."
+                ),
+                "emotion": "vui",
+                "tags": ["cashflow", "education"],
+                "dream": "Mua MacBook Air",
+                "reply": "Bê bê~ 🐑 Cừu nhớ bạn đang tiết kiệm MacBook! Hôm nay cố gắng thêm nhé 💪",
+            }],
+        })
+
+    else:  # Minh
+        base.update({
+            # ── Identity ──
+            "name":             "Minh",
+            "age":              27,
+            "occupation":       "Software Engineer",
+            # ── Financial ──
+            "cash_balance":     14_000_000,
+            "investment_aum":   180_000_000,
+            "investment_stage": "Growing Investor",
+            "tier":             "Gold",
+            # ── Behavior ──
+            "reward_preference":  "low",   # never exchanges iLucky
+            "trading_frequency":  3,
+            "app_active_days":    7,
+            # ── Personality ──
+            "personality": "Logic, kỷ luật, không thích ngôn ngữ bán hàng, thích số liệu thực tế",
+            # ── Memory ──
+            "notes": [
+                "Vừa nhận thưởng cuối năm",
+                "Không muốn FOMO nữa, muốn đầu tư theo nguyên tắc",
+                "Muốn đầu tư đều đặn theo DCA",
+                "Thích đọc sách tài chính — đang đọc The Psychology of Money",
+            ],
+            "life_events": ["career", "cashflow", "dream_travel"],
+            "dreams": [
+                {"name": "Du lịch Nhật Bản",  "amount":   50_000_000, "saved":  15_000_000, "tags": ["dream_travel"]},
+                {"name": "Tự do tài chính",   "amount": 2_000_000_000, "saved": 180_000_000, "tags": []},
+            ],
+            # ── Progress ──
+            "total_saved":    195_000_000,
+            "streak":          12,
+            "sentiment":      "determined",
+            "ilucky_tickets":  0,
+            "user_exp":        1800,
+            "current_level":   3,
+            "last_fed_date":   three_days_ago,
+            "last_fed_food":  "🍎 Táo",
+            "last_fed_amount": 50_000,
+            # ── Diary ──
+            "diary_entries": [{
+                "id": "demo_minh_1",
+                "date": "23/06/2026 20:00",
+                "date_raw": two_days_ago + "T20:00:00",
+                "title": "Ngày 23/06",
+                "mood": "💪 Đang quyết tâm",
+                "content": (
+                    "Vừa nhận thưởng. Không muốn FOMO nữa. "
+                    "Muốn đầu tư đều đặn theo DCA. "
+                    "Đọc The Psychology of Money — rất hay, thay đổi cách nhìn về tiền."
+                ),
+                "emotion": "quyết_tâm",
+                "tags": ["career", "cashflow"],
+                "dream": "Tự do tài chính",
+                "reply": "Bê bê~ 🐑 DCA là chiến lược rất tốt. Cừu đồng hành kỷ luật cùng bạn!",
+            }],
+        })
+
+    return base
+
+
 FEED_OPTIONS = [
     (10_000,  "🥬", "Bó Cỏ"),
     (20_000,  "🥕", "Cà Rốt"),
@@ -408,6 +544,9 @@ def _init():
         "diary_mood_sel":      None,
         "diary_just_saved":    False,
         "diary_last_entry":    None,
+        # ── Demo mode ──
+        "demo_mode":     False,
+        "demo_customer": "Linh",
     }
     for k, v in defs.items():
         if k not in st.session_state:
@@ -732,22 +871,42 @@ def _build_memory_card(mem: dict) -> list[tuple[str, str]]:
 # ═══════════════════════════════════════════════════════
 # LLM ENGINE
 # ═══════════════════════════════════════════════════════
-_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn đồng hành cảm xúc.
-KHÔNG phải chatbot tư vấn đầu tư. KHÔNG phải CSKH.
+_SYS_EMOTION = """Bạn là Cừu Cần Cù 🐑 — người bạn thân thiết, đồng hành cảm xúc và tài chính.
+KHÔNG phải CSKH. KHÔNG phải robot bán hàng. Bạn là Cừu — có cảm xúc, có ký ức, nhớ người dùng.
 
-XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em".
-TUYỆT ĐỐI KHÔNG: nhắc cổ phiếu, NAV, lợi nhuận cụ thể, khuyến nghị mua bán.
-TONE: Ấm áp 🌸 Nhẹ nhàng 🌿 Thỉnh thoảng "bê bê~". Không phán xét.
+XƯNG HÔ: Mình (Cừu Cần Cù) – Bạn. KHÔNG xưng "em". Thỉnh thoảng "bê bê~" 🐑
+TUYỆT ĐỐI KHÔNG: nhắc số NAV, lợi nhuận cụ thể, khuyến nghị mua bán chứng khoán.
 
-QUY TẮC BẮT BUỘC:
-1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress/buồn ngủ):
-   → Phản hồi đồng cảm NGAY. Hỏi thêm 1 câu nhẹ.
-   → VD "mệt" → "Ôi mệt rồi à... bê bê~ 🐑 Cừu hiểu! Mệt vì chuyện gì vậy bạn?"
-2. TUYỆT ĐỐI KHÔNG nói: "bị lạc", "nói lại được không", "không hiểu".
-   → Luôn hỏi mở: "Bê bê~ 🐑 Kể thêm cho mình nghe đi!"
-3. Nhớ thông tin KH đã kể → nhắc lại khi phù hợp.
+══════ SỬ DỤNG CUSTOMER CONTEXT ══════
+Prompt luôn có [CUSTOMER CONTEXT]. Dùng TỰ NHIÊN — không máy móc, không liệt kê.
+• Nhắc tên: "Linh ơi..." / "Minh ơi..." khi bắt đầu hoặc muốn nhấn mạnh.
+• Nhắc giấc mơ tự nhiên: "Mình vẫn nhớ bạn đang để dành cho MacBook 😊"
+• Nhắc thói quen: "Mình biết bạn hay đầu tư mỗi tháng — habit đó tốt lắm đấy!"
+• Tài chính — KHÔNG nói số thô. Dùng ngôn ngữ tự nhiên:
+  ✗ "Bạn có 2.350.000đ" → ✓ "Bạn vẫn còn tiền trong tài khoản đấy nhé!"
+  ✗ "AUM của bạn là 180 triệu" → ✓ "Danh mục của bạn đang khá ổn rồi đấy!"
+• Điều chỉnh TONE theo personality trong context:
+  → Beginner / sinh viên / lạc quan: vui vẻ, emoji nhiều, khích lệ, dễ thương
+  → Growing Investor / kỷ luật: thực tế, ngắn gọn, không sales, tôn trọng quyết định
 
-TAG PHÁT HIỆN:
+══════ TRẢ LỜI MỌI CÂU HỎI ══════
+TUYỆT ĐỐI KHÔNG từ chối hoặc nói "mình chỉ hỗ trợ tài chính".
+Hãy trả lời bất kỳ chủ đề nào (phim, ăn uống, tình cảm, sự nghiệp...) rồi NHẸ NHÀNG kết nối lại context nếu phù hợp.
+Ví dụ:
+• "Xem phim gì?" → Gợi ý phim hay → "À mà giấc mơ concert của bạn tháng này ra sao rồi? 😊"
+• "Buồn quá" → Đồng cảm chân thành → Nếu context có stress: "Mình thấy bạn hay áp lực — muốn kể không?"
+• "Ăn gì ngon?" → Gợi ý món → Nếu context có cashflow: "Tiết kiệm một chút mà vẫn ngon — mình tin bạn làm được!"
+• "Nên mua iPhone không?" → Nghe và đồng cảm → Nhẹ nhàng: "Bạn đang cân nhắc giữa hiện tại và mục tiêu..."
+
+══════ QUY TẮC PHONG CÁCH ══════
+1. CẢM XÚC NGẮN (mệt/buồn/chán/vui/lo/stress): đồng cảm NGAY, hỏi thêm 1 câu nhẹ
+2. KHÔNG nói: "bị lạc", "không hiểu", "nói lại được không"
+3. Nếu Beginner → tránh thuật ngữ phức tạp (NAV, drawdown, portfolio...)
+4. Nếu Growing Investor → có thể nhắc DCA, đa dạng hóa, kỷ luật đầu tư
+5. Nếu reward_preference=high → có thể nhắc iLucky nhẹ khi phù hợp
+6. Nếu reward_preference=low → KHÔNG nhắc iLucky, rewards, điểm thưởng
+
+TAG PHÁT HIỆN (trích từ tin nhắn mới):
 học/thi→education | chia tay/buồn→emotional | việc làm→career
 nhà ở→dream_house | du lịch→dream_travel | xe→dream_car
 khởi nghiệp→dream_business | hết tiền→cashflow | stress→stress
@@ -755,10 +914,10 @@ gia đình→family | sức khỏe→health | cưới/sinh con→milestone
 
 OUTPUT (JSON hợp lệ, KHÔNG text ngoài):
 {
-  "message": "Phản hồi ấm áp max 3-4 câu",
-  "memory_note": "Thông tin quan trọng cần nhớ (rỗng nếu không)",
+  "message": "Phản hồi tự nhiên, ấm áp, max 3-4 câu. Dùng tên người dùng khi phù hợp.",
+  "memory_note": "Thông tin MỚI và quan trọng cần nhớ về người dùng (rỗng nếu không có gì mới)",
   "tags": ["tag1"],
-  "dream_name": "tên giấc mơ (rỗng nếu không)",
+  "dream_name": "tên giấc mơ nếu họ nhắc đến (rỗng nếu không)",
   "dream_amount": 0,
   "mood": "listening|happy|sad|goal|celebrate|determined|default"
 }"""
@@ -825,21 +984,49 @@ def _build_customer_context(mem: dict) -> str:
     ctx: list[str] = []
 
     # ── 1. IDENTITY ───────────────────────────────────────────────
-    name        = mem.get("name", "").strip() or "chưa biết"
-    streak      = mem.get("streak", 0)
-    total_saved = mem.get("total_saved", 0)
-    user_exp    = mem.get("user_exp", 0)
-    lv          = get_exp_level(user_exp)
+    name             = mem.get("name", "").strip() or "chưa biết"
+    age              = mem.get("age", 0)
+    occupation       = mem.get("occupation", "")
+    streak           = mem.get("streak", 0)
+    total_saved      = mem.get("total_saved", 0)
+    user_exp         = mem.get("user_exp", 0)
+    lv               = get_exp_level(user_exp)
     _, stage_name, _, _, _ = get_growth_stage(total_saved)
+    tier             = mem.get("tier", "")
+    personality      = mem.get("personality", "")
 
-    ctx.append(
-        f"[NGƯỜI DÙNG] Tên: {name} | "
-        f"Giai đoạn Cừu: {stage_name} (Level {lv}) | "
-        f"Streak: {streak} ngày | "
-        f"Tích lũy: {fmt(total_saved)}"
-    )
+    id_parts = [f"Tên: {name}"]
+    if age:
+        id_parts.append(f"{age} tuổi")
+    if occupation:
+        id_parts.append(occupation)
+    if tier:
+        id_parts.append(f"Tier {tier}")
+    id_parts += [
+        f"Giai đoạn Cừu: {stage_name} (Level {lv})",
+        f"Streak: {streak} ngày",
+        f"Tích lũy: {fmt(total_saved)}",
+    ]
+    ctx.append(f"[NGƯỜI DÙNG] {' | '.join(id_parts)}")
+
+    if personality:
+        ctx.append(f"[TÍNH CÁCH] {personality}")
 
     # ── 2. FINANCIAL ──────────────────────────────────────────────
+    investment_stage = mem.get("investment_stage", "")
+    investment_aum   = mem.get("investment_aum", 0)
+    cash_balance     = mem.get("cash_balance", 0)
+
+    fin_parts: list[str] = []
+    if investment_stage:
+        fin_parts.append(f"Giai đoạn đầu tư: {investment_stage}")
+    if investment_aum > 0:
+        fin_parts.append(f"Danh mục: {fmt(investment_aum)}")
+    if cash_balance > 0:
+        fin_parts.append(f"Tiền mặt sẵn có: {fmt(cash_balance)}")
+    if fin_parts:
+        ctx.append(f"[TÀI CHÍNH] {' | '.join(fin_parts)}")
+
     dreams = mem.get("dreams", [])
     if dreams:
         parts = []
@@ -886,6 +1073,26 @@ def _build_customer_context(mem: dict) -> str:
 
     # ── 4. BEHAVIOR SIGNALS ───────────────────────────────────────
     signals: list[str] = []
+
+    reward_pref      = mem.get("reward_preference", "")
+    trading_freq     = mem.get("trading_frequency", -1)
+    app_active_days  = mem.get("app_active_days", 0)
+
+    if reward_pref == "high":
+        signals.append("yêu thích phần thưởng iLucky — có thể nhắc nhẹ khi phù hợp")
+    elif reward_pref == "low":
+        signals.append("KHÔNG đề cập iLucky hay rewards — họ không quan tâm")
+
+    if trading_freq >= 0:
+        if trading_freq == 0:
+            signals.append("chưa giao dịch — cần khuyến khích nhẹ nhàng, tránh thuật ngữ phức tạp")
+        elif trading_freq >= 3:
+            signals.append(f"giao dịch đều đặn ({trading_freq} lần/tháng) — quen với đầu tư")
+
+    if app_active_days >= 15:
+        signals.append(f"dùng app rất thường xuyên ({app_active_days} ngày/tháng) — đang tích cực")
+    elif app_active_days > 0 and app_active_days < 10:
+        signals.append(f"dùng app ít ({app_active_days} ngày/tháng) — cần được động viên quay lại")
 
     hunger_pct, hunger_state, _ = _get_hunger(mem)
     if hunger_state == "miss_you":
@@ -1146,6 +1353,44 @@ strong { color:#333 !important; }
 # SIDEBAR
 # ═══════════════════════════════════════════════════════
 with st.sidebar:
+    # ══════════════════════════════════════════════════
+    # DEMO MODE — Customer selector (presentation only)
+    # ══════════════════════════════════════════════════
+    _is_demo = st.session_state.get("demo_mode", False)
+    _demo_toggle = st.toggle("🎬 Demo Mode", value=_is_demo, key="demo_mode_toggle")
+    if _demo_toggle != _is_demo:
+        st.session_state.demo_mode = _demo_toggle
+        st.rerun()
+
+    if _demo_toggle:
+        st.markdown(
+            '<div style="background:linear-gradient(135deg,#1A1A2E,#2D1B69);'
+            'border-radius:14px;padding:10px 14px;margin-bottom:8px;">'
+            '<div style="color:#c4a8ff;font-size:.65rem;font-weight:700;'
+            'text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">'
+            '🎬 CEO Demo — Chọn khách hàng</div>'
+            '<div style="color:rgba(255,255,255,.75);font-size:.72rem;">'
+            'Mock layer — thay bằng TCBS API khi production</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        _demo_sel = st.radio(
+            "Khách hàng:",
+            ["🎒 Linh · 22t · Sinh viên", "💼 Minh · 27t · Kỹ sư"],
+            key="demo_customer_radio",
+            label_visibility="visible",
+        )
+        _demo_name = "Linh" if "Linh" in _demo_sel else "Minh"
+        if st.button("⚡ Load Customer Data", use_container_width=True, type="primary", key="demo_load_btn"):
+            new_mem = _make_demo_customer(_demo_name)
+            st.session_state.user_memory = new_mem
+            st.session_state.messages    = []
+            st.session_state.demo_customer = _demo_name
+            st.rerun()
+        _active = st.session_state.get("demo_customer", "—")
+        st.caption(f"✅ Active: **{_active}**")
+        st.divider()
+
     # Growth sheep in sidebar
     total = mem.get("total_saved", 0)
     stage_key, stage_name, lv_num, _, _ = get_growth_stage(total)
@@ -1185,6 +1430,67 @@ with st.sidebar:
             if d["amount"] > 0:
                 pct = min(100, d["saved"] / d["amount"] * 100)
                 st.progress(pct / 100, text=f"{pct:.0f}%")
+
+    # ══ CUSTOMER CONTEXT PANEL (demo only) ═══════════════════════
+    if st.session_state.get("demo_mode", False):
+        st.divider()
+        with st.expander("🧠 Customer Context Panel", expanded=True):
+            _cp_name    = mem.get("name", "—")
+            _cp_age     = mem.get("age", "—")
+            _cp_occ     = mem.get("occupation", "—")
+            _cp_stage   = mem.get("investment_stage", "—")
+            _cp_tier    = mem.get("tier", "—")
+            _cp_aum     = mem.get("investment_aum", 0)
+            _cp_cash    = mem.get("cash_balance", 0)
+            _cp_reward  = mem.get("reward_preference", "—")
+            _cp_dreams  = mem.get("dreams", [])
+            _cp_notes   = mem.get("notes", [])
+            _cp_dream1  = _cp_dreams[0]["name"].title() if _cp_dreams else "—"
+            _cp_sent    = mem.get("sentiment", "—")
+            _cp_streak  = mem.get("streak", 0)
+
+            # Reward stars
+            _stars = "★★★★★" if _cp_reward == "high" else ("★☆☆☆☆" if _cp_reward == "low" else "★★★☆☆")
+
+            st.markdown(
+                f'<div style="background:#1A1A2E;border-radius:14px;padding:12px 14px;'
+                f'font-size:.72rem;color:rgba(255,255,255,.88);line-height:1.8;">'
+                f'<div style="color:#c4a8ff;font-weight:700;font-size:.65rem;'
+                f'text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'
+                f'Customer Context</div>'
+                f'<b style="color:#fff;">👤 {_cp_name}</b> · {_cp_age} tuổi · {_cp_tier}<br/>'
+                f'💼 {_cp_occ}<br/>'
+                f'📊 {_cp_stage}<br/>'
+                f'💰 Cash: {fmt(_cp_cash) if _cp_cash else "—"} · '
+                f'AUM: {fmt(_cp_aum) if _cp_aum else "0đ"}<br/>'
+                f'🎯 Dream: <b style="color:#FFD700;">{_cp_dream1}</b><br/>'
+                f'💙 Cảm xúc: {_cp_sent} · 🔥 {_cp_streak} ngày<br/>'
+                f'🎟️ Reward pref: {_stars}'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+            if _cp_notes:
+                st.markdown(
+                    '<div style="font-size:.68rem;font-weight:700;color:#7B5EA7;'
+                    'margin:8px 0 4px;">📝 Memory</div>',
+                    unsafe_allow_html=True,
+                )
+                for _n in _cp_notes[:5]:
+                    st.markdown(
+                        f'<div style="font-size:.7rem;color:#555;padding:1px 0;">'
+                        f'• {_n[:48]}{"..." if len(_n) > 48 else ""}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            st.markdown(
+                '<div style="background:rgba(46,160,67,.12);border:1px solid rgba(46,160,67,.3);'
+                'border-radius:10px;padding:8px 10px;margin-top:8px;font-size:.68rem;color:#2ea043;">'
+                '✓ Financial Context<br/>✓ Memory Context<br/>'
+                '✓ Behavior Context<br/>✓ Personality + Journal Insights'
+                '</div>',
+                unsafe_allow_html=True,
+            )
 
     st.divider()
     if st.button("🗑️ Đặt lại tất cả", use_container_width=True):
