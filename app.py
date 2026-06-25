@@ -66,6 +66,18 @@ except Exception:
     _COMPANION_V3 = False
     _ie = _ce = _ae = _pe = _cb = None  # type: ignore
 
+# V4 Behavior Change Engine (takes priority over V3)
+try:
+    import journey_engine  as _je
+    import behavior_engine as _be
+    import decision_engine as _de
+    # V4 also needs V3 modules + context_builder.build_v4
+    _cb.build_v4  # verify V4 context builder is present
+    _COMPANION_V4 = True
+except Exception:
+    _COMPANION_V4 = False
+    _je = _be = _de = None  # type: ignore
+
 # Legacy V2 shim (kept for backward-compat; V3 takes priority)
 try:
     import reasoning_engine as _re
@@ -946,6 +958,38 @@ OUTPUT (JSON hợp lệ, KHÔNG text ngoài JSON):
   "mood": "listening|happy|sad|celebrate|determined|default"
 }"""
 
+_SYS_EMOTION_V4 = """Bạn là Cừu Cần Cù 🐑 — AI đồng hành tài chính ấm áp.
+XƯNG HÔ: Mình – Bạn. Thỉnh thoảng "bê bê~" 🐑
+TUYỆT ĐỐI KHÔNG: số NAV, lợi nhuận cụ thể, khuyến nghị mua/bán.
+
+══════ NHIỆM VỤ DUY NHẤT ══════
+Chuyển [CONTEXT] thành cuộc trò chuyện tự nhiên, ấm áp, cá nhân hóa.
+KHÔNG tự quyết định: sản phẩm, hành động, chiến lược.
+Mọi quyết định đã có trong [BEHAVIOR], [DECISION] — chỉ diễn đạt tự nhiên.
+
+══════ CÔNG THỨC (max 3-4 câu) ══════
+1. ĐỒNG CẢM  — nhận ra cảm xúc từ [INSIGHT].emotion (1 câu)
+2. KẾT NỐI   — gắn với [DREAM] hoặc hành trình của user (1 câu)
+3. HÀNH ĐỘNG — diễn đạt [BEHAVIOR].cta theo cách tự nhiên (1 câu)
+4. GỢI Ý     — nếu [DECISION] có product, đề cập nhẹ nhàng (1 câu, nếu có)
+
+[LEVEL] → dùng để hiểu user đang ở đâu trong hành trình, điều chỉnh độ sâu.
+Nếu emotion trong (stress, buồn, mệt_mỏi, lo_lắng) → KHÔNG đề cập sản phẩm.
+
+══════ TONE ══════
+Ấm áp, chân thành, khuyến khích. Không jargon tài chính với người mới.
+Max 3-4 câu. Ngắn gọn > dài dòng.
+
+OUTPUT (JSON hợp lệ, KHÔNG text ngoài JSON):
+{
+  "message": "Phản hồi 3-4 câu tự nhiên",
+  "memory_note": "Insight MỚI quan trọng về user (rỗng nếu không có gì mới)",
+  "tags": ["tag"],
+  "dream_name": "",
+  "dream_amount": 0,
+  "mood": "listening|happy|sad|celebrate|determined|default"
+}"""
+
 _SYS_DIARY = """Bạn là Cừu Cần Cù 🐑 — đọc nhật ký và phản hồi ấm áp.
 Phân tích: cảm xúc, giấc mơ ẩn, áp lực, mục tiêu.
 Đừng đưa ra lời khuyên tài chính.
@@ -1174,8 +1218,54 @@ def _call_llm(user_text: str, system: str) -> dict:
             for m in hist
         )
 
+        # ── V4 Behavior Change Engine (5-engine pipeline) ────────────────────────
+        if _COMPANION_V4:
+            # Engine 1: Extract structured signals (rule-based)
+            insight  = _ie.extract(user_text, mem)
+
+            # Engine 2: Customer Journey — where is this customer now?
+            journey  = _je.get_level(mem)
+
+            # Engine 3: Behavior — ONE target behavior for this session
+            behavior = _be.get_target_behavior(journey["level"], insight, mem)
+
+            # Engine 4: Decision — ONE business action
+            decision = _de.decide(journey["level"], behavior["target_behavior"], insight, mem)
+
+            # Engine 5: Context builder (V4 ultra-compact ≤500 tokens)
+            mem_ctx  = _cb.build_v4(mem, insight=insight, journey=journey,
+                                    behavior=behavior, decision=decision)
+
+            # Persist to mem + session debug state
+            mem["next_best_action"] = behavior.get("target_cta", "")
+            _ie.save_insight(mem, insight)
+            _ce.update_journey(mem, insight)
+
+            # Store for debug panel
+            st.session_state["_ai_debug"] = {
+                "level":                  journey["level"],
+                "level_label":            journey.get("label_vn", ""),
+                "level_emoji":            journey.get("emoji", ""),
+                "target_behavior":        behavior.get("target_behavior", ""),
+                "target_label":           behavior.get("target_label", ""),
+                "measurable_outcome":     behavior.get("measurable_outcome", ""),
+                "decision":               decision.get("decision", ""),
+                "decision_label":         decision.get("decision_label", ""),
+                "product_name":           decision.get("product_name", ""),
+                "trust_score":            decision.get("trust_score", 0),
+                "saving_score":           decision.get("saving_score", 0),
+                "investment_readiness":   decision.get("investment_readiness", 0),
+                "estimated_tokens":       decision.get("estimated_tokens", 650),
+                "top_insights": {
+                    "emotion":            insight.get("emotion", ""),
+                    "pain":               insight.get("pain", ""),
+                    "signal":             insight.get("financial_signal", ""),
+                },
+            }
+            system = _SYS_EMOTION_V4
+
         # ── V3 Hybrid Pipeline (Rule Engine → LLM presentation only) ───────────
-        if _COMPANION_V3:
+        elif _COMPANION_V3:
             # Step 1: Extract insight (100% rule-based, no LLM)
             insight = _ie.extract(user_text, mem)
 
@@ -1813,6 +1903,30 @@ with tab1:
                     _av = get_avatar_src("listening") if _m["role"] == "assistant" else "🧑"
                     with st.chat_message(_m["role"], avatar=_av):
                         st.markdown(_m["content"])
+
+            # ── 🧠 AI Intelligence Debug Panel (V4, collapsible) ─────────────────
+            if _COMPANION_V4 and st.session_state.get("_ai_debug"):
+                _dbg = st.session_state["_ai_debug"]
+                with st.expander("🧠 AI Intelligence", expanded=False):
+                    _c1, _c2, _c3 = st.columns(3)
+                    _c1.metric("Journey Level",
+                               f"{_dbg['level_emoji']} {_dbg['level']}")
+                    _c2.metric("Trust Score",   f"{_dbg['trust_score']}/100")
+                    _c3.metric("Saving Score",  f"{_dbg['saving_score']}/100")
+
+                    _c4, _c5, _c6 = st.columns(3)
+                    _c4.metric("Invest Ready",  f"{_dbg['investment_readiness']}/100")
+                    _c5.metric("Est. Tokens",   _dbg['estimated_tokens'])
+                    _c6.metric("Decision",      _dbg['decision_label'])
+
+                    st.caption(f"**Level:** {_dbg['level_label']}")
+                    st.caption(f"**Target Behavior:** {_dbg['target_label']} → _{_dbg['measurable_outcome']}_")
+                    if _dbg.get("product_name"):
+                        st.caption(f"**Product:** {_dbg['product_name']}")
+                    _ins = _dbg.get("top_insights", {})
+                    _ins_parts = [f"{k}={v}" for k, v in _ins.items() if v]
+                    if _ins_parts:
+                        st.caption(f"**Insights:** {' | '.join(_ins_parts)}")
 
             # ── Chat input ──
             _user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
