@@ -1833,12 +1833,13 @@ with st.sidebar:
                 _sn      = _sc["n"]
                 _done    = _sn in _fired
                 _is_next = not _done and (len(_fired) == _sn - 1)
-                _dis     = _processing_now or (_done) or (not _is_next and _sn not in _fired and len(_fired) < _sn - 1)
+                # Allow any unfired scene — no sequential lock
+                _dis     = _processing_now or _done
 
                 st.markdown(
-                    f'<div style="font-size:.58rem;color:{"#4CAF50" if _done else ("#FFB300" if _is_next else "#888")};'
+                    f'<div style="font-size:.58rem;color:{"#4CAF50" if _done else ("#E91E63" if _is_next else "#555")};'
                     f'font-weight:700;margin:4px 0 2px;text-transform:uppercase;letter-spacing:.05em;">'
-                    f'{"✅ " if _done else ("▶ " if _is_next else "  ")}'
+                    f'{"✅ " if _done else ("▶ " if _is_next else "○ ")}'
                     f'{_sc["sublabel"]}</div>',
                     unsafe_allow_html=True,
                 )
