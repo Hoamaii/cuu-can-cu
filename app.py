@@ -39,6 +39,7 @@ import re
 import base64
 import glob
 import os
+import time
 from datetime import datetime, timedelta
 from copy import deepcopy
 
@@ -507,62 +508,43 @@ def _make_demo_customer(name: str) -> dict:
             }],
         })
 
-    else:  # Minh
+    else:  # Minh — CEO Demo Customer
         base.update({
             # ── Identity ──
             "name":             "Minh",
-            "age":              27,
-            "occupation":       "Software Engineer",
+            "age":              24,
+            "occupation":       "Nhân viên văn phòng",
             # ── Financial ──
-            "cash_balance":     14_000_000,
-            "investment_aum":   180_000_000,
-            "investment_stage": "Growing Investor",
-            "tier":             "Gold",
+            "cash_balance":     2_500_000,
+            "investment_aum":   0,
+            "investment_stage": "Beginner",
+            "tier":             "Silver",
             # ── Behavior ──
-            "reward_preference":  "low",   # never exchanges iLucky
-            "trading_frequency":  3,
-            "app_active_days":    7,
+            "reward_preference":  "medium",
+            "trading_frequency":  0,
+            "app_active_days":    2,
             # ── Personality ──
-            "personality": "Logic, kỷ luật, không thích ngôn ngữ bán hàng, thích số liệu thực tế",
+            "personality": "Trẻ 24 tuổi, hay tiêu hết lương, muốn học cách quản lý tài chính, thích ngôn ngữ đơn giản gần gũi",
             # ── Memory ──
             "notes": [
-                "Vừa nhận thưởng cuối năm",
-                "Không muốn FOMO nữa, muốn đầu tư theo nguyên tắc",
-                "Muốn đầu tư đều đặn theo DCA",
-                "Thích đọc sách tài chính — đang đọc The Psychology of Money",
+                "Hay tiêu hết lương trước cuối tháng",
+                "Lương 12 triệu nhưng không còn tiền vào cuối tháng",
+                "Muốn tiết kiệm nhưng chưa biết bắt đầu từ đâu",
             ],
-            "life_events": ["career", "cashflow", "dream_travel"],
-            "dreams": [
-                {"name": "Du lịch Nhật Bản",  "amount":   50_000_000, "saved":  15_000_000, "tags": ["dream_travel"]},
-                {"name": "Tự do tài chính",   "amount": 2_000_000_000, "saved": 180_000_000, "tags": []},
-            ],
+            "life_events": ["cashflow"],
+            "dreams": [],   # starts empty — will be filled via demo events
             # ── Progress ──
-            "total_saved":    195_000_000,
-            "streak":          12,
-            "sentiment":      "determined",
-            "ilucky_tickets":  0,
-            "user_exp":        1800,
-            "current_level":   3,
-            "last_fed_date":   three_days_ago,
-            "last_fed_food":  "🍎 Táo",
-            "last_fed_amount": 50_000,
+            "total_saved":    0,
+            "streak":          0,
+            "sentiment":      "hopeful",
+            "ilucky_tickets":  2,
+            "user_exp":        50,
+            "current_level":   1,
+            "last_fed_date":   "",
+            "last_fed_food":  "",
+            "last_fed_amount": 0,
             # ── Diary ──
-            "diary_entries": [{
-                "id": "demo_minh_1",
-                "date": "23/06/2026 20:00",
-                "date_raw": two_days_ago + "T20:00:00",
-                "title": "Ngày 23/06",
-                "mood": "💪 Đang quyết tâm",
-                "content": (
-                    "Vừa nhận thưởng. Không muốn FOMO nữa. "
-                    "Muốn đầu tư đều đặn theo DCA. "
-                    "Đọc The Psychology of Money — rất hay, thay đổi cách nhìn về tiền."
-                ),
-                "emotion": "quyết_tâm",
-                "tags": ["career", "cashflow"],
-                "dream": "Tự do tài chính",
-                "reply": "Bê bê~ 🐑 DCA là chiến lược rất tốt. Cừu đồng hành kỷ luật cùng bạn!",
-            }],
+            "diary_entries": [],
         })
 
     return base
@@ -590,8 +572,14 @@ def _init():
         "diary_just_saved":    False,
         "diary_last_entry":    None,
         # ── Demo mode ──
-        "demo_mode":     False,
-        "demo_customer": "Linh",
+        "demo_mode":          False,
+        "demo_customer":      "Linh",
+        # ── CEO Presentation Demo ──
+        "ceo_processing":     False,
+        "ceo_pending_event":  None,
+        "ceo_events_fired":   [],
+        "ceo_last_result":    None,
+        "ceo_last_event":     None,
     }
     for k, v in defs.items():
         if k not in st.session_state:
@@ -1666,16 +1654,30 @@ with st.sidebar:
         )
         _demo_sel = st.radio(
             "Khách hàng:",
-            ["🎒 Linh · 22t · Sinh viên", "💼 Minh · 27t · Kỹ sư"],
+            ["🎒 Linh · 22t · Sinh viên", "💼 Minh · 24t · Nhân viên"],
             key="demo_customer_radio",
             label_visibility="visible",
         )
         _demo_name = "Linh" if "Linh" in _demo_sel else "Minh"
+        if _demo_name == "Minh":
+            st.markdown(
+                '<div style="background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.4);'
+                'border-radius:8px;padding:6px 10px;font-size:.68rem;color:#2E7D32;margin-bottom:6px;">'
+                '🎬 CEO Presentation Mode — 3 cột đồng bộ · 5 scenes · Animation</div>',
+                unsafe_allow_html=True,
+            )
         if st.button("⚡ Load Customer Data", use_container_width=True, type="primary", key="demo_load_btn"):
             new_mem = _make_demo_customer(_demo_name)
-            st.session_state.user_memory = new_mem
-            st.session_state.messages    = []
-            st.session_state.demo_customer = _demo_name
+            st.session_state.user_memory       = new_mem
+            st.session_state.messages          = []
+            st.session_state.demo_customer     = _demo_name
+            # Reset CEO demo state when switching customers
+            st.session_state.ceo_events_fired  = []
+            st.session_state.ceo_last_result   = None
+            st.session_state.ceo_last_event    = None
+            st.session_state._ai_debug         = None
+            st.session_state.ceo_processing    = False
+            st.session_state.ceo_pending_event = None
             st.rerun()
         _active = st.session_state.get("demo_customer", "—")
         st.caption(f"✅ Active: **{_active}**")
@@ -1969,10 +1971,714 @@ def _render_ai_panel(dbg: dict | None) -> None:
 
 
 # ═══════════════════════════════════════════════════════
-# 3 TABS NAVIGATION
+# CEO PRESENTATION DEMO
+# Apple Keynote style · 3-column synchronized layout
+# LEFT: Customer Life · MIDDLE: AI Intelligence · RIGHT: Financial Journey
+# ═══════════════════════════════════════════════════════
+
+_CEO_DEMO_EVENTS = [
+    {
+        "scene": 1, "type": "chat", "icon": "💬",
+        "label": '"Muốn mua MacBook"',
+        "sublabel": "Chat",
+        "text": "Mình muốn mua MacBook lắm. Không biết bao giờ mới có đủ tiền để mua.",
+        "insight_preview": "Khách hàng có ước mơ cụ thể — MacBook",
+        "mem_patch": {
+            "dreams": [
+                {"name": "MacBook", "amount": 28_000_000, "saved": 0, "tags": []},
+                {"name": "Đi xem concert", "amount": 2_000_000, "saved": 0, "tags": []},
+            ],
+        },
+        "financial_signal": "",
+    },
+    {
+        "scene": 2, "type": "diary", "icon": "📖",
+        "label": '"Tiêu hết lương rồi"',
+        "sublabel": "Nhật ký",
+        "text": "Hôm nay phát hiện mình hay tiêu hết lương trước cuối tháng. Không còn tiền nào để dành.",
+        "insight_preview": "Phát hiện vấn đề cashflow nghiêm trọng",
+        "mem_patch": {
+            "life_events": ["cashflow"],
+            "notes": [
+                "Hay tiêu hết lương trước cuối tháng",
+                "Muốn học cách quản lý tài chính",
+                "Cần một kế hoạch tiết kiệm cụ thể",
+            ],
+        },
+        "financial_signal": "cashflow_problem",
+    },
+    {
+        "scene": 3, "type": "transaction", "icon": "💳",
+        "label": "Lương +12M vào tài khoản",
+        "sublabel": "Giao dịch",
+        "text": "Vừa nhận lương 12 triệu đồng vào tài khoản. Lần này mình muốn để dành.",
+        "insight_preview": "Nhận lương — thời điểm vàng để bắt đầu tiết kiệm",
+        "mem_patch": {
+            "cash_balance": 14_500_000,
+        },
+        "financial_signal": "salary_received",
+    },
+    {
+        "scene": 4, "type": "transaction", "icon": "💳",
+        "label": "Tiết kiệm 300K đầu tiên ✨",
+        "sublabel": "Giao dịch",
+        "text": "Mình vừa tiết kiệm được 300,000 đồng lần đầu tiên! Tự hào về bản thân quá!",
+        "insight_preview": "Hành động tài chính đầu tiên — milestone quan trọng!",
+        "mem_patch": {
+            "total_saved": 300_000,
+            "streak": 1,
+            "cash_balance": 14_200_000,
+            "last_fed_date": datetime.now().strftime("%Y-%m-%d"),
+            "last_fed_food": "🥕 Cà Rốt",
+            "last_fed_amount": 300_000,
+        },
+        "financial_signal": "micro_saving",
+    },
+    {
+        "scene": 5, "type": "transaction", "icon": "💳",
+        "label": "Mua Quỹ TCBF lần đầu 📈",
+        "sublabel": "Giao dịch",
+        "text": "Mình vừa đầu tư vào Quỹ TCBF lần đầu tiên trong đời. Hồi hộp và phấn khích!",
+        "insight_preview": "Bước vào thế giới đầu tư — milestone lớn nhất",
+        "mem_patch": {
+            "investment_aum": 2_000_000,
+            "total_saved": 600_000,
+            "streak": 8,
+            "trading_frequency": 1,
+            "investment_stage": "New Investor",
+        },
+        "financial_signal": "fund_purchase",
+    },
+]
+
+_CEO_STEP_ANIM = [
+    ("📨", "Customer Event",     "Đọc dữ liệu từ khách hàng..."),
+    ("🧠", "Understanding",      "Phân tích cảm xúc và ý định..."),
+    ("💡", "Insight Found",      "Phát hiện insight mới..."),
+    ("🗺", "Journey Check",      "Kiểm tra vị trí hành trình..."),
+    ("🎯", "Goal Selected",      "Chọn mục tiêu kinh doanh..."),
+    ("⚡", "Action Chosen",      "Quyết định hành động tốt nhất..."),
+    ("✍️", "Generating Reply",   "Đang soạn phản hồi..."),
+]
+
+
+def _ceo_anim_html(steps: list, current: int) -> str:
+    """Render the animated reasoning steps for MIDDLE column."""
+    rows = ""
+    for i, (icon, title, desc) in enumerate(steps):
+        if i < current:
+            color = "#2E7D32"; bg = "#E8F5E9"; op = "1"; badge = "✓"
+        elif i == current:
+            color = "#1565C0"; bg = "#E3F2FD"; op = "1"; badge = "▶"
+        else:
+            color = "#9E9E9E"; bg = "transparent"; op = "0.4"; badge = str(i+1)
+        rows += (
+            f'<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;'
+            f'border-radius:10px;background:{bg};margin-bottom:5px;opacity:{op};'
+            f'transition:all .3s ease;">'
+            f'<span style="font-size:1rem;min-width:22px;text-align:center;">{icon}</span>'
+            f'<div style="flex:1;">'
+            f'<div style="font-size:.75rem;font-weight:700;color:{color};">{title}</div>'
+            f'<div style="font-size:.68rem;color:#666;margin-top:1px;">{desc}</div>'
+            f'</div>'
+            f'<span style="font-size:.65rem;font-weight:700;color:{color};'
+            f'background:{"white" if i <= current else "transparent"};'
+            f'width:18px;height:18px;border-radius:50%;display:flex;align-items:center;'
+            f'justify-content:center;border:1.5px solid {color};">{badge}</span>'
+            f'</div>'
+        )
+    return (
+        f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+        f'<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;'
+        f'letter-spacing:.08em;color:#9E9E9E;margin-bottom:10px;">🧠 AI đang suy nghĩ...</div>'
+        f'{rows}'
+        f'</div>'
+    )
+
+
+def _ceo_intelligence_html(dbg: dict) -> str:
+    """Render the AI Intelligence result card for MIDDLE column."""
+    if not dbg:
+        return (
+            '<div style="text-align:center;color:#BDBDBD;font-size:.85rem;'
+            'padding:40px 0;font-family:-apple-system,sans-serif;">'
+            '🧠 Nhấn một sự kiện để xem AI phân tích</div>'
+        )
+
+    _dec_colors = {
+        "continue_relationship":  ("#E8F5E9", "#2E7D32", "🤝"),
+        "celebrate_progress":     ("#FFF8E1", "#F57F17", "🎉"),
+        "ask_financial_goal":     ("#EDE7F6", "#4527A0", "🎯"),
+        "recommend_micro_saving": ("#E8F5E9", "#2E7D32", "🐑"),
+        "recommend_iPower":       ("#E0F2F1", "#00695C", "💰"),
+        "recommend_fund":         ("#E8EAF6", "#283593", "📈"),
+        "recommend_learning":     ("#FFF3E0", "#E65100", "📚"),
+        "no_action":              ("#F5F5F5", "#757575", "⏸"),
+    }
+    dec_key = dbg.get("decision", "no_action")
+    dec_bg, dec_color, dec_icon = _dec_colors.get(dec_key, ("#F5F5F5", "#757575", "⚙"))
+
+    r_icon  = dbg.get("result_icon", "✓")
+    r_vn    = dbg.get("conversation_result_vn", "")
+    r_bg    = dbg.get("result_bg", "#E8F5E9")
+    r_color = dbg.get("result_color", "#2E7D32")
+
+    bullets = "".join(
+        f'<div style="display:flex;gap:7px;margin:4px 0;">'
+        f'<span style="color:#1565C0;font-size:.8rem;margin-top:1px;">✓</span>'
+        f'<span style="font-size:.78rem;color:#333;line-height:1.4;">{b}</span>'
+        f'</div>'
+        for b in dbg.get("insight_bullets", [])
+    )
+    product_badge = ""
+    if dbg.get("product_name"):
+        product_badge = (
+            f'<div style="margin-top:8px;display:inline-block;font-size:.7rem;'
+            f'background:#E3F2FD;color:#1565C0;padding:3px 10px;border-radius:99px;'
+            f'font-weight:700;">→ {dbg["product_name"]}</div>'
+        )
+
+    return f"""
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+
+  <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;
+              letter-spacing:.08em;color:#9E9E9E;margin-bottom:10px;">🧠 AI Intelligence</div>
+
+  <!-- Quote -->
+  <div style="font-size:.8rem;color:#333;font-style:italic;padding:8px 10px;
+              background:#F8F9FF;border-left:3px solid #90CAF9;border-radius:0 8px 8px 0;
+              margin-bottom:10px;line-height:1.5;">
+    "{dbg.get('last_user_message','')[:100]}{"…" if len(dbg.get('last_user_message','')) > 100 else ""}"
+  </div>
+
+  <!-- Insight bullets -->
+  <div style="background:white;border-radius:12px;padding:10px 12px;
+              box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:8px;">
+    <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                letter-spacing:.06em;color:#999;margin-bottom:6px;">AI Hiểu Được</div>
+    {bullets}
+  </div>
+
+  <!-- Journey + Behavior -->
+  <div style="background:white;border-radius:12px;padding:10px 12px;
+              box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:8px;
+              display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div>
+      <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                  letter-spacing:.06em;color:#999;margin-bottom:5px;">Hành Trình</div>
+      <div style="font-size:1.2rem;">{dbg.get('stage_emoji', dbg.get('level_emoji',''))}</div>
+      <div style="font-size:.8rem;font-weight:700;color:#1a1a1a;margin-top:3px;">
+        Stage {dbg.get('stage', dbg.get('level', 1))}/6</div>
+      <div style="font-size:.7rem;color:#666;">
+        {dbg.get('stage_label', dbg.get('level_short',''))}</div>
+    </div>
+    <div style="border-left:1px solid #F5F5F5;padding-left:12px;">
+      <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                  letter-spacing:.06em;color:#999;margin-bottom:5px;">Mục Tiêu Hôm Nay</div>
+      <div style="font-size:.78rem;font-weight:700;color:#1565C0;line-height:1.3;margin-top:3px;">
+        {dbg.get('target_label','')}</div>
+    </div>
+  </div>
+
+  <!-- Decision -->
+  <div style="background:white;border-radius:12px;padding:10px 12px;
+              box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:8px;">
+    <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                letter-spacing:.06em;color:#999;margin-bottom:6px;">Quyết Định AI</div>
+    <div style="display:inline-flex;align-items:center;gap:6px;background:{dec_bg};
+                color:{dec_color};padding:4px 11px;border-radius:99px;
+                font-size:.78rem;font-weight:700;">{dec_icon} {dbg.get('decision_label','')}</div>
+    {product_badge}
+    <div style="margin-top:8px;font-size:.75rem;color:#555;line-height:1.5;">
+      {dbg.get('why_reason','')}</div>
+  </div>
+
+  <!-- Conversation Result -->
+  <div style="background:{r_bg};border-radius:12px;padding:10px 12px;">
+    <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                letter-spacing:.06em;color:{r_color};margin-bottom:6px;">Kết Quả</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:1.4rem;">{r_icon}</span>
+      <span style="font-size:.88rem;font-weight:800;color:{r_color};">{r_vn}</span>
+    </div>
+  </div>
+
+</div>
+"""
+
+
+def _ceo_journey_html(mem_snap: dict, dbg: dict | None) -> str:
+    """Render the right-column Financial Journey card."""
+    import sys; sys.path.insert(0, ".")
+    try:
+        import journey_engine as _je_local
+        journey = _je_local.get_stage(mem_snap)
+        cur_stage = journey["stage"]
+    except Exception:
+        cur_stage = 1
+
+    stages = [
+        (1, "Kết Nối", "🤝", "Connect"),
+        (2, "Hiểu Tôi", "🧠", "Understand Me"),
+        (3, "Hành Động", "🎯", "First Tiny Action"),
+        (4, "Thói Quen", "🔄", "Build Habit"),
+        (5, "Tăng Trưởng", "📈", "Grow Wealth"),
+        (6, "Dài Hạn", "❤️", "Long-term Investor"),
+    ]
+
+    steps_html = ""
+    for s, lbl, em, lbl_en in stages:
+        if s < cur_stage:
+            dot = f'<span style="font-size:14px;">✅</span>'
+            name_style = "font-size:.8rem;font-weight:600;color:#1B5E20;"
+        elif s == cur_stage:
+            dot = f'<span style="font-size:14px;">{em}</span>'
+            name_style = "font-size:.8rem;font-weight:800;color:#1565C0;"
+            lbl = f'<span style="background:#1565C0;color:white;font-size:.6rem;' \
+                  f'padding:1px 6px;border-radius:99px;margin-left:4px;">NOW</span>' + lbl
+        else:
+            dot = f'<span style="font-size:14px;opacity:.3;">⬜</span>'
+            name_style = "font-size:.8rem;color:#BDBDBD;"
+        steps_html += (
+            f'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;">'
+            f'{dot}<span style="{name_style}">{lbl}</span></div>'
+        )
+
+    # Achievements this session
+    achiev = []
+    if dbg:
+        conv_res = dbg.get("conversation_result", "")
+        if conv_res == "goal_defined":
+            achiev.append(("🎯", "Mục tiêu xác định", f"MacBook {dbg.get('next_tiny_step','')[:30]}"))
+        elif conv_res == "financial_action_started":
+            achiev.append(("🚀", "Hành động đầu tiên", "Bắt đầu tiết kiệm"))
+        elif conv_res == "habit_reinforced":
+            achiev.append(("🔥", "Thói quen củng cố", f"Streak {mem_snap.get('streak',0)} ngày"))
+        elif conv_res == "investment_started":
+            achiev.append(("📈", "Đầu tư bắt đầu", "Mua Quỹ TCBF"))
+        elif conv_res == "product_explored":
+            achiev.append(("🔍", "Khám phá sản phẩm", dbg.get("product_name","") or "Micro Saving"))
+        elif conv_res == "insight_collected":
+            achiev.append(("💡", "Insight thu thập", "Vấn đề cashflow ghi nhận"))
+        elif conv_res == "relationship_built":
+            achiev.append(("🤝", "Kết nối xây dựng", "Bước đầu tin tưởng"))
+
+    achiev_html = ""
+    if achiev:
+        for aic, an, ad in achiev:
+            achiev_html += (
+                f'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;'
+                f'border-bottom:1px solid rgba(255,255,255,.1);">'
+                f'<span style="font-size:1rem;">{aic}</span>'
+                f'<div><div style="font-size:.75rem;font-weight:700;color:#FFD700;">{an}</div>'
+                f'<div style="font-size:.65rem;color:rgba(255,255,255,.7);">{ad}</div></div>'
+                f'</div>'
+            )
+
+    # Next step
+    next_step = ""
+    if dbg:
+        next_step = dbg.get("next_tiny_step", "") or dbg.get("next_action_label", "")
+
+    # Progress bar
+    pct = int((cur_stage - 1) / 5 * 100)
+    bar_html = (
+        f'<div style="background:rgba(255,255,255,.15);border-radius:99px;height:6px;'
+        f'overflow:hidden;margin:8px 0;">'
+        f'<div style="background:#4CAF50;width:{pct}%;height:100%;border-radius:99px;'
+        f'transition:width .5s ease;"></div></div>'
+        f'<div style="font-size:.65rem;color:rgba(255,255,255,.6);text-align:right;">'
+        f'{cur_stage-1}/5 milestones</div>'
+    )
+
+    return f"""
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+            background:linear-gradient(160deg,#1A1A2E 0%,#2D1B69 100%);
+            border-radius:16px;padding:16px;color:white;min-height:440px;">
+
+  <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;
+              letter-spacing:.1em;color:#c4a8ff;margin-bottom:4px;">🐑 YOUR FINANCIAL JOURNEY</div>
+  <div style="border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:12px;"></div>
+
+  {steps_html}
+
+  {bar_html}
+
+  {"" if not achiev_html else f'''
+  <div style="border-top:1px solid rgba(255,255,255,.12);margin-top:12px;padding-top:12px;">
+    <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                letter-spacing:.08em;color:#c4a8ff;margin-bottom:8px;">TODAY WE ACHIEVED</div>
+    {achiev_html}
+  </div>
+  '''}
+
+  {"" if not next_step else f'''
+  <div style="background:rgba(255,255,255,.08);border-radius:10px;
+              padding:8px 10px;margin-top:12px;">
+    <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;
+                letter-spacing:.08em;color:#c4a8ff;margin-bottom:4px;">NEXT STEP</div>
+    <div style="font-size:.82rem;font-weight:700;color:white;">{next_step[:70]}</div>
+  </div>
+  '''}
+
+</div>
+"""
+
+
+def _ceo_summary_html(dbg: dict | None, events_fired: list) -> str:
+    """Bottom CEO Business Summary Card."""
+    if not dbg and not events_fired:
+        return ""
+
+    # Build insight tags
+    insight_tags = []
+    if any(e["scene"] == 1 for e in events_fired):
+        insight_tags.append(("✔", "Ước mơ xác định", "#E8F5E9", "#2E7D32"))
+    if any(e["scene"] == 2 for e in events_fired):
+        insight_tags.append(("✔", "Vấn đề cashflow ghi nhận", "#FFF8E1", "#F57F17"))
+    if any(e["scene"] == 3 for e in events_fired):
+        insight_tags.append(("✔", "Lương nhận — cơ hội tốt nhất", "#E3F2FD", "#1565C0"))
+
+    behavior_tags = []
+    if any(e["scene"] == 4 for e in events_fired):
+        behavior_tags.append(("✔", "Hành động tài chính đầu tiên", "#E8F5E9", "#2E7D32"))
+    if any(e["scene"] == 5 for e in events_fired):
+        behavior_tags.append(("✔", "Đầu tư bắt đầu", "#E0F2F1", "#00695C"))
+
+    conv_result_vn = dbg.get("conversation_result_vn", "—") if dbg else "—"
+    conv_result_icon = dbg.get("result_icon", "✓") if dbg else "—"
+    product_name = dbg.get("product_name", "") if dbg else ""
+    decision_label = dbg.get("decision_label", "—") if dbg else "—"
+
+    def _tag(icon, label, bg, color):
+        return (
+            f'<div style="display:flex;align-items:center;gap:6px;padding:4px 0;">'
+            f'<span style="font-size:.8rem;color:{color};font-weight:700;">{icon}</span>'
+            f'<span style="font-size:.78rem;color:#333;">{label}</span>'
+            f'</div>'
+        )
+
+    insight_html  = "".join(_tag(*t) for t in insight_tags)  or '<div style="color:#ccc;font-size:.75rem;">—</div>'
+    behavior_html = "".join(_tag(*t) for t in behavior_tags) or '<div style="color:#ccc;font-size:.75rem;">—</div>'
+
+    # Business opportunity based on scenes fired
+    opp = "—"
+    if any(e["scene"] == 5 for e in events_fired):
+        opp = "Quỹ TCBF → Portfolio Review"
+    elif any(e["scene"] == 4 for e in events_fired):
+        opp = "Micro Saving → iPower"
+    elif any(e["scene"] == 3 for e in events_fired):
+        opp = "Micro Saving"
+    elif any(e["scene"] == 1 for e in events_fired):
+        opp = "Micro Saving (khi nhận lương)"
+
+    next_product = "—"
+    if any(e["scene"] >= 4 for e in events_fired):
+        next_product = "iPower — Tiền nhàn rỗi sinh lãi linh hoạt"
+    if any(e["scene"] == 5 for e in events_fired):
+        next_product = "Portfolio Review — Tối ưu danh mục"
+
+    col_style = (
+        "background:white;border-radius:12px;padding:12px 14px;"
+        "box-shadow:0 1px 4px rgba(0,0,0,.06);"
+    )
+    lbl_style = (
+        "font-size:.6rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:.08em;color:#9E9E9E;margin-bottom:6px;"
+    )
+
+    return f"""
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+            margin-top:16px;border-top:2px solid #F0F0F0;padding-top:16px;">
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+    <span style="font-size:16px;">📊</span>
+    <span style="font-size:.95rem;font-weight:800;color:#1a1a1a;">Business Value Created</span>
+    <span style="margin-left:auto;font-size:.65rem;background:#1A1A2E;color:white;
+                 padding:3px 10px;border-radius:99px;font-weight:700;">CEO VIEW</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+
+    <div style="{col_style}">
+      <div style="{lbl_style}">💡 Insight</div>
+      {insight_html}
+    </div>
+
+    <div style="{col_style}">
+      <div style="{lbl_style}">🎯 Behavior</div>
+      {behavior_html}
+    </div>
+
+    <div style="{col_style}">
+      <div style="{lbl_style}">💼 Business Opportunity</div>
+      <div style="font-size:.78rem;color:#1565C0;font-weight:700;">{opp}</div>
+      <div style="margin-top:6px;">
+        <div style="{lbl_style.replace('margin-bottom:6px','margin-top:4px')}">Next Product</div>
+        <div style="font-size:.72rem;color:#555;">{next_product}</div>
+      </div>
+    </div>
+
+    <div style="{col_style}">
+      <div style="{lbl_style}">📈 Conversation Result</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:1.3rem;">{conv_result_icon}</span>
+        <span style="font-size:.78rem;font-weight:800;color:#1a1a1a;">{conv_result_vn}</span>
+      </div>
+      <div style="margin-top:6px;font-size:.7rem;color:#888;">
+        AI Decision: {decision_label}</div>
+    </div>
+
+  </div>
+</div>
+"""
+
+
+def _render_ceo_demo():
+    """
+    CEO Presentation Demo — Apple Keynote style.
+    3 synchronized columns. Predefined events. No typing required.
+    """
+    _ceo_mode_mem = st.session_state.user_memory   # uses main mem (Minh profile)
+    _events_fired = st.session_state.get("ceo_events_fired", [])
+    _last_dbg     = st.session_state.get("_ai_debug")
+
+    # ── DEMO HEADER ──────────────────────────────────────────────────────────
+    st.markdown(
+        '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
+        'background:linear-gradient(135deg,#1A1A2E 0%,#16213E 50%,#0F3460 100%);'
+        'border-radius:16px;padding:14px 20px;margin-bottom:16px;'
+        'display:flex;align-items:center;gap:12px;">'
+        '<span style="font-size:1.2rem;">🎬</span>'
+        '<div><div style="color:white;font-weight:800;font-size:1rem;">CEO Presentation Demo</div>'
+        '<div style="color:rgba(255,255,255,.6);font-size:.72rem;">'
+        'AI + Customer Data + Transaction Data → Customer Insight → Business Decision → Financial Action → TCBS Value'
+        '</div></div>'
+        '<div style="margin-left:auto;font-size:.68rem;background:#4CAF50;color:white;'
+        'padding:4px 12px;border-radius:99px;font-weight:700;">● LIVE</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── PROCESS PENDING EVENT (animation + LLM) ──────────────────────────────
+    _processing = st.session_state.get("ceo_processing", False)
+    _pending_ev = st.session_state.get("ceo_pending_event")
+
+    # ── 3 COLUMNS ──────────────────────────────────────────────────────────────
+    col_l, col_m, col_r = st.columns([1, 1.1, 1], gap="medium")
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # LEFT COLUMN — Customer Life
+    # ─────────────────────────────────────────────────────────────────────────
+    with col_l:
+        st.markdown(
+            '<div style="font-family:-apple-system,sans-serif;">'
+            '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;'
+            'letter-spacing:.08em;color:#9E9E9E;margin-bottom:10px;">👤 Customer Life</div>'
+
+            # Customer profile card
+            '<div style="background:linear-gradient(135deg,#667eea,#764ba2);'
+            'border-radius:14px;padding:14px;color:white;margin-bottom:12px;">'
+            '<div style="font-size:1.1rem;font-weight:800;">Minh · 24 tuổi</div>'
+            '<div style="font-size:.75rem;opacity:.85;margin:2px 0;">Nhân viên văn phòng</div>'
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">'
+            '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 8px;">'
+            '<div style="font-size:.6rem;opacity:.7;">Lương</div>'
+            '<div style="font-size:.82rem;font-weight:700;">12M/tháng</div></div>'
+            '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 8px;">'
+            '<div style="font-size:.6rem;opacity:.7;">Tiền mặt</div>'
+            f'<div style="font-size:.82rem;font-weight:700;">{fmt(_ceo_mode_mem.get("cash_balance",2500000))}</div></div>'
+            '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 8px;">'
+            '<div style="font-size:.6rem;opacity:.7;">Tiết kiệm</div>'
+            f'<div style="font-size:.82rem;font-weight:700;">{fmt(_ceo_mode_mem.get("total_saved",0))}</div></div>'
+            '<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 8px;">'
+            '<div style="font-size:.6rem;opacity:.7;">Đầu tư</div>'
+            f'<div style="font-size:.82rem;font-weight:700;">{fmt(_ceo_mode_mem.get("investment_aum",0))}</div></div>'
+            '</div></div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Event buttons grouped by type
+        _scene_labels = {1: "Scene 1", 2: "Scene 2", 3: "Scene 3", 4: "Scene 4", 5: "Scene 5"}
+        _type_colors  = {"chat": "#1565C0", "diary": "#5C35B0", "transaction": "#00695C"}
+        _type_bg      = {"chat": "#E3F2FD", "diary": "#EDE7F6", "transaction": "#E0F2F1"}
+
+        for ev in _CEO_DEMO_EVENTS:
+            scene_n = ev["scene"]
+            already = any(e["scene"] == scene_n for e in _events_fired)
+            disabled = _processing or already
+            color  = _type_colors.get(ev["type"], "#333")
+            bg     = _type_bg.get(ev["type"], "#F5F5F5")
+            alpha  = "0.45" if disabled else "1"
+
+            st.markdown(
+                f'<div style="opacity:{alpha};margin-bottom:4px;">'
+                f'<div style="font-size:.58rem;font-weight:700;text-transform:uppercase;'
+                f'letter-spacing:.06em;color:#BDBDBD;margin-bottom:2px;">'
+                f'{"✅ " if already else ""}{_scene_labels[scene_n]} · {ev["sublabel"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+            if not disabled:
+                if st.button(
+                    f'{ev["icon"]} {ev["label"]}',
+                    key=f"ceo_ev_{scene_n}",
+                    use_container_width=True,
+                ):
+                    # Apply mem patch
+                    for k, v in ev["mem_patch"].items():
+                        if k == "life_events":
+                            existing = _ceo_mode_mem.get("life_events", [])
+                            for tag in v:
+                                if tag not in existing:
+                                    existing.append(tag)
+                            _ceo_mode_mem["life_events"] = existing
+                        elif k == "notes":
+                            _ceo_mode_mem["notes"] = v
+                        else:
+                            _ceo_mode_mem[k] = v
+                    # Patch financial signal into a temp field for engine
+                    if ev.get("financial_signal"):
+                        _ceo_mode_mem["_demo_fin_signal"] = ev["financial_signal"]
+                    # Update main memory
+                    st.session_state.user_memory = _ceo_mode_mem
+                    # Fire event
+                    st.session_state.ceo_processing    = True
+                    st.session_state.ceo_pending_event = ev
+                    _events_fired.append(ev)
+                    st.session_state.ceo_events_fired  = _events_fired
+                    st.rerun()
+            else:
+                st.button(
+                    f'{"✅" if already else "⏳"} {ev["label"]}',
+                    key=f"ceo_ev_{scene_n}_done",
+                    use_container_width=True,
+                    disabled=True,
+                )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # MIDDLE COLUMN — AI Intelligence (animated during processing)
+    # ─────────────────────────────────────────────────────────────────────────
+    with col_m:
+        st.markdown(
+            '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;'
+            'letter-spacing:.08em;color:#9E9E9E;margin-bottom:10px;">🧠 AI Intelligence</div>',
+            unsafe_allow_html=True,
+        )
+        _mid_ph = st.empty()
+
+        if _processing and _pending_ev:
+            # Animation: step through reasoning
+            for step_i in range(len(_CEO_STEP_ANIM)):
+                _mid_ph.markdown(
+                    _ceo_anim_html(_CEO_STEP_ANIM, step_i),
+                    unsafe_allow_html=True,
+                )
+                time.sleep(0.32)
+
+            # Actually call the V4 pipeline
+            _ev_text = _pending_ev["text"]
+            # Inject demo financial signal into insight override
+            _fin_sig_override = _pending_ev.get("financial_signal", "")
+            try:
+                _llm_result = _call_llm(_ev_text, _SYS_EMOTION_V4)
+                # Override financial signal in _ai_debug if demo event has one
+                if _fin_sig_override and st.session_state.get("_ai_debug"):
+                    pass  # V4 insight engine reads from text; demo signal already in mem patch
+            except Exception as _e:
+                _llm_result = {"message": f"[Demo mode — API key required] {str(_e)[:80]}"}
+
+            st.session_state.ceo_last_result    = _llm_result
+            st.session_state.ceo_last_event     = _pending_ev
+            st.session_state.ceo_processing     = False
+            st.session_state.ceo_pending_event  = None
+            # Append reply to messages
+            reply_text = _llm_result.get("message", "Bê bê~ 🐑")
+            st.session_state.messages.append({"role": "user",      "content": _ev_text})
+            st.session_state.messages.append({"role": "assistant", "content": reply_text})
+            st.rerun()
+        else:
+            _mid_ph.markdown(
+                _ceo_intelligence_html(_last_dbg),
+                unsafe_allow_html=True,
+            )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # RIGHT COLUMN — Financial Journey
+    # ─────────────────────────────────────────────────────────────────────────
+    with col_r:
+        st.markdown(
+            '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;'
+            'letter-spacing:.08em;color:#9E9E9E;margin-bottom:10px;">📈 Financial Journey</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            _ceo_journey_html(_ceo_mode_mem, _last_dbg),
+            unsafe_allow_html=True,
+        )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # LAST AI REPLY
+    # ─────────────────────────────────────────────────────────────────────────
+    _last_result = st.session_state.get("ceo_last_result")
+    if _last_result:
+        _reply_text = _last_result.get("message", "")
+        if _reply_text:
+            st.markdown(
+                f'<div style="font-family:-apple-system,sans-serif;margin-top:10px;'
+                f'background:white;border-radius:14px;padding:14px 16px;'
+                f'box-shadow:0 1px 4px rgba(0,0,0,.08);">'
+                f'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;'
+                f'letter-spacing:.08em;color:#9E9E9E;margin-bottom:6px;">🐑 Cừu Cần Cù trả lời</div>'
+                f'<div style="font-size:.88rem;color:#1a1a1a;line-height:1.6;">{_reply_text}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # BOTTOM — CEO Business Summary
+    # ─────────────────────────────────────────────────────────────────────────
+    if _events_fired:
+        st.markdown(
+            _ceo_summary_html(_last_dbg, _events_fired),
+            unsafe_allow_html=True,
+        )
+
+    # Reset button
+    st.markdown('<div style="margin-top:16px;"></div>', unsafe_allow_html=True)
+    if st.button("🔄 Reset Demo", key="ceo_reset", type="secondary"):
+        new_mem = _make_demo_customer("Minh")
+        st.session_state.user_memory       = new_mem
+        st.session_state.messages          = []
+        st.session_state.ceo_events_fired  = []
+        st.session_state.ceo_last_result   = None
+        st.session_state.ceo_last_event    = None
+        st.session_state._ai_debug         = None
+        st.session_state.ceo_processing    = False
+        st.session_state.ceo_pending_event = None
+        st.rerun()
+
+
+# ═══════════════════════════════════════════════════════
+# PAGE ROUTING: CEO Demo OR Normal App
+# ═══════════════════════════════════════════════════════
+_CEO_ACTIVE = (
+    st.session_state.get("demo_mode", False)
+    and st.session_state.get("demo_customer") == "Minh"
+)
+if _CEO_ACTIVE:
+    _render_ceo_demo()
+
+# ═══════════════════════════════════════════════════════
+# 3 TABS NAVIGATION (hidden when CEO demo is active)
 # Vision: Finch × Duolingo × Character AI × TCBS
 # 💬 Tâm sự · 🐑 Cừu của tôi · 👥 Cộng đồng
 # ═══════════════════════════════════════════════════════
+if _CEO_ACTIVE:
+    st.stop()   # CEO demo rendered above; skip all tabs
+
 tab1, tab2, tab3 = st.tabs([
     "💬 Tâm sự",
     "🐑 Cừu của tôi",
