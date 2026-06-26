@@ -2199,6 +2199,10 @@ tab1, tab2 = st.tabs([
 # ═══════════════════════════════════════════════════════
 with tab1:
 
+    # ── Demo Mode: auto-switch to Chat when a scene is pending ──
+    if st.session_state.get("demo_processing") or st.session_state.get("demo_pending_scene"):
+        st.session_state["tamsự_view"] = "💬 Trò chuyện với Cừu"
+
     # ── Sub-view toggle ──
     st.markdown(
         '<div style="display:flex;justify-content:center;margin-bottom:8px;"></div>',
@@ -2485,51 +2489,36 @@ with tab1:
                 st.session_state.messages.append({"role": "assistant", "content": _reply_msg})
                 st.rerun()
 
+        # ── Demo scene processor (runs here, in Chat view, guaranteed) ──────────
+        _pending_sc = st.session_state.get("demo_pending_scene")
+        if st.session_state.get("demo_processing") and _pending_sc:
+            _sc_text   = _pending_sc.get("text")
+            _fin_sig   = _pending_sc.get("_fin_signal", "")
+            _sig_labels = {
+                "salary_received": "💳 Lương **+12,000,000 VND** vừa vào tài khoản của Minh.",
+                "micro_saving":    "👆 Minh vừa tiết kiệm thành công! Cừu đã ghi nhận.",
+                "fund_purchase":   "🎉 Chúc mừng! Minh vừa đầu tư **3,000,000 VND** vào iPower Fund!",
+            }
+            if _sc_text:
+                # Chat/diary scene → call LLM
+                try:
+                    _sc_result = _call_llm(_sc_text, _SYS_EMOTION_V4)
+                except Exception as _exc:
+                    _sc_result = {"message": f"[Demo] {str(_exc)[:120]}"}
+                st.session_state.messages.append({"role": "user",      "content": _sc_text})
+                st.session_state.messages.append({"role": "assistant", "content": _sc_result.get("message", "Bê bê~ 🐑")})
+            else:
+                # Transaction / action scene → inject finance note
+                _note = _sig_labels.get(_fin_sig, "📊 Sự kiện tài chính đã được ghi nhận.")
+                st.session_state.messages.append({"role": "assistant", "content": _note})
+            st.session_state.demo_processing    = False
+            st.session_state.demo_pending_scene = None
+            st.rerun()
+
         # ── AI Intelligence Panel (Demo Mode only, right column) ──────────────
         if _show_ai_panel:
             with __col_panel:
-                _pending_sc = st.session_state.get("demo_pending_scene")
-                if st.session_state.get("demo_processing") and _pending_sc:
-                    # ── Animated reasoning steps ──
-                    _anim_ph = st.empty()
-                    for _step_i in range(len(_DEMO_ANIM_STEPS)):
-                        _anim_ph.markdown(
-                            _demo_anim_html(_DEMO_ANIM_STEPS, _step_i),
-                            unsafe_allow_html=True,
-                        )
-                        time.sleep(0.35)
-                    # Show all steps completed briefly
-                    _anim_ph.markdown(
-                        _demo_anim_html(_DEMO_ANIM_STEPS, len(_DEMO_ANIM_STEPS)),
-                        unsafe_allow_html=True,
-                    )
-                    time.sleep(0.4)
-                    _anim_ph.empty()
-                    # ── Call LLM with scene text (if scene has text) ──
-                    _sc_text = _pending_sc.get("text")
-                    if _sc_text:
-                        try:
-                            _sc_result = _call_llm(_sc_text, _SYS_EMOTION_V4)
-                        except Exception as _exc:
-                            _sc_result = {"message": f"[Demo] {str(_exc)[:100]}"}
-                        st.session_state.messages.append({"role": "user",    "content": _sc_text})
-                        st.session_state.messages.append({"role": "assistant", "content": _sc_result.get("message", "Bê bê~ 🐑")})
-                    else:
-                        # Transaction / action scene — inject a system note
-                        _fin_sig = _pending_sc.get("_fin_signal", "")
-                        _sig_labels = {
-                            "salary_received": "💳 Lương +12,000,000 VND vừa vào tài khoản.",
-                            "micro_saving":    "👆 Cừu ghi nhận bạn vừa tiết kiệm thành công!",
-                            "fund_purchase":   "🎉 Chúc mừng! Bạn vừa đầu tư vào iPower Fund.",
-                        }
-                        _note = _sig_labels.get(_fin_sig, "📊 Sự kiện tài chính đã được ghi nhận.")
-                        st.session_state.messages.append({"role": "assistant", "content": _note})
-                    # ── Clear demo flags & re-render panel with fresh debug data ──
-                    st.session_state.demo_processing    = False
-                    st.session_state.demo_pending_scene = None
-                    st.rerun()
-                else:
-                    _render_ai_panel(st.session_state.get("_ai_debug"))
+                _render_ai_panel(st.session_state.get("_ai_debug"))
 
 
 
