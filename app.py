@@ -1634,6 +1634,131 @@ strong { color:#333 !important; }
 # ═══════════════════════════════════════════════════════
 # SIDEBAR
 # ═══════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════
+# 🎬 DEMO MODE — Story Scenes & Animation Engine
+# Completely separated from normal customer experience.
+# Presenter clicks one scene button; everything updates.
+# ═══════════════════════════════════════════════════════
+
+_DEMO_SCENES: list[dict] = [
+    {
+        "n": 1, "icon": "💬", "type": "chat",
+        "button":   '"I have a dream" 💭',
+        "sublabel": "Chat · Scene 1",
+        "text":     "Mình muốn mua MacBook Air năm nay. Đó là ước mơ của mình.",
+        "diary":    None,
+        "mem_patch": {
+            "dreams": [{"name": "MacBook Air", "amount": 28_000_000, "saved": 0, "tags": []}],
+        },
+    },
+    {
+        "n": 2, "icon": "📖", "type": "diary",
+        "button":   '"My salary disappears 😂" 📖',
+        "sublabel": "Diary · Scene 2",
+        "text":     "Mình nhận lương mỗi tháng nhưng không biết sao tiền cứ hết. Không tiết kiệm được.",
+        "diary": {
+            "mood":    "😅 Hơi lo",
+            "content": "Nhận lương mỗi tháng nhưng chẳng hiểu sao tiền cứ bay hết. Cuối tháng nhìn ví trống, buồn lắm.",
+            "emotion": "lo_lắng",
+            "tags":    ["cashflow"],
+        },
+        "mem_patch": {
+            "life_events": ["cashflow"],
+            "notes": ["Hay tiêu hết lương trước cuối tháng", "Không tiết kiệm được gì"],
+        },
+    },
+    {
+        "n": 3, "icon": "💳", "type": "transaction",
+        "button":   "💳 Salary +12,000,000 VND",
+        "sublabel": "Transaction · Scene 3",
+        "text":     "Mình vừa nhận lương 12 triệu đồng. Lần này mình muốn để dành được tiền.",
+        "diary":    None,
+        "mem_patch": {"cash_balance": 14_500_000},
+        "_fin_signal": "salary_received",
+    },
+    {
+        "n": 4, "icon": "👆", "type": "action",
+        "button":   "👆 Save 100,000 VND",
+        "sublabel": "Customer Action · Scene 4",
+        "text":     "Mình vừa tiết kiệm 100,000 đồng lần đầu tiên trong đời! Tự hào về bản thân lắm!",
+        "diary":    None,
+        "mem_patch": {
+            "total_saved": 100_000, "streak": 1, "cash_balance": 14_400_000,
+            "last_fed_date": datetime.now().strftime("%Y-%m-%d"),
+            "last_fed_food": "🥕 Cà Rốt", "last_fed_amount": 100_000,
+        },
+        "_fin_signal": "micro_saving",
+    },
+    {
+        "n": 5, "icon": "💳", "type": "transaction",
+        "button":   "💳 One Week Later — Saving 300K",
+        "sublabel": "Transaction · Scene 5",
+        "text":     "Mình vừa tiết kiệm thêm 300,000 đồng nữa. Cảm giác tốt hơn nhiều so với trước!",
+        "diary":    None,
+        "mem_patch": {
+            "total_saved": 400_000, "streak": 7, "cash_balance": 14_100_000,
+            "last_fed_date": datetime.now().strftime("%Y-%m-%d"),
+        },
+        "_fin_signal": "micro_saving",
+    },
+    {
+        "n": 6, "icon": "💳", "type": "transaction",
+        "button":   "💳 One Month — iPower 3,000,000",
+        "sublabel": "Transaction · Scene 6",
+        "text":     "Mình vừa mở iPower với 3 triệu đồng. Tiền của mình đang sinh lãi rồi — thích lắm!",
+        "diary":    None,
+        "mem_patch": {
+            "investment_aum": 3_000_000, "total_saved": 700_000, "streak": 30,
+            "cash_balance": 11_100_000, "trading_frequency": 1,
+            "investment_stage": "New Investor",
+        },
+        "_fin_signal": "fund_purchase",
+    },
+]
+
+_DEMO_ANIM_STEPS = [
+    ("📊", "Reading Chat…",              "Đang đọc tin nhắn của khách hàng..."),
+    ("📖", "Reading Diary…",             "Đang đọc nhật ký cá nhân..."),
+    ("💳", "Reading Transactions…",      "Đang đọc lịch sử giao dịch..."),
+    ("🧠", "Updating Customer State…",   "Cập nhật trạng thái khách hàng..."),
+    ("🎯", "Selecting Business Goal…",   "Chọn mục tiêu kinh doanh..."),
+    ("✍️", "Generating Recommendation…", "Soạn khuyến nghị cá nhân hóa..."),
+]
+
+
+def _demo_anim_html(steps: list, active: int) -> str:
+    rows = ""
+    for i, (icon, title, desc) in enumerate(steps):
+        if i < active:
+            bg = "#E8F5E9"; tc = "#1B5E20"; badge = "✓"; op = "1"
+        elif i == active:
+            bg = "#E3F2FD"; tc = "#0D47A1"; badge = "▶"; op = "1"
+        else:
+            bg = "transparent"; tc = "#BDBDBD"; badge = str(i + 1); op = "0.35"
+        rows += (
+            f'<div style="display:flex;align-items:center;gap:9px;padding:7px 9px;'
+            f'border-radius:10px;background:{bg};margin-bottom:4px;opacity:{op};">'
+            f'<span style="font-size:.9rem;min-width:20px;text-align:center;">{icon}</span>'
+            f'<div style="flex:1;">'
+            f'<div style="font-size:.73rem;font-weight:700;color:{tc};">{title}</div>'
+            f'<div style="font-size:.64rem;color:#888;margin-top:1px;">{desc}</div>'
+            f'</div>'
+            f'<span style="font-size:.6rem;font-weight:800;color:{tc};'
+            f'background:{"rgba(255,255,255,.9)" if i <= active else "transparent"};'
+            f'width:17px;height:17px;border-radius:50%;display:flex;align-items:center;'
+            f'justify-content:center;border:1.5px solid {tc};">{badge}</span>'
+            f'</div>'
+        )
+    return (
+        f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+        f'<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;'
+        f'letter-spacing:.09em;color:#9E9E9E;margin-bottom:9px;">🤖 AI đang xử lý...</div>'
+        f'{rows}'
+        f'</div>'
+    )
+
+
+
 with st.sidebar:
     # ══════════════════════════════════════════════════
     # DEMO MODE — Customer selector (presentation only)
@@ -2062,130 +2187,6 @@ def _render_ai_panel(dbg: dict | None) -> None:
 </div>
 """
     st.markdown(html, unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════════════
-# 🎬 DEMO MODE — Story Scenes & Animation Engine
-# Completely separated from normal customer experience.
-# Presenter clicks one scene button; everything updates.
-# ═══════════════════════════════════════════════════════
-
-_DEMO_SCENES: list[dict] = [
-    {
-        "n": 1, "icon": "💬", "type": "chat",
-        "button":   '"I have a dream" 💭',
-        "sublabel": "Chat · Scene 1",
-        "text":     "Mình muốn mua MacBook Air năm nay. Đó là ước mơ của mình.",
-        "diary":    None,
-        "mem_patch": {
-            "dreams": [{"name": "MacBook Air", "amount": 28_000_000, "saved": 0, "tags": []}],
-        },
-    },
-    {
-        "n": 2, "icon": "📖", "type": "diary",
-        "button":   '"My salary disappears 😂" 📖',
-        "sublabel": "Diary · Scene 2",
-        "text":     "Mình nhận lương mỗi tháng nhưng không biết sao tiền cứ hết. Không tiết kiệm được.",
-        "diary": {
-            "mood":    "😅 Hơi lo",
-            "content": "Nhận lương mỗi tháng nhưng chẳng hiểu sao tiền cứ bay hết. Cuối tháng nhìn ví trống, buồn lắm.",
-            "emotion": "lo_lắng",
-            "tags":    ["cashflow"],
-        },
-        "mem_patch": {
-            "life_events": ["cashflow"],
-            "notes": ["Hay tiêu hết lương trước cuối tháng", "Không tiết kiệm được gì"],
-        },
-    },
-    {
-        "n": 3, "icon": "💳", "type": "transaction",
-        "button":   "💳 Salary +12,000,000 VND",
-        "sublabel": "Transaction · Scene 3",
-        "text":     "Mình vừa nhận lương 12 triệu đồng. Lần này mình muốn để dành được tiền.",
-        "diary":    None,
-        "mem_patch": {"cash_balance": 14_500_000},
-        "_fin_signal": "salary_received",
-    },
-    {
-        "n": 4, "icon": "👆", "type": "action",
-        "button":   "👆 Save 100,000 VND",
-        "sublabel": "Customer Action · Scene 4",
-        "text":     "Mình vừa tiết kiệm 100,000 đồng lần đầu tiên trong đời! Tự hào về bản thân lắm!",
-        "diary":    None,
-        "mem_patch": {
-            "total_saved": 100_000, "streak": 1, "cash_balance": 14_400_000,
-            "last_fed_date": datetime.now().strftime("%Y-%m-%d"),
-            "last_fed_food": "🥕 Cà Rốt", "last_fed_amount": 100_000,
-        },
-        "_fin_signal": "micro_saving",
-    },
-    {
-        "n": 5, "icon": "💳", "type": "transaction",
-        "button":   "💳 One Week Later — Saving 300K",
-        "sublabel": "Transaction · Scene 5",
-        "text":     "Mình vừa tiết kiệm thêm 300,000 đồng nữa. Cảm giác tốt hơn nhiều so với trước!",
-        "diary":    None,
-        "mem_patch": {
-            "total_saved": 400_000, "streak": 7, "cash_balance": 14_100_000,
-            "last_fed_date": datetime.now().strftime("%Y-%m-%d"),
-        },
-        "_fin_signal": "micro_saving",
-    },
-    {
-        "n": 6, "icon": "💳", "type": "transaction",
-        "button":   "💳 One Month — iPower 3,000,000",
-        "sublabel": "Transaction · Scene 6",
-        "text":     "Mình vừa mở iPower với 3 triệu đồng. Tiền của mình đang sinh lãi rồi — thích lắm!",
-        "diary":    None,
-        "mem_patch": {
-            "investment_aum": 3_000_000, "total_saved": 700_000, "streak": 30,
-            "cash_balance": 11_100_000, "trading_frequency": 1,
-            "investment_stage": "New Investor",
-        },
-        "_fin_signal": "fund_purchase",
-    },
-]
-
-_DEMO_ANIM_STEPS = [
-    ("📊", "Reading Chat…",              "Đang đọc tin nhắn của khách hàng..."),
-    ("📖", "Reading Diary…",             "Đang đọc nhật ký cá nhân..."),
-    ("💳", "Reading Transactions…",      "Đang đọc lịch sử giao dịch..."),
-    ("🧠", "Updating Customer State…",   "Cập nhật trạng thái khách hàng..."),
-    ("🎯", "Selecting Business Goal…",   "Chọn mục tiêu kinh doanh..."),
-    ("✍️", "Generating Recommendation…", "Soạn khuyến nghị cá nhân hóa..."),
-]
-
-
-def _demo_anim_html(steps: list, active: int) -> str:
-    rows = ""
-    for i, (icon, title, desc) in enumerate(steps):
-        if i < active:
-            bg = "#E8F5E9"; tc = "#1B5E20"; badge = "✓"; op = "1"
-        elif i == active:
-            bg = "#E3F2FD"; tc = "#0D47A1"; badge = "▶"; op = "1"
-        else:
-            bg = "transparent"; tc = "#BDBDBD"; badge = str(i + 1); op = "0.35"
-        rows += (
-            f'<div style="display:flex;align-items:center;gap:9px;padding:7px 9px;'
-            f'border-radius:10px;background:{bg};margin-bottom:4px;opacity:{op};">'
-            f'<span style="font-size:.9rem;min-width:20px;text-align:center;">{icon}</span>'
-            f'<div style="flex:1;">'
-            f'<div style="font-size:.73rem;font-weight:700;color:{tc};">{title}</div>'
-            f'<div style="font-size:.64rem;color:#888;margin-top:1px;">{desc}</div>'
-            f'</div>'
-            f'<span style="font-size:.6rem;font-weight:800;color:{tc};'
-            f'background:{"rgba(255,255,255,.9)" if i <= active else "transparent"};'
-            f'width:17px;height:17px;border-radius:50%;display:flex;align-items:center;'
-            f'justify-content:center;border:1.5px solid {tc};">{badge}</span>'
-            f'</div>'
-        )
-    return (
-        f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
-        f'<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;'
-        f'letter-spacing:.09em;color:#9E9E9E;margin-bottom:9px;">🤖 AI đang xử lý...</div>'
-        f'{rows}'
-        f'</div>'
-    )
-
 
 tab1, tab2 = st.tabs([
     "💬 Tâm sự",
