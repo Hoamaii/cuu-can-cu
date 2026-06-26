@@ -958,34 +958,58 @@ OUTPUT (JSON hợp lệ, KHÔNG text ngoài JSON):
   "mood": "listening|happy|sad|celebrate|determined|default"
 }"""
 
-_SYS_EMOTION_V4 = """Bạn là Cừu Cần Cù 🐑 — AI đồng hành tài chính ấm áp.
+_SYS_EMOTION_V4 = """Bạn là Cừu Cần Cù 🐑 — Financial Coach của TCBS.
+VAI TRÒ: Financial Coach. Không phải chatbot. Không phải sales agent.
 XƯNG HÔ: Mình – Bạn. Thỉnh thoảng "bê bê~" 🐑
-TUYỆT ĐỐI KHÔNG: số NAV, lợi nhuận cụ thể, khuyến nghị mua/bán.
+TUYỆT ĐỐI KHÔNG: số NAV cụ thể, lợi nhuận cụ thể, gợi ý nhiều sản phẩm cùng lúc.
 
-══════ NHIỆM VỤ DUY NHẤT ══════
-Chuyển [CONTEXT] thành cuộc trò chuyện tự nhiên, ấm áp, cá nhân hóa.
-KHÔNG tự quyết định: sản phẩm, hành động, chiến lược.
-Mọi quyết định đã có trong [BEHAVIOR], [DECISION] — chỉ diễn đạt tự nhiên.
+══════ 7 BƯỚC COACHING BẮT BUỘC (theo đúng thứ tự) ══════
+Đọc [STAGE] để biết khách hàng đang ở đâu. Đọc [BEHAVIOR] để biết mục tiêu hôm nay.
+Đọc [DECISION] để biết hành động kinh doanh đã được quyết định.
+Claude chỉ DIỄN ĐẠT — không tự quyết định sản phẩm hay chiến lược.
 
-══════ CÔNG THỨC (max 3-4 câu) ══════
-1. ĐỒNG CẢM  — nhận ra cảm xúc từ [INSIGHT].emotion (1 câu)
-2. KẾT NỐI   — gắn với [DREAM] hoặc hành trình của user (1 câu)
-3. HÀNH ĐỘNG — diễn đạt [BEHAVIOR].cta theo cách tự nhiên (1 câu)
-4. GỢI Ý     — nếu [DECISION] có product, đề cập nhẹ nhàng (1 câu, nếu có)
+Bước 1 — KẾT NỐI CẢM XÚC
+  Nhận ra cảm xúc từ [INSIGHT].emotion. Đừng phán xét. (1 câu)
 
-[LEVEL] → dùng để hiểu user đang ở đâu trong hành trình, điều chỉnh độ sâu.
-Nếu emotion trong (stress, buồn, mệt_mỏi, lo_lắng) → KHÔNG đề cập sản phẩm.
+Bước 2 — HIỂU TÌNH HUỐNG THỰC
+  Đặt 1 câu hỏi mở để hiểu sâu hơn về tình hình tài chính thực của khách hàng.
+  Dùng [INSIGHT].pain nếu có. Chỉ 1 câu hỏi, không nhiều hơn.
 
-══════ TONE ══════
-Ấm áp, chân thành, khuyến khích. Không jargon tài chính với người mới.
-Max 3-4 câu. Ngắn gọn > dài dòng.
+Bước 3 — XÁC ĐỊNH MỘT TRỞ NGẠI
+  Phản ánh lại 1 trở ngại tài chính cụ thể bạn nhận ra. Ngắn gọn. (1 câu)
+  Bỏ qua bước này nếu [INSIGHT] không có pain rõ ràng.
+
+Bước 4 — GỢI Ý MỘT HÀNH ĐỘNG NHỎ
+  Diễn đạt [BEHAVIOR].cta theo cách tự nhiên, ấm áp, cụ thể. (1 câu)
+  Đây là hành động nhỏ nhất có thể tạo ra kết quả đo được.
+
+Bước 5 — GỢI Ý SẢN PHẨM (chỉ khi [DECISION] có product)
+  Nếu [DECISION].product có tên → đề cập 1 câu nhẹ nhàng, không bán hàng.
+  Nếu [DECISION].product = null → TUYỆT ĐỐI không nhắc sản phẩm.
+  Nếu [INSIGHT].emotion là stress/buồn/mệt → bỏ qua bước này hoàn toàn.
+
+Bước 6 — GIẢI THÍCH TẠI SAO
+  1 câu ngắn: hành động này giúp khách hàng đạt được [DREAM] của họ như thế nào.
+
+Bước 7 — ĐỒNG Ý MỘT CỘT MỐC TIẾP THEO
+  Kết thúc bằng 1 cột mốc cụ thể, đo được từ [BEHAVIOR].measurable_outcome.
+  Ví dụ: "Hẹn Cừu ngày mai nhé!" hoặc "Thử tiết kiệm 10K hôm nay đi!"
+  Không kết thúc mà không có cột mốc tiếp theo.
+
+══════ QUY TẮC QUAN TRỌNG ══════
+• Không bỏ qua bước nào (trừ Bước 3 khi không có pain, Bước 5 khi không có product)
+• Không gợi ý nhiều sản phẩm trong cùng 1 tin nhắn
+• Không kết thúc cuộc trò chuyện mà không có cột mốc tiếp theo
+• Tổng max 4-5 câu. Ngắn > dài.
+• [STAGE] = Stage 1-2 → ưu tiên kết nối, không nhắc sản phẩm
+• [STAGE] = Stage 3+ → có thể gợi ý sản phẩm nếu [DECISION] cho phép
 
 OUTPUT (JSON hợp lệ, KHÔNG text ngoài JSON):
 {
-  "message": "Phản hồi 3-4 câu tự nhiên",
-  "memory_note": "Insight MỚI quan trọng về user (rỗng nếu không có gì mới)",
-  "tags": ["tag"],
-  "dream_name": "",
+  "message": "Phản hồi 4-5 câu theo 7 bước coaching",
+  "memory_note": "Insight TÀI CHÍNH mới quan trọng về user (rỗng nếu không có gì mới)",
+  "tags": ["tag_ngắn"],
+  "dream_name": "tên giấc mơ nếu nhắc đến (rỗng nếu không)",
   "dream_amount": 0,
   "mood": "listening|happy|sad|celebrate|determined|default"
 }"""
@@ -1227,10 +1251,10 @@ def _call_llm(user_text: str, system: str) -> dict:
             journey  = _je.get_level(mem)
 
             # Engine 3: Behavior — ONE target behavior for this session
-            behavior = _be.get_target_behavior(journey["level"], insight, mem)
+            behavior = _be.get_target_behavior(journey.get("stage", 1), insight, mem)
 
             # Engine 4: Decision — ONE business action
-            decision = _de.decide(journey["level"], behavior["target_behavior"], insight, mem)
+            decision = _de.decide(journey.get("stage", 1), behavior["target_behavior"], insight, mem)
 
             # Engine 5: Context builder (V4 ultra-compact ≤500 tokens)
             mem_ctx  = _cb.build_v4(mem, insight=insight, journey=journey,
@@ -1268,30 +1292,19 @@ def _call_llm(user_text: str, system: str) -> dict:
                 "investment_ready": "Sẵn sàng tìm hiểu đầu tư",
             }
             _why_map = {
-                "continue_relationship": "Khách hàng đang xây dựng niềm tin với app. Chưa phải lúc giới thiệu sản phẩm.",
-                "celebrate_progress":    "Khách hàng vừa đạt cột mốc quan trọng. Đây là khoảnh khắc củng cố thói quen.",
-                "ask_reflection":        "Chia sẻ cảm xúc giúp khách hàng gắn kết sâu hơn và hiểu bản thân hơn.",
-                "ask_financial_goal":    "Khách hàng đã sẵn sàng về mặt cảm xúc. Đây là thời điểm phù hợp để định hướng.",
-                "recommend_micro_saving":"Khách hàng đã có mục tiêu. Một bước tiết kiệm nhỏ sẽ tạo ra thói quen lâu dài.",
-                "recommend_iPower":      "Khách hàng đã có thói quen tiết kiệm. iPower giúp tiền sinh lãi mà không mất linh hoạt.",
-                "recommend_fund":        "Khách hàng đã sẵn sàng đầu tư. Quỹ phù hợp giúp bắt đầu đúng hướng.",
-                "recommend_learning":    "Khách hàng cần hiểu trước khi đầu tư. Kiến thức là bước đầu tiên.",
-                "recommend_referral":    "Khách hàng đã có hành trình thành công. Chia sẻ sẽ củng cố cam kết của họ.",
-                "no_action":             "Không có tín hiệu rõ ràng. Duy trì kết nối tự nhiên là ưu tiên.",
+                "continue_relationship":  "Khách hàng đang xây dựng niềm tin. Chưa phải lúc giới thiệu sản phẩm.",
+                "celebrate_progress":     "Khách hàng vừa đạt cột mốc quan trọng. Đây là khoảnh khắc củng cố thói quen.",
+                "identify_obstacle":      "Xác định trở ngại giúp Coach đưa ra lời khuyên chính xác hơn.",
+                "ask_financial_goal":     "Khách hàng cần mục tiêu rõ ràng trước khi bắt đầu hành động tài chính.",
+                "recommend_micro_saving": "Khách hàng đã có mục tiêu. Một hành động nhỏ sẽ tạo ra thói quen lâu dài.",
+                "recommend_iPower":       "Tiền đang nhàn rỗi. iPower giúp tiền sinh lãi mà không mất linh hoạt.",
+                "recommend_fund":         "Khách hàng sẵn sàng đầu tư. Quỹ phù hợp giúp bắt đầu đúng hướng.",
+                "recommend_learning":     "Cần hiểu trước khi đầu tư. Kiến thức là bước đầu tiên bắt buộc.",
+                "recommend_referral":     "Khách hàng đã có hành trình thành công. Chia sẻ sẽ củng cố cam kết.",
+                "no_action":              "Không có tín hiệu đủ mạnh. Duy trì kết nối tự nhiên là ưu tiên.",
             }
-            _nba_map = {
-                "return_tomorrow":      "Mời quay lại ngày mai",
-                "start_chat":           "Khuyến khích bắt đầu trò chuyện",
-                "write_diary":          "Gợi ý viết nhật ký",
-                "define_goal":          "Khám phá mục tiêu tài chính",
-                "first_saving":         "Thực hiện tiết kiệm lần đầu",
-                "repeat_saving":        "Duy trì streak tiết kiệm hôm nay",
-                "learn_investment":     "Đọc bài học đầu tư đầu tiên",
-                "recurring_investment": "Đặt lịch đầu tư định kỳ",
-                "referral":             "Giới thiệu một người bạn",
-                "ambassador":           "Tiếp tục chia sẻ hành trình",
-            }
-            # Build insight bullets (CEO-friendly)
+
+            # Build insight bullets (CEO-friendly, no technical terms)
             _ib = []
             _e = insight.get("emotion", "")
             if _e and _e != "bình_thường":
@@ -1307,50 +1320,76 @@ def _call_llm(user_text: str, system: str) -> dict:
             if not _ib:
                 _ib = ["Đang xây dựng niềm tin với app", "Chưa có tín hiệu tài chính rõ ràng"]
 
-            # Journey steps for progress display
-            _jlvl = journey["level"]
-            _jsteps = [
-                (1, "Mở App"),
-                (2, "Quay Lại"),
-                (3, "Trò Chuyện"),
-                (4, "Nhật Ký"),
-                (5, "Mục Tiêu"),
-                (6, "Tiết Kiệm"),
-                (7, "Thói Quen"),
+            # Stage steps for progress display (6 business stages)
+            _cur_stage = journey.get("stage", 1)
+            _stage_steps = [
+                (1, "Kết Nối", "🤝"),
+                (2, "Hiểu Tôi", "🧠"),
+                (3, "Hành Động", "🎯"),
+                (4, "Thói Quen", "🔄"),
+                (5, "Tăng Trưởng", "📈"),
+                (6, "Dài Hạn", "❤️"),
             ]
             _journey_steps = [
-                {"label": lbl,
-                 "status": "done" if lvl < _jlvl else ("current" if lvl == _jlvl else "pending")}
-                for lvl, lbl in _jsteps
+                {"label": lbl, "emoji": em,
+                 "status": "done" if s < _cur_stage else ("current" if s == _cur_stage else "pending")}
+                for s, lbl, em in _stage_steps
             ]
 
+            # Conversation result labels
+            _result_icons = {
+                "relationship_built":       ("🤝", "#E8F5E9", "#2E7D32"),
+                "insight_collected":        ("💡", "#E3F2FD", "#1565C0"),
+                "goal_defined":             ("🎯", "#EDE7F6", "#4527A0"),
+                "financial_action_started": ("🚀", "#FFF8E1", "#F57F17"),
+                "habit_reinforced":         ("🔥", "#FFF3E0", "#E65100"),
+                "product_explored":         ("🔍", "#E8EAF6", "#283593"),
+                "investment_started":       ("📈", "#E0F7FA", "#006064"),
+                "journey_progressed":       ("⬆️", "#FCE4EC", "#880E4F"),
+            }
+            _conv_result     = decision.get("conversation_result", "relationship_built")
+            _conv_result_vn  = decision.get("conversation_result_label", "Xây Dựng Niềm Tin")
+            _conv_result_en  = decision.get("conversation_result_en", "Relationship Built")
+            _r_icon, _r_bg, _r_color = _result_icons.get(_conv_result, ("✓", "#F5F5F5", "#757575"))
+
             st.session_state["_ai_debug"] = {
-                # Raw data (kept for backward compat)
-                "level":                  journey["level"],
+                # Stage fields (new framework)
+                "stage":                  journey.get("stage", 1),
+                "stage_label":            journey.get("stage_label", journey.get("label_vn", "")),
+                "stage_emoji":            journey.get("stage_emoji", journey.get("emoji", "")),
+                "coach_focus":            journey.get("coach_focus", ""),
+                "next_milestone":         journey.get("next_milestone", ""),
+                # Legacy level fields (backward compat)
+                "level":                  journey.get("level", 1),
                 "level_label":            journey.get("label_vn", ""),
                 "level_emoji":            journey.get("emoji", ""),
+                # Behavior
                 "target_behavior":        behavior.get("target_behavior", ""),
                 "target_label":           behavior.get("target_label", ""),
                 "measurable_outcome":     behavior.get("measurable_outcome", ""),
+                # Decision
                 "decision":               decision.get("decision", ""),
                 "decision_label":         decision.get("decision_label", ""),
                 "product_name":           decision.get("product_name", ""),
-                "trust_score":            decision.get("trust_score", 0),
-                "saving_score":           decision.get("saving_score", 0),
-                "investment_readiness":   decision.get("investment_readiness", 0),
-                "estimated_tokens":       decision.get("estimated_tokens", 650),
-                "top_insights": {
-                    "emotion": insight.get("emotion", ""),
-                    "pain":    insight.get("pain", ""),
-                    "signal":  insight.get("financial_signal", ""),
-                },
-                # Human-readable fields for AI Intelligence Panel
-                "last_user_message":  user_text,
-                "insight_bullets":    _ib,
-                "why_reason":         _why_map.get(decision.get("decision", ""), "Đây là quyết định phù hợp nhất với hành vi hiện tại của khách hàng."),
-                "journey_steps":      _journey_steps,
-                "next_action_label":  _nba_map.get(behavior.get("target_behavior", ""), behavior.get("target_label", "")),
-                "level_short":        journey.get("label", ""),
+                "product_reason":         decision.get("product_reason", ""),
+                # Conversation Result (new)
+                "conversation_result":    _conv_result,
+                "conversation_result_vn": _conv_result_vn,
+                "conversation_result_en": _conv_result_en,
+                "result_icon":            _r_icon,
+                "result_bg":              _r_bg,
+                "result_color":           _r_color,
+                # Progress Card data (new)
+                "progress_milestone":     decision.get("progress_milestone", ""),
+                "next_tiny_step":         decision.get("next_tiny_step", ""),
+                "milestones_completed":   decision.get("milestones_completed", 0),
+                # Human-readable panel fields
+                "last_user_message":      user_text,
+                "insight_bullets":        _ib,
+                "why_reason":             _why_map.get(decision.get("decision", ""), "Đây là quyết định phù hợp nhất với hành vi hiện tại của khách hàng."),
+                "journey_steps":          _journey_steps,
+                "next_action_label":      behavior.get("target_label", ""),
+                "level_short":            journey.get("stage_label", journey.get("label", "")),
             }
             system = _SYS_EMOTION_V4
 
@@ -1786,33 +1825,14 @@ def _render_ai_panel(dbg: dict | None) -> None:
     _dec_key  = dbg.get("decision", "no_action")
     _dec_bg, _dec_color, _dec_icon = _dec_colors.get(_dec_key, ("#F5F5F5", "#757575", "⚙"))
 
-    # ── Journey steps HTML ──
-    _steps_html = ""
-    for step in dbg.get("journey_steps", []):
-        s = step["status"]
-        if s == "done":
-            _steps_html += (
-                f'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">'
-                f'<span style="font-size:14px;">✅</span>'
-                f'<span style="font-size:.78rem;color:#1B5E20;font-weight:600;">{step["label"]}</span>'
-                f'</div>'
-            )
-        elif s == "current":
-            _steps_html += (
-                f'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">'
-                f'<span style="font-size:14px;">▶️</span>'
-                f'<span style="font-size:.78rem;color:#1565C0;font-weight:700;">{step["label"]}</span>'
-                f'<span style="font-size:.65rem;background:#1565C0;color:white;'
-                f'padding:1px 7px;border-radius:99px;margin-left:2px;">Hiện tại</span>'
-                f'</div>'
-            )
-        else:
-            _steps_html += (
-                f'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">'
-                f'<span style="font-size:14px;opacity:.35;">⬜</span>'
-                f'<span style="font-size:.78rem;color:#BDBDBD;">{step["label"]}</span>'
-                f'</div>'
-            )
+    # ── Conversation Result card data ──
+    _r_icon   = dbg.get("result_icon", "✓")
+    _r_bg     = dbg.get("result_bg", "#F5F5F5")
+    _r_color  = dbg.get("result_color", "#757575")
+    _r_vn     = dbg.get("conversation_result_vn", "Xây Dựng Niềm Tin")
+    _r_en     = dbg.get("conversation_result_en", "Relationship Built")
+    _coach_focus = dbg.get("coach_focus", "")
+    _next_milestone = dbg.get("next_milestone", "")
 
     # ── Insight bullets HTML ──
     _bullets_html = "".join(
@@ -1875,16 +1895,18 @@ def _render_ai_panel(dbg: dict | None) -> None:
     {_bullets_html}
   </div>
 
-  <!-- 3. Journey + Behavior (2 columns) -->
+  <!-- 3. Journey Stage + Behavior (2 columns) -->
   <div style="{_card}">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div>
-        <div style="{_lbl}">📍 Vị trí hành trình</div>
-        <div style="font-size:1.35rem;line-height:1;">{dbg.get("level_emoji","")}</div>
+        <div style="{_lbl}">📍 Giai đoạn hành trình</div>
+        <div style="font-size:1.35rem;line-height:1;">{dbg.get("stage_emoji", dbg.get("level_emoji",""))}</div>
         <div style="font-size:.92rem;font-weight:700;color:#1a1a1a;margin-top:4px;">
-          Level {dbg.get("level",1)}</div>
+          Stage {dbg.get("stage", dbg.get("level",1))}/6</div>
         <div style="font-size:.75rem;color:#666;margin-top:2px;">
-          {dbg.get("level_short","")}</div>
+          {dbg.get("stage_label", dbg.get("level_short",""))}</div>
+        <div style="font-size:.68rem;color:#888;margin-top:4px;line-height:1.4;font-style:italic;">
+          {_coach_focus[:60] + "…" if len(_coach_focus) > 60 else _coach_focus}</div>
       </div>
       <div style="border-left:1px solid #F0F0F0;padding-left:14px;">
         <div style="{_lbl}">🎯 Mục tiêu hôm nay</div>
@@ -1914,10 +1936,21 @@ def _render_ai_panel(dbg: dict | None) -> None:
     </div>
   </div>
 
-  <!-- 5. Customer Growth Journey -->
-  <div style="{_card}">
-    <div style="{_lbl}">📈 Hành trình khách hàng</div>
-    {_steps_html}
+  <!-- 5. Conversation Result — ONE measurable business outcome per session -->
+  <div style="{_card}background:{_r_bg};">
+    <div style="{_lbl}color:{_r_color};">📊 Kết quả cuộc trò chuyện</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:1.6rem;line-height:1;">{_r_icon}</span>
+      <div>
+        <div style="font-size:.95rem;font-weight:800;color:{_r_color};line-height:1.2;">
+          {_r_vn}</div>
+        <div style="font-size:.68rem;color:{_r_color};opacity:.7;margin-top:2px;
+                    text-transform:uppercase;letter-spacing:.05em;">{_r_en}</div>
+      </div>
+    </div>
+    <div style="font-size:.72rem;color:{_r_color};opacity:.8;line-height:1.45;
+                padding:6px 8px;background:rgba(255,255,255,.55);border-radius:8px;">
+      🎯 Cột mốc tiếp theo: {_next_milestone}</div>
   </div>
 
   <!-- 6. Next Best Action -->
@@ -2187,6 +2220,45 @@ with tab1:
                     _av = get_avatar_src("listening") if _m["role"] == "assistant" else "🧑"
                     with st.chat_message(_m["role"], avatar=_av):
                         st.markdown(_m["content"])
+
+            # ── 🐑 Today's Progress Card (customer-facing, shown after AI responds) ──
+            _dbg_prog = st.session_state.get("_ai_debug")
+            if _dbg_prog and _COMPANION_V4:
+                _prog_milestone   = _dbg_prog.get("progress_milestone", "")
+                _prog_next_step   = _dbg_prog.get("next_tiny_step", "")
+                _prog_completed   = _dbg_prog.get("milestones_completed", 0)
+                _prog_result_vn   = _dbg_prog.get("conversation_result_vn", "")
+                _prog_result_icon = _dbg_prog.get("result_icon", "✓")
+                _prog_r_color     = _dbg_prog.get("result_color", "#2E7D32")
+                _prog_r_bg        = _dbg_prog.get("result_bg", "#E8F5E9")
+                # Build 6-dot progress bar
+                _dots = "".join(
+                    f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
+                    f'background:{"#4CAF50" if i < _prog_completed else ("#2196F3" if i == _prog_completed else "#E0E0E0")};'
+                    f'margin:0 3px;"></span>'
+                    for i in range(6)
+                )
+                if _prog_milestone:
+                    st.markdown(
+                        f'<div style="margin:10px 0 4px;background:white;border-radius:14px;'
+                        f'padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04);">'
+                        f'<div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;'
+                        f'text-transform:uppercase;color:#9E9E9E;margin-bottom:8px;">🐑 Tiến độ hôm nay</div>'
+                        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+                        f'<span style="font-size:1.1rem;">{_prog_result_icon}</span>'
+                        f'<span style="font-size:.82rem;font-weight:700;color:{_prog_r_color};">'
+                        f'{_prog_result_vn}</span></div>'
+                        f'<div style="font-size:.78rem;color:#555;line-height:1.4;margin-bottom:8px;">'
+                        f'📍 {_prog_milestone}</div>'
+                        f'<div style="font-size:.78rem;color:#1565C0;font-weight:600;margin-bottom:8px;">'
+                        f'🎯 Bước nhỏ tiếp theo: {_prog_next_step}</div>'
+                        f'<div style="display:flex;align-items:center;gap:8px;">'
+                        f'<span style="font-size:.68rem;color:#888;">🌱 Tiến bộ:</span>'
+                        f'{_dots}'
+                        f'<span style="font-size:.68rem;color:#888;">{_prog_completed}/6 giai đoạn</span>'
+                        f'</div></div>',
+                        unsafe_allow_html=True,
+                    )
 
             # ── Chat input ──
             _user_msg = st.chat_input("Nhắn tin với Cừu Cần Cù... 🐑")
