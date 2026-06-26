@@ -29,6 +29,24 @@ Nhiều ảnh cùng mood: sheep_happy_1.png, sheep_happy_2.png → random 1 cái
 """
 
 # ═══════════════════════════════════════════════════════
+# ENCODING FIX — must run before any imports that use locale
+# ═══════════════════════════════════════════════════════
+import os, sys, io
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+os.environ.setdefault("LANG", "en_US.UTF-8")
+os.environ.setdefault("LC_ALL", "en_US.UTF-8")
+if hasattr(sys.stdout, "buffer"):
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "buffer"):
+    try:
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+# ═══════════════════════════════════════════════════════
 # IMPORTS & PAGE CONFIG
 # ═══════════════════════════════════════════════════════
 import streamlit as st
@@ -38,7 +56,6 @@ import random
 import re
 import base64
 import glob
-import os
 import time
 from datetime import datetime, timedelta
 from copy import deepcopy
@@ -1421,6 +1438,10 @@ def _call_llm(user_text: str, system: str) -> dict:
             f"User: {user_text}"
         )
 
+        # Ensure all strings are proper UTF-8 (guards against ASCII-locale environments)
+        prompt = prompt.encode("utf-8", errors="replace").decode("utf-8")
+        system = system.encode("utf-8", errors="replace").decode("utf-8")
+
         client = anthropic.Anthropic(api_key=st.session_state.api_key)
         resp   = client.messages.create(
             model="claude-haiku-4-5-20251001",
@@ -2052,6 +2073,178 @@ with st.sidebar:
 # Only shown in Demo Mode. Never exposed to customers.
 # ═══════════════════════════════════════════════════════
 
+def _render_ai_progress(dbg: dict | None) -> None:
+    """
+    AI Decision Progress — 4-state maturity indicator.
+    Inferred from existing _ai_debug fields. Pure presentation layer.
+    States: Blue (Understand) → Amber (Opportunity) → Green (Action) → Purple (Value)
+    """
+    if not dbg:
+        return
+
+    conv_result = dbg.get("conversation_result", "")
+    decision    = dbg.get("decision", "")
+    insight_bul = dbg.get("insight_bullets", [])
+    stage       = dbg.get("stage", 1)
+
+    # ── Detect highest achieved state ─────────────────────────────────────────
+    PURPLE = {"habit_reinforced", "investment_started", "journey_progressed"}
+    GREEN  = {"financial_action_started", "product_explored"}
+    AMBER_SKIP = {"", "no_action", "continue_relationship"}
+
+    if conv_result in PURPLE:
+        state = 4
+    elif conv_result in GREEN:
+        state = 3
+    elif decision and decision not in AMBER_SKIP:
+        state = 2
+    elif insight_bul or conv_result in {"insight_collected", "goal_defined", "relationship_built"} or stage > 1:
+        state = 1
+    else:
+        return  # no data yet — don't render
+
+    # ── State definitions ─────────────────────────────────────────────────────
+    _STATES = [
+        {
+            "dot": "●", "color": "#2563EB", "bg": "#EFF6FF", "border": "#BFDBFE",
+            "title": "Understand Customer",
+            "status": "AI understands the customer.",
+            "desc":   "Goal identified. Customer profile is becoming clearer.",
+            "opp":    "Not yet — awaiting business signal.",
+            "ceo":    "Customer goal identified.",
+        },
+        {
+            "dot": "●", "color": "#D97706", "bg": "#FFFBEB", "border": "#FDE68A",
+            "title": "Identify Opportunity",
+            "status": "AI found the best opportunity.",
+            "desc":   "The system knows what the customer needs next.",
+            "opp":    "Ready — waiting for the right timing.",
+            "ceo":    "Business opportunity detected.",
+        },
+        {
+            "dot": "●", "color": "#16A34A", "bg": "#F0FDF4", "border": "#BBF7D0",
+            "title": "Create Action",
+            "status": "Customer performed the first action.",
+            "desc":   "Conversation has become measurable behavior.",
+            "opp":    "Activated.",
+            "ceo":    "Customer completed first financial action.",
+        },
+        {
+            "dot": "●", "color": "#7C3AED", "bg": "#F5F3FF", "border": "#DDD6FE",
+            "title": "Create Business Value",
+            "status": "Business value created.",
+            "desc":   "AI converted understanding into measurable customer progress.",
+            "opp":    "High — customer ready for next TCBS product.",
+            "ceo":    "Conversation generated measurable business value.",
+        },
+    ]
+
+    cur = _STATES[state - 1]
+    col = cur["color"]
+    bg  = cur["bg"]
+    bdr = cur["border"]
+
+    # ── Timeline ──────────────────────────────────────────────────────────────
+    tl_labels = ["Understand", "Opportunity", "Action", "Value"]
+    tl_colors = [s["color"] for s in _STATES]
+
+    dots_html = '<div style="display:flex;align-items:center;margin-top:14px;">'
+    for i in range(4):
+        done    = i < state
+        is_cur  = i == state - 1
+        dc      = tl_colors[i] if done else "#D1D5DB"
+        dbg_    = _STATES[i]["bg"] if done else "#F9FAFB"
+        pulse   = "animation:aiDotPulse 1.2s ease-out 1;" if is_cur else ""
+        fw      = "700" if is_cur else ("500" if done else "400")
+        tc      = "#374151" if done else "#9CA3AF"
+
+        dots_html += (
+            f'<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:5px;">'
+            f'<div style="width:26px;height:26px;border-radius:50%;'
+            f'background:{dbg_};border:2px solid {dc};'
+            f'display:flex;align-items:center;justify-content:center;'
+            f'font-size:.62rem;font-weight:800;color:{dc};{pulse}">'
+            f'{"✓" if done and not is_cur else (str(i+1))}'
+            f'</div>'
+            f'<div style="font-size:.57rem;color:{tc};font-weight:{fw};'
+            f'text-align:center;line-height:1.2;">{tl_labels[i]}</div>'
+            f'</div>'
+        )
+        if i < 3:
+            bar_col = tl_colors[i] if i < state - 1 else "#E5E7EB"
+            dots_html += (
+                f'<div style="height:2px;flex:2;background:{bar_col};'
+                f'margin-bottom:20px;transition:background 0.6s ease;"></div>'
+            )
+    dots_html += '</div>'
+
+    html = f"""
+<style>
+@keyframes aiCardIn {{
+  from {{ opacity:0; transform:translateY(-6px); }}
+  to   {{ opacity:1; transform:translateY(0);   }}
+}}
+@keyframes aiDotPulse {{
+  0%   {{ box-shadow:0 0 0 0 {col}55; }}
+  60%  {{ box-shadow:0 0 0 9px {col}00; }}
+  100% {{ box-shadow:0 0 0 0 {col}00; }}
+}}
+</style>
+
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            background:{bg};border:1.5px solid {bdr};border-radius:14px;
+            padding:16px 18px;margin-bottom:12px;
+            animation:aiCardIn 0.55s cubic-bezier(.22,.68,0,1.2);
+            transition:background 0.6s ease, border-color 0.6s ease;">
+
+  <!-- Header label -->
+  <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;
+              letter-spacing:.1em;color:{col};margin-bottom:12px;">
+    🧠 AI Decision Progress
+  </div>
+
+  <!-- Current state -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+    <div style="width:36px;height:36px;border-radius:50%;
+                background:{col}18;border:2px solid {col};
+                display:flex;align-items:center;justify-content:center;
+                font-size:1rem;animation:aiDotPulse 1.4s ease-out 0.3s 1;">
+      <span style="color:{col};font-size:.9rem;font-weight:900;">{state}</span>
+    </div>
+    <div>
+      <div style="font-size:.9rem;font-weight:800;color:{col};line-height:1.1;">{cur["title"]}</div>
+      <div style="font-size:.71rem;color:#6B7280;margin-top:2px;">{cur["status"]}</div>
+    </div>
+  </div>
+
+  <!-- Description -->
+  <div style="font-size:.77rem;color:#374151;line-height:1.6;
+              background:rgba(255,255,255,.7);border-radius:8px;
+              padding:8px 11px;margin-bottom:10px;">
+    {cur["desc"]}
+  </div>
+
+  <!-- Business Opportunity -->
+  <div style="display:flex;align-items:center;gap:6px;
+              font-size:.68rem;font-weight:600;color:{col};
+              border-top:1px solid {bdr};padding-top:9px;">
+    <span>💼</span>
+    <span>Business Opportunity: <strong>{cur["opp"]}</strong></span>
+  </div>
+
+  <!-- CEO quote -->
+  <div style="font-size:.65rem;color:#9CA3AF;font-style:italic;margin-top:6px;">
+    "{cur["ceo"]}"
+  </div>
+
+  <!-- Timeline -->
+  {dots_html}
+
+</div>
+"""
+    st.markdown(html, unsafe_allow_html=True)
+
+
 def _render_ai_panel(dbg: dict | None) -> None:
     """
     Render the AI Intelligence Panel for CEO/business stakeholder demos.
@@ -2557,7 +2750,9 @@ with tab1:
         # ── AI Intelligence Panel (Demo Mode only, right column) ──────────────
         if _show_ai_panel:
             with __col_panel:
-                _render_ai_panel(st.session_state.get("_ai_debug"))
+                _dbg_panel = st.session_state.get("_ai_debug")
+                _render_ai_progress(_dbg_panel)
+                _render_ai_panel(_dbg_panel)
 
 
 
