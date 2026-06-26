@@ -1473,159 +1473,191 @@ def _call_llm(user_text: str, system: str) -> dict:
 # ═══════════════════════════════════════════════════════
 st.markdown("""
 <style>
-[data-testid="stApp"] {
-    background: linear-gradient(145deg,
-        #FFF8FB 0%, #FFF3F7 25%, #FAF0FF 55%,
-        #F0F7FF 80%, #F5FBFF 100%) !important;
+/* ══ TCBS PREMIUM DESIGN SYSTEM ══ */
+:root {
+    --red:     #D71920;
+    --red-dk:  #B01218;
+    --red-lt:  #FEF2F2;
+    --border:  #E5E7EB;
+    --txt1:    #111827;
+    --txt2:    #6B7280;
+    --white:   #FFFFFF;
+    --shadow:  0 1px 4px rgba(0,0,0,.07), 0 0 0 1px rgba(0,0,0,.04);
 }
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg,
-        #FFF5F9 0%, #FFECF4 35%, #F8EAFF 65%, #E8F4FF 100%) !important;
-    border-right: 2px solid #FFCCE0 !important;
-}
-h1 { font-size:1.7rem !important; font-weight:800 !important; color:#C4607F !important; }
-h2 { font-size:1.3rem !important; font-weight:700 !important; color:#4E7DB8 !important; }
-h3 { font-size:1.08rem !important; font-weight:700 !important; color:#555 !important; }
-p, .stMarkdown p, label { font-size:0.92rem !important; color:#444 !important; line-height:1.65 !important; }
-strong { color:#333 !important; }
 
+/* ── App & Sidebar backgrounds ── */
+[data-testid="stApp"] { background:#FFFFFF !important; }
+[data-testid="stSidebar"] {
+    background:#FFFFFF !important;
+    border-right:1px solid var(--border) !important;
+}
+
+/* ── Typography ── */
+h1 { font-size:1.6rem !important; font-weight:800 !important; color:var(--red) !important; }
+h2 { font-size:1.25rem !important; font-weight:700 !important; color:var(--txt1) !important; }
+h3 { font-size:1.05rem !important; font-weight:700 !important; color:var(--txt1) !important; }
+p, .stMarkdown p, label { font-size:0.92rem !important; color:var(--txt2) !important; line-height:1.65 !important; }
+strong { color:var(--txt1) !important; }
+
+/* ── Buttons ── */
 .stButton > button {
-    border-radius:22px !important; border:1.5px solid #FFB7D5 !important;
-    background:linear-gradient(135deg,#FFF5FA,#EEF5FF) !important;
-    color:#555 !important; font-size:0.87rem !important;
-    padding:0.45rem 0.9rem !important; transition:all 0.2s ease !important;
+    border-radius:10px !important;
+    border:1.5px solid var(--border) !important;
+    background:#FFFFFF !important;
+    color:var(--txt1) !important;
+    font-size:0.87rem !important;
+    padding:0.45rem 0.9rem !important;
+    transition:all 0.18s ease !important;
     font-weight:500 !important;
+    box-shadow:none !important;
 }
 .stButton > button:hover {
-    background:linear-gradient(135deg,#FFD6E8,#D6E8FF) !important;
-    transform:translateY(-2px) !important;
-    box-shadow:0 4px 14px rgba(255,150,200,0.3) !important;
+    border-color:var(--red) !important;
+    color:var(--red) !important;
+    background:#FFFFFF !important;
+    box-shadow:0 2px 8px rgba(215,25,32,.12) !important;
 }
 .stButton > button[kind="primary"] {
-    background:linear-gradient(135deg,#FF8FAF,#7EC8E3) !important;
-    color:white !important; border:none !important;
-    font-weight:700 !important; font-size:0.92rem !important;
+    background:var(--red) !important;
+    color:#FFFFFF !important;
+    border:none !important;
+    font-weight:700 !important;
+    font-size:0.9rem !important;
+    box-shadow:0 2px 8px rgba(215,25,32,.25) !important;
 }
 .stButton > button[kind="primary"]:hover {
-    background:linear-gradient(135deg,#FF6B99,#5BA8CC) !important;
-    box-shadow:0 6px 18px rgba(255,100,150,0.4) !important;
+    background:var(--red-dk) !important;
+    box-shadow:0 4px 14px rgba(215,25,32,.35) !important;
 }
 
-/* Tabs */
+/* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
-    gap:6px !important; background:rgba(255,200,220,0.15) !important;
-    border-radius:16px !important; padding:6px !important;
+    gap:4px !important;
+    background:#F9FAFB !important;
+    border-radius:10px !important;
+    padding:4px !important;
+    border:1px solid var(--border) !important;
 }
 .stTabs [data-baseweb="tab"] {
-    border-radius:12px !important; padding:10px 20px !important;
-    font-weight:600 !important; font-size:0.9rem !important; color:#888 !important;
+    border-radius:8px !important;
+    padding:8px 18px !important;
+    font-weight:600 !important;
+    font-size:0.88rem !important;
+    color:var(--txt2) !important;
 }
 .stTabs [aria-selected="true"] {
-    background:linear-gradient(135deg,#FF8FAF,#7EC8E3) !important;
-    color:white !important;
+    background:#FFFFFF !important;
+    color:var(--red) !important;
+    box-shadow:var(--shadow) !important;
 }
 
-/* Chat */
+/* ── Chat avatar ── */
 [data-testid="stChatMessage"] img {
-    width:52px !important; height:52px !important; min-width:52px !important;
+    width:48px !important; height:48px !important; min-width:48px !important;
     border-radius:50% !important; object-fit:cover !important;
-    border:2.5px solid #FFB5C8 !important;
-    box-shadow:0 4px 12px rgba(255,150,200,0.3) !important;
+    border:2px solid var(--border) !important;
+    box-shadow:0 2px 8px rgba(0,0,0,.08) !important;
 }
-[data-testid="stChatMessage"] { align-items:flex-start !important; gap:12px !important; border-radius:18px !important; }
+[data-testid="stChatMessage"] { align-items:flex-start !important; gap:12px !important; }
 
-/* Progress */
+/* ── Progress bar ── */
 .stProgress > div > div > div {
-    background:linear-gradient(90deg,#FF8FAF,#7EC8E3) !important;
+    background:var(--red) !important;
     border-radius:10px !important;
 }
+
+/* ── Metric cards ── */
 [data-testid="metric-container"] {
-    background:linear-gradient(135deg,#FFF8FC,#F5F8FF) !important;
-    border-radius:14px !important; border:1px solid #FFD6E8 !important;
+    background:#FFFFFF !important;
+    border-radius:12px !important;
+    border:1px solid var(--border) !important;
+    box-shadow:var(--shadow) !important;
 }
 
-/* Custom components */
+/* ── Custom components ── */
 .chat-framing {
-    background:linear-gradient(135deg,rgba(255,182,210,0.2),rgba(200,230,255,0.2));
-    border:1.5px solid #FFD6E8; border-radius:16px;
-    padding:14px 18px; margin-bottom:18px;
+    background:#FFFFFF;
+    border:1px solid var(--border);
+    border-left:3px solid var(--red);
+    border-radius:0 12px 12px 0;
+    padding:12px 16px; margin-bottom:16px;
 }
 .diary-framing {
-    background:linear-gradient(135deg,rgba(255,240,200,0.3),rgba(220,255,220,0.2));
-    border:1.5px solid #D4EFC4; border-radius:16px;
-    padding:14px 18px; margin-bottom:18px;
+    background:#FFFFFF;
+    border:1px solid var(--border);
+    border-left:3px solid var(--red);
+    border-radius:0 12px 12px 0;
+    padding:12px 16px; margin-bottom:16px;
 }
 .celebration-box {
-    background:linear-gradient(135deg,#FFF0F5,#FFFBE0);
-    border:2px solid #FFB5C8; border-radius:20px;
+    background:var(--red-lt);
+    border:1.5px solid rgba(215,25,32,.2);
+    border-radius:16px;
     padding:20px; text-align:center; margin:16px 0;
-    animation: pulse 1s ease-in-out;
+    animation: fadeUp 0.4s ease;
 }
 .refusal-box {
-    background:linear-gradient(135deg,#F5F8FF,#FFF5FA);
-    border:1.5px solid #CCDDFF; border-radius:16px;
+    background:#F9FAFB;
+    border:1px solid var(--border);
+    border-radius:12px;
     padding:16px; text-align:center; margin:12px 0;
 }
 .suggestion-box {
-    background:rgba(255,213,225,0.25);
-    border-left:4px solid #FF8FAF; border-radius:0 12px 12px 0;
+    background:#FEF2F2;
+    border-left:3px solid var(--red);
+    border-radius:0 10px 10px 0;
     padding:10px 14px; margin:10px 0;
-    font-size:0.88rem;
+    font-size:0.88rem; color:var(--txt1);
 }
 .growth-label {
     text-align:center; padding:8px 0;
-    font-size:1.3rem; font-weight:800; color:#C4607F;
+    font-size:1.25rem; font-weight:800; color:var(--red);
+}
+@keyframes fadeUp {
+    from { opacity:0; transform:translateY(6px); }
+    to   { opacity:1; transform:translateY(0);   }
 }
 @keyframes pulse {
-    0%  { transform:scale(1);   box-shadow:0 0 0 0 rgba(255,150,200,0.4); }
-    50% { transform:scale(1.02);box-shadow:0 0 0 12px rgba(255,150,200,0); }
-    100%{ transform:scale(1);   box-shadow:0 0 0 0 rgba(255,150,200,0); }
+    0%   { box-shadow:0 0 0 0 rgba(215,25,32,.2); }
+    70%  { box-shadow:0 0 0 8px rgba(215,25,32,0); }
+    100% { box-shadow:0 0 0 0 rgba(215,25,32,0); }
 }
 
-/* ── Diary-specific components ── */
+/* ── Diary components ── */
 .diary-prompt {
-    background: rgba(255,240,200,0.45);
-    border-left: 3px solid #FFB5C8;
-    border-radius: 0 10px 10px 0;
-    padding: 9px 14px;
-    margin: 14px 0 5px;
-    font-size: 0.93rem;
-    font-weight: 700;
-    color: #C4607F;
-    line-height: 1.4;
+    background:#FEF2F2;
+    border-left:3px solid var(--red);
+    border-radius:0 10px 10px 0;
+    padding:9px 14px; margin:14px 0 5px;
+    font-size:0.93rem; font-weight:700;
+    color:var(--red); line-height:1.4;
 }
 .insight-card {
-    background: linear-gradient(135deg, #FFF5FA, #F0F7FF);
-    border: 2px solid #FFD6E8;
-    border-radius: 20px;
-    padding: 24px 20px;
-    text-align: center;
-    margin: 12px 0 16px;
-    animation: pulse 0.8s ease-in-out;
+    background:#FFFFFF;
+    border:1.5px solid var(--border);
+    border-radius:16px;
+    padding:24px 20px; text-align:center;
+    margin:12px 0 16px;
+    box-shadow:var(--shadow);
 }
 .diary-stat-mini {
-    background: white;
-    border: 1.5px solid #FFD6E8;
-    border-radius: 12px;
-    padding: 10px 10px 8px;
-    text-align: center;
-    min-height: 62px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
+    background:#FFFFFF;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 10px 8px; text-align:center;
+    min-height:62px; display:flex;
+    flex-direction:column; justify-content:center; gap:2px;
 }
 .diary-entry-card {
-    background: white;
-    border: 1.5px solid #F0E6F0;
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin: 6px 0 4px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    background:#FFFFFF;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px; margin:6px 0 4px;
+    transition:border-color 0.18s, box-shadow 0.18s;
 }
 .diary-entry-card:hover {
-    border-color: #FFB5C8;
-    box-shadow: 0 2px 10px rgba(255,150,200,0.15);
+    border-color:var(--red);
+    box-shadow:0 2px 8px rgba(215,25,32,.1);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1730,29 +1762,30 @@ def _demo_anim_html(steps: list, active: int) -> str:
     rows = ""
     for i, (icon, title, desc) in enumerate(steps):
         if i < active:
-            bg = "#E8F5E9"; tc = "#1B5E20"; badge = "✓"; op = "1"
+            bg = "#FEF2F2"; tc = "#D71920"; badge = "✓"; op = "1"
         elif i == active:
-            bg = "#E3F2FD"; tc = "#0D47A1"; badge = "▶"; op = "1"
+            bg = "#FEF2F2"; tc = "#D71920"; badge = "▶"; op = "1"
         else:
-            bg = "transparent"; tc = "#BDBDBD"; badge = str(i + 1); op = "0.35"
+            bg = "transparent"; tc = "#D1D5DB"; badge = str(i + 1); op = "0.4"
         rows += (
-            f'<div style="display:flex;align-items:center;gap:9px;padding:7px 9px;'
-            f'border-radius:10px;background:{bg};margin-bottom:4px;opacity:{op};">'
-            f'<span style="font-size:.9rem;min-width:20px;text-align:center;">{icon}</span>'
+            f'<div style="display:flex;align-items:center;gap:9px;padding:7px 10px;'
+            f'border-radius:8px;background:{bg};margin-bottom:3px;opacity:{op};">'
+            f'<span style="font-size:.85rem;min-width:18px;text-align:center;">{icon}</span>'
             f'<div style="flex:1;">'
-            f'<div style="font-size:.73rem;font-weight:700;color:{tc};">{title}</div>'
-            f'<div style="font-size:.64rem;color:#888;margin-top:1px;">{desc}</div>'
+            f'<div style="font-size:.72rem;font-weight:700;color:{tc};">{title}</div>'
+            f'<div style="font-size:.63rem;color:#9CA3AF;margin-top:1px;">{desc}</div>'
             f'</div>'
-            f'<span style="font-size:.6rem;font-weight:800;color:{tc};'
-            f'background:{"rgba(255,255,255,.9)" if i <= active else "transparent"};'
-            f'width:17px;height:17px;border-radius:50%;display:flex;align-items:center;'
+            f'<span style="font-size:.58rem;font-weight:800;color:{tc};'
+            f'background:{"#FFFFFF" if i <= active else "transparent"};'
+            f'width:16px;height:16px;border-radius:50%;display:flex;align-items:center;'
             f'justify-content:center;border:1.5px solid {tc};">{badge}</span>'
             f'</div>'
         )
     return (
-        f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+        f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
+        f'background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;">'
         f'<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;'
-        f'letter-spacing:.09em;color:#9E9E9E;margin-bottom:9px;">🤖 AI đang xử lý...</div>'
+        f'letter-spacing:.09em;color:#D71920;margin-bottom:9px;">🤖 AI đang xử lý...</div>'
         f'{rows}'
         f'</div>'
     )
@@ -1771,12 +1804,13 @@ with st.sidebar:
 
     if _demo_toggle:
         st.markdown(
-            '<div style="background:linear-gradient(135deg,#1A1A2E,#2D1B69);'
-            'border-radius:14px;padding:10px 14px;margin-bottom:8px;">'
-            '<div style="color:#c4a8ff;font-size:.65rem;font-weight:700;'
-            'text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">'
+            '<div style="background:#FFFFFF;border:1px solid #E5E7EB;'
+            'border-left:3px solid #D71920;'
+            'border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:10px;">'
+            '<div style="color:#D71920;font-size:.62rem;font-weight:700;'
+            'text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">'
             '🎬 CEO Demo — Chọn khách hàng</div>'
-            '<div style="color:rgba(255,255,255,.75);font-size:.72rem;">'
+            '<div style="color:#9CA3AF;font-size:.68rem;">'
             'Mock layer — thay bằng TCBS API khi production</div>'
             '</div>',
             unsafe_allow_html=True,
@@ -1818,13 +1852,14 @@ with st.sidebar:
             _processing_now = st.session_state.get("demo_processing", False)
 
             st.markdown(
-                '<div style="background:linear-gradient(135deg,#1A1A2E,#0F3460);'
-                'border-radius:12px;padding:10px 12px;margin-bottom:8px;">'
-                '<div style="color:#c4a8ff;font-size:.62rem;font-weight:700;'
-                'text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'
+                '<div style="background:#FFFFFF;border:1px solid #E5E7EB;'
+                'border-left:3px solid #D71920;'
+                'border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:10px;">'
+                '<div style="color:#D71920;font-size:.62rem;font-weight:700;'
+                'text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">'
                 '🎬 Demo Story</div>'
-                '<div style="color:rgba(255,255,255,.55);font-size:.65rem;">'
-                'Click each scene in order. Chat → Diary → Transaction → Action.</div>'
+                '<div style="color:#9CA3AF;font-size:.64rem;">'
+                'Click any scene. Chat → Diary → Transaction → Action.</div>'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -1909,9 +1944,9 @@ with st.sidebar:
     src_side = _b64(_pick_mascot(stage_key))
     st.markdown(
         f'<div style="text-align:center;padding:10px 0 4px;">'
-        f'<img src="{src_side}" width="100" style="border-radius:50%;'
-        f'border:3px solid #FFB5C8;box-shadow:0 8px 24px rgba(255,140,190,0.4);" /></div>'
-        f'<div style="text-align:center;font-weight:700;color:#C4607F;font-size:1rem;">'
+        f'<img src="{src_side}" width="96" style="border-radius:50%;'
+        f'border:2.5px solid #E5E7EB;box-shadow:0 4px 12px rgba(0,0,0,.08);" /></div>'
+        f'<div style="text-align:center;font-weight:700;color:#D71920;font-size:.95rem;">'
         f'{stage_name}</div>',
         unsafe_allow_html=True,
     )
@@ -1965,17 +2000,17 @@ with st.sidebar:
             _stars = "★★★★★" if _cp_reward == "high" else ("★☆☆☆☆" if _cp_reward == "low" else "★★★☆☆")
 
             st.markdown(
-                f'<div style="background:#1A1A2E;border-radius:14px;padding:12px 14px;'
-                f'font-size:.72rem;color:rgba(255,255,255,.88);line-height:1.8;">'
-                f'<div style="color:#c4a8ff;font-weight:700;font-size:.65rem;'
-                f'text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'
+                f'<div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;'
+                f'padding:12px 14px;font-size:.72rem;color:#374151;line-height:1.8;">'
+                f'<div style="color:#D71920;font-weight:700;font-size:.62rem;'
+                f'text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">'
                 f'Customer Context</div>'
-                f'<b style="color:#fff;">👤 {_cp_name}</b> · {_cp_age} tuổi · {_cp_tier}<br/>'
+                f'<b style="color:#111827;">👤 {_cp_name}</b> · {_cp_age} tuổi · {_cp_tier}<br/>'
                 f'💼 {_cp_occ}<br/>'
                 f'📊 {_cp_stage}<br/>'
                 f'💰 Cash: {fmt(_cp_cash) if _cp_cash else "—"} · '
                 f'AUM: {fmt(_cp_aum) if _cp_aum else "0đ"}<br/>'
-                f'🎯 Dream: <b style="color:#FFD700;">{_cp_dream1}</b><br/>'
+                f'🎯 Dream: <b style="color:#D71920;">{_cp_dream1}</b><br/>'
                 f'💙 Cảm xúc: {_cp_sent} · 🔥 {_cp_streak} ngày<br/>'
                 f'🎟️ Reward pref: {_stars}'
                 f'</div>',
@@ -1984,7 +2019,7 @@ with st.sidebar:
 
             if _cp_notes:
                 st.markdown(
-                    '<div style="font-size:.68rem;font-weight:700;color:#7B5EA7;'
+                    '<div style="font-size:.68rem;font-weight:700;color:#D71920;'
                     'margin:8px 0 4px;">📝 Memory</div>',
                     unsafe_allow_html=True,
                 )
@@ -2059,38 +2094,38 @@ def _render_ai_panel(dbg: dict | None) -> None:
     # ── Insight bullets HTML ──
     _bullets_html = "".join(
         f'<div style="display:flex;align-items:flex-start;gap:8px;margin:5px 0;">'
-        f'<span style="color:#1565C0;font-size:.85rem;margin-top:1px;">✓</span>'
-        f'<span style="font-size:.82rem;color:#333;line-height:1.45;">{b}</span>'
+        f'<span style="color:#D71920;font-size:.8rem;margin-top:2px;font-weight:700;">✓</span>'
+        f'<span style="font-size:.82rem;color:#374151;line-height:1.5;">{b}</span>'
         f'</div>'
         for b in dbg.get("insight_bullets", [])
     )
 
     # ── Shared card style ──
     _card = (
-        "background:white;border-radius:14px;padding:14px 16px;"
-        "margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07),"
-        "0 0 0 1px rgba(0,0,0,.04);overflow:hidden;"
+        "background:#FFFFFF;border-radius:12px;padding:14px 16px;"
+        "margin-bottom:10px;border:1px solid #E5E7EB;"
+        "box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;"
     )
     _lbl = (
-        "font-size:.65rem;font-weight:700;letter-spacing:.08em;"
-        "text-transform:uppercase;color:#999;margin-bottom:8px;"
+        "font-size:.62rem;font-weight:700;letter-spacing:.09em;"
+        "text-transform:uppercase;color:#9CA3AF;margin-bottom:8px;"
     )
 
     # ── Quote for last user message ──
     _last_msg = dbg.get("last_user_message", "")
     _quote_html = (
-        f'<div style="font-size:.88rem;color:#1a1a1a;font-style:italic;'
-        f'line-height:1.5;padding:6px 10px;background:#F8F9FF;'
-        f'border-left:3px solid #90CAF9;border-radius:0 8px 8px 0;">'
+        f'<div style="font-size:.86rem;color:#111827;font-style:italic;'
+        f'line-height:1.55;padding:8px 12px;background:#F9FAFB;'
+        f'border-left:3px solid #D71920;border-radius:0 8px 8px 0;">'
         f'"{_last_msg[:120]}{"…" if len(_last_msg) > 120 else ""}"</div>'
-    ) if _last_msg else '<div style="color:#ccc;font-size:.8rem;">—</div>'
+    ) if _last_msg else '<div style="color:#D1D5DB;font-size:.8rem;">—</div>'
 
     # ── Product badge ──
     _product = dbg.get("product_name", "")
     _product_badge = (
         f'<span style="display:inline-block;margin-top:6px;font-size:.7rem;'
-        f'background:#E3F2FD;color:#1565C0;padding:2px 10px;border-radius:99px;'
-        f'font-weight:600;">→ {_product}</span>'
+        f'background:#FEF2F2;color:#D71920;padding:3px 10px;border-radius:6px;'
+        f'font-weight:700;border:1px solid rgba(215,25,32,.15);">→ {_product}</span>'
     ) if _product else ""
 
     html = f"""
@@ -2098,11 +2133,14 @@ def _render_ai_panel(dbg: dict | None) -> None:
             padding:4px 0;max-width:420px;">
 
   <!-- Header -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 2px;">
-    <span style="font-size:16px;">🧠</span>
-    <span style="font-size:.95rem;font-weight:700;color:#1a1a1a;">AI Intelligence</span>
-    <span style="margin-left:auto;font-size:.65rem;background:#E8F5E9;color:#2E7D32;
-                 padding:2px 8px;border-radius:99px;font-weight:600;">LIVE</span>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;
+              padding:10px 14px;background:#FFFFFF;border-radius:12px;
+              border:1px solid #E5E7EB;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+    <span style="font-size:15px;">🧠</span>
+    <span style="font-size:.92rem;font-weight:800;color:#D71920;letter-spacing:-.01em;">AI Intelligence</span>
+    <span style="margin-left:auto;font-size:.6rem;background:#FEF2F2;color:#D71920;
+                 padding:2px 8px;border-radius:6px;font-weight:700;
+                 border:1px solid rgba(215,25,32,.15);">LIVE</span>
   </div>
 
   <!-- 1. Customer Said -->
@@ -2113,28 +2151,28 @@ def _render_ai_panel(dbg: dict | None) -> None:
 
   <!-- 2. AI Understands -->
   <div style="{_card}">
-    <div style="{_lbl}">🧠 AI hiểu được gì</div>
+    <div style="{_lbl}">🧠 AI nhận diện</div>
     {_bullets_html}
   </div>
 
-  <!-- 3. Journey Stage + Behavior (2 columns) -->
+  <!-- 3. Journey Stage + Behavior -->
   <div style="{_card}">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div>
-        <div style="{_lbl}">📍 Giai đoạn hành trình</div>
-        <div style="font-size:1.35rem;line-height:1;">{dbg.get("stage_emoji", dbg.get("level_emoji",""))}</div>
-        <div style="font-size:.92rem;font-weight:700;color:#1a1a1a;margin-top:4px;">
+        <div style="{_lbl}">📍 Hành trình</div>
+        <div style="font-size:1.2rem;line-height:1;">{dbg.get("stage_emoji", dbg.get("level_emoji",""))}</div>
+        <div style="font-size:.9rem;font-weight:800;color:#111827;margin-top:4px;">
           Stage {dbg.get("stage", dbg.get("level",1))}/6</div>
-        <div style="font-size:.75rem;color:#666;margin-top:2px;">
+        <div style="font-size:.74rem;color:#D71920;font-weight:600;margin-top:2px;">
           {dbg.get("stage_label", dbg.get("level_short",""))}</div>
-        <div style="font-size:.68rem;color:#888;margin-top:4px;line-height:1.4;font-style:italic;">
+        <div style="font-size:.67rem;color:#9CA3AF;margin-top:4px;line-height:1.4;">
           {_coach_focus[:60] + "…" if len(_coach_focus) > 60 else _coach_focus}</div>
       </div>
-      <div style="border-left:1px solid #F0F0F0;padding-left:14px;">
-        <div style="{_lbl}">🎯 Mục tiêu hôm nay</div>
-        <div style="font-size:.85rem;font-weight:700;color:#1565C0;line-height:1.3;margin-top:4px;">
+      <div style="border-left:1px solid #F3F4F6;padding-left:14px;">
+        <div style="{_lbl}">🎯 Mục tiêu</div>
+        <div style="font-size:.83rem;font-weight:700;color:#111827;line-height:1.35;margin-top:4px;">
           {dbg.get("target_label","")}</div>
-        <div style="font-size:.7rem;color:#888;margin-top:4px;line-height:1.4;">
+        <div style="font-size:.7rem;color:#6B7280;margin-top:5px;line-height:1.4;">
           {dbg.get("measurable_outcome","")}</div>
       </div>
     </div>
@@ -2142,46 +2180,45 @@ def _render_ai_panel(dbg: dict | None) -> None:
 
   <!-- 4. AI Decision -->
   <div style="{_card}">
-    <div style="{_lbl}">⚙ AI đã quyết định</div>
+    <div style="{_lbl}">⚙ Quyết định</div>
     <div style="display:inline-flex;align-items:center;gap:6px;
-                background:{_dec_bg};color:{_dec_color};
-                padding:5px 12px;border-radius:99px;
+                background:#FEF2F2;color:#D71920;
+                padding:5px 12px;border-radius:8px;border:1px solid rgba(215,25,32,.15);
                 font-size:.82rem;font-weight:700;margin-bottom:10px;">
       <span>{_dec_icon}</span>
       <span>{dbg.get("decision_label","")}</span>
     </div>
     {_product_badge}
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
-      <div style="{_lbl}">💬 Tại sao?</div>
-      <div style="font-size:.82rem;color:#444;line-height:1.55;">
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6;">
+      <div style="{_lbl}">💬 Lý do</div>
+      <div style="font-size:.81rem;color:#374151;line-height:1.6;">
         {dbg.get("why_reason","")}</div>
     </div>
   </div>
 
-  <!-- 5. Conversation Result — ONE measurable business outcome per session -->
-  <div style="{_card}background:{_r_bg};">
-    <div style="{_lbl}color:{_r_color};">📊 Kết quả cuộc trò chuyện</div>
+  <!-- 5. Conversation Result -->
+  <div style="{_card}border-left:3px solid #D71920;">
+    <div style="{_lbl}color:#D71920;">📊 Kết quả</div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <span style="font-size:1.6rem;line-height:1;">{_r_icon}</span>
+      <span style="font-size:1.5rem;line-height:1;">{_r_icon}</span>
       <div>
-        <div style="font-size:.95rem;font-weight:800;color:{_r_color};line-height:1.2;">
+        <div style="font-size:.93rem;font-weight:800;color:#111827;line-height:1.2;">
           {_r_vn}</div>
-        <div style="font-size:.68rem;color:{_r_color};opacity:.7;margin-top:2px;
-                    text-transform:uppercase;letter-spacing:.05em;">{_r_en}</div>
+        <div style="font-size:.67rem;color:#9CA3AF;margin-top:2px;
+                    text-transform:uppercase;letter-spacing:.06em;">{_r_en}</div>
       </div>
     </div>
-    <div style="font-size:.72rem;color:{_r_color};opacity:.8;line-height:1.45;
-                padding:6px 8px;background:rgba(255,255,255,.55);border-radius:8px;">
-      🎯 Cột mốc tiếp theo: {_next_milestone}</div>
+    <div style="font-size:.72rem;color:#6B7280;line-height:1.5;
+                padding:6px 10px;background:#F9FAFB;border-radius:8px;">
+      🎯 {_next_milestone}</div>
   </div>
 
   <!-- 6. Next Best Action -->
-  <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-              border-radius:14px;padding:14px 16px;margin-bottom:4px;">
-    <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;
-                text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px;">
+  <div style="background:#D71920;border-radius:12px;padding:14px 16px;margin-bottom:4px;">
+    <div style="font-size:.6rem;font-weight:700;letter-spacing:.09em;
+                text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:6px;">
       💡 Hành động tiếp theo</div>
-    <div style="font-size:.92rem;font-weight:700;color:white;">
+    <div style="font-size:.9rem;font-weight:700;color:#FFFFFF;line-height:1.4;">
       {dbg.get("next_action_label","—")}</div>
   </div>
 
@@ -2452,29 +2489,30 @@ with tab1:
                 _prog_r_bg        = _dbg_prog.get("result_bg", "#E8F5E9")
                 # Build 6-dot progress bar
                 _dots = "".join(
-                    f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
-                    f'background:{"#4CAF50" if i < _prog_completed else ("#2196F3" if i == _prog_completed else "#E0E0E0")};'
+                    f'<span style="display:inline-block;width:9px;height:9px;border-radius:50%;'
+                    f'background:{"#D71920" if i < _prog_completed else ("#FECDD3" if i == _prog_completed else "#E5E7EB")};'
                     f'margin:0 3px;"></span>'
                     for i in range(6)
                 )
                 if _prog_milestone:
                     st.markdown(
-                        f'<div style="margin:10px 0 4px;background:white;border-radius:14px;'
-                        f'padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04);">'
-                        f'<div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;'
-                        f'text-transform:uppercase;color:#9E9E9E;margin-bottom:8px;">🐑 Tiến độ hôm nay</div>'
+                        f'<div style="margin:10px 0 4px;background:#FFFFFF;border-radius:12px;'
+                        f'padding:14px 16px;border:1px solid #E5E7EB;'
+                        f'box-shadow:0 1px 3px rgba(0,0,0,.05);">'
+                        f'<div style="font-size:.62rem;font-weight:700;letter-spacing:.09em;'
+                        f'text-transform:uppercase;color:#D71920;margin-bottom:8px;">🐑 Tiến độ hôm nay</div>'
                         f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
-                        f'<span style="font-size:1.1rem;">{_prog_result_icon}</span>'
-                        f'<span style="font-size:.82rem;font-weight:700;color:{_prog_r_color};">'
+                        f'<span style="font-size:1rem;">{_prog_result_icon}</span>'
+                        f'<span style="font-size:.84rem;font-weight:700;color:#111827;">'
                         f'{_prog_result_vn}</span></div>'
-                        f'<div style="font-size:.78rem;color:#555;line-height:1.4;margin-bottom:8px;">'
+                        f'<div style="font-size:.77rem;color:#374151;line-height:1.5;margin-bottom:8px;">'
                         f'📍 {_prog_milestone}</div>'
-                        f'<div style="font-size:.78rem;color:#1565C0;font-weight:600;margin-bottom:8px;">'
-                        f'🎯 Bước nhỏ tiếp theo: {_prog_next_step}</div>'
-                        f'<div style="display:flex;align-items:center;gap:8px;">'
-                        f'<span style="font-size:.68rem;color:#888;">🌱 Tiến bộ:</span>'
+                        f'<div style="font-size:.77rem;color:#D71920;font-weight:600;margin-bottom:10px;">'
+                        f'🎯 Tiếp theo: {_prog_next_step}</div>'
+                        f'<div style="display:flex;align-items:center;gap:6px;">'
+                        f'<span style="font-size:.67rem;color:#9CA3AF;">Tiến bộ</span>'
                         f'{_dots}'
-                        f'<span style="font-size:.68rem;color:#888;">{_prog_completed}/6 giai đoạn</span>'
+                        f'<span style="font-size:.67rem;color:#9CA3AF;">{_prog_completed}/6</span>'
                         f'</div></div>',
                         unsafe_allow_html=True,
                     )
